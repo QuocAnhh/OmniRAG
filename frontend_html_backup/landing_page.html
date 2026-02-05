@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OmniRAG - Intelligent Chatbot Platform</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2", // Indigo
+                        "secondary": "#10B981", // Emerald
+                        "background-light": "#ffffff",
+                        "background-off": "#f9fafb",
+                        "background-dark": "#101122",
+                        "surface-dark": "#1e1f3a",
+                        "text-main": "#0d0e1b",
+                        "text-muted": "#6b7280",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for dashboard mockups */
+        .mockup-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .mockup-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .mockup-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary/20 selection:text-primary">
+<!-- Header -->
+<header class="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-background-dark/80">
+<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+<div class="flex items-center gap-2">
+<div class="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<span class="text-xl font-bold tracking-tight text-text-main dark:text-white">OmniRAG</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-text-muted hover:text-primary dark:text-gray-400 dark:hover:text-white transition-colors" href="#">Product</a>
+<a class="text-sm font-medium text-text-muted hover:text-primary dark:text-gray-400 dark:hover:text-white transition-colors" href="#">Pricing</a>
+<a class="text-sm font-medium text-text-muted hover:text-primary dark:text-gray-400 dark:hover:text-white transition-colors" href="#">Docs</a>
+</nav>
+<div class="flex items-center gap-3">
+<a class="hidden sm:flex text-sm font-semibold text-text-main hover:text-primary dark:text-white dark:hover:text-primary/80 px-3 py-2" href="#">Login</a>
+<button class="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark">
+                    Start Free Trial
+                </button>
+</div>
+</div>
+</header>
+<main class="flex-auto">
+<!-- Hero Section -->
+<section class="relative overflow-hidden pt-16 pb-20 sm:pt-24 lg:pb-32">
+<!-- Background Decoration -->
+<div class="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-background-dark bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-3xl text-center">
+<div class="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary dark:border-primary/30 dark:bg-primary/10">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+                        New: GPT-4o Integration Live
+                    </div>
+<h1 class="text-4xl font-black tracking-tight text-text-main sm:text-5xl lg:text-6xl dark:text-white">
+                        Build Intelligent Chatbots <br class="hidden sm:block"/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">with Your Own Data</span>
+</h1>
+<p class="mt-6 text-lg leading-8 text-text-muted dark:text-gray-400">
+                        OmniRAG unifies your knowledge base into a powerful, multi-channel AI assistant. Enterprise-grade security, zero code required.
+                    </p>
+<div class="mt-10 flex items-center justify-center gap-x-4">
+<button class="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-8 text-base font-bold text-white shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark">
+                            Start Free Trial
+                        </button>
+<button class="inline-flex h-12 items-center justify-center rounded-lg border border-gray-200 bg-white px-8 text-base font-bold text-text-main shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-700 dark:bg-surface-dark dark:text-white dark:hover:bg-gray-800">
+<span class="mr-2 material-symbols-outlined text-lg">play_circle</span>
+                            Watch Demo
+                        </button>
+</div>
+</div>
+<!-- Dashboard Mockup -->
+<div class="mt-16 flow-root sm:mt-24">
+<div class="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 dark:bg-white/5 dark:ring-white/10">
+<!-- Actual Dashboard UI -->
+<div class="relative overflow-hidden rounded-lg bg-white shadow-2xl dark:bg-surface-dark border border-gray-200 dark:border-gray-700 min-h-[400px] lg:min-h-[600px] flex flex-col md:flex-row">
+<!-- Sidebar -->
+<div class="w-full md:w-64 border-r border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/30 hidden md:flex flex-col gap-6">
+<div class="flex items-center gap-2 px-2">
+<div class="h-6 w-6 rounded bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">O</div>
+<span class="font-semibold text-sm dark:text-white">Workspace A</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-3 px-2 py-2 bg-white rounded-md border border-gray-200 shadow-sm text-sm font-medium text-primary dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+                                        Overview
+                                    </div>
+<div class="flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined text-[20px]">source</span>
+                                        Data Sources
+                                    </div>
+<div class="flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+                                        Chatbots
+                                    </div>
+<div class="flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+                                        Analytics
+                                    </div>
+</div>
+<div class="mt-auto">
+<div class="p-3 bg-indigo-50 rounded-lg border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800">
+<p class="text-xs font-semibold text-indigo-900 dark:text-indigo-200">Plan Usage</p>
+<div class="mt-2 w-full bg-indigo-200 rounded-full h-1.5 dark:bg-indigo-900">
+<div class="bg-primary h-1.5 rounded-full" style="width: 75%"></div>
+</div>
+<p class="mt-1 text-[10px] text-indigo-700 dark:text-indigo-300">75% of tokens used</p>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col">
+<!-- Top Bar -->
+<div class="h-14 border-b border-gray-100 px-6 flex items-center justify-between dark:border-gray-700">
+<h3 class="font-semibold text-text-main dark:text-white">Customer Support Bot v2</h3>
+<div class="flex items-center gap-3">
+<span class="flex h-2 w-2 rounded-full bg-secondary"></span>
+<span class="text-xs font-medium text-secondary">Active</span>
+<button class="ml-4 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90">Deploy</button>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-white dark:bg-surface-dark h-full">
+<!-- Left Column: Config -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4">
+<div class="p-4 rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+<div class="text-xs text-gray-500 mb-1 dark:text-gray-400">Total Conversations</div>
+<div class="text-2xl font-bold text-text-main dark:text-white">1,248</div>
+<div class="text-[10px] text-secondary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[12px]">trending_up</span> +12%
+                                                </div>
+</div>
+<div class="p-4 rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+<div class="text-xs text-gray-500 mb-1 dark:text-gray-400">Avg Response Time</div>
+<div class="text-2xl font-bold text-text-main dark:text-white">1.2s</div>
+<div class="text-[10px] text-secondary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Good
+                                                </div>
+</div>
+<div class="p-4 rounded-lg border border-gray-100 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+<div class="text-xs text-gray-500 mb-1 dark:text-gray-400">Satisfaction Score</div>
+<div class="text-2xl font-bold text-text-main dark:text-white">4.8/5</div>
+</div>
+</div>
+<!-- Knowledge Sources Table -->
+<div class="border border-gray-200 rounded-lg overflow-hidden dark:border-gray-700">
+<div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center dark:bg-gray-800 dark:border-gray-700">
+<h4 class="text-sm font-semibold dark:text-white">Knowledge Base</h4>
+<button class="text-primary text-xs font-medium hover:underline">+ Add Source</button>
+</div>
+<table class="w-full text-sm text-left">
+<thead class="text-xs text-gray-500 uppercase bg-gray-50/50 dark:text-gray-400 dark:bg-gray-800/30">
+<tr>
+<th class="px-4 py-2 font-medium">Name</th>
+<th class="px-4 py-2 font-medium">Type</th>
+<th class="px-4 py-2 font-medium">Status</th>
+<th class="px-4 py-2 font-medium">Chunks</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+<tr class="bg-white dark:bg-surface-dark">
+<td class="px-4 py-3 font-medium text-text-main dark:text-gray-200">Product_Manual_v2.pdf</td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">PDF</td>
+<td class="px-4 py-3"><span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full dark:bg-green-900/30 dark:text-green-300">Indexed</span></td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">142</td>
+</tr>
+<tr class="bg-white dark:bg-surface-dark">
+<td class="px-4 py-3 font-medium text-text-main dark:text-gray-200">Help Center Wiki</td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">Web Crawl</td>
+<td class="px-4 py-3"><span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full dark:bg-green-900/30 dark:text-green-300">Indexed</span></td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">890</td>
+</tr>
+<tr class="bg-white dark:bg-surface-dark">
+<td class="px-4 py-3 font-medium text-text-main dark:text-gray-200">Internal Slack #support</td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">Integration</td>
+<td class="px-4 py-3"><span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300">Syncing...</span></td>
+<td class="px-4 py-3 text-gray-500 dark:text-gray-400">--</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Column: Chat Preview -->
+<div class="border border-gray-200 rounded-lg flex flex-col bg-gray-50 overflow-hidden dark:border-gray-700 dark:bg-gray-800/30 h-[380px] lg:h-auto">
+<div class="p-3 border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
+<h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Preview</h4>
+</div>
+<div class="flex-1 p-4 space-y-4 overflow-y-auto mockup-scroll bg-white dark:bg-gray-900">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 dark:bg-gray-800">
+<span class="material-symbols-outlined text-[16px]">person</span>
+</div>
+<div class="bg-gray-100 p-3 rounded-lg rounded-tl-none text-sm text-gray-700 max-w-[85%] dark:bg-gray-800 dark:text-gray-300">
+                                                    How do I reset my API key?
+                                                </div>
+</div>
+<div class="flex gap-3 flex-row-reverse">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+</div>
+<div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg rounded-tr-none text-sm text-gray-800 max-w-[85%] dark:bg-primary/10 dark:border-primary/20 dark:text-gray-200">
+<p>You can reset your API key by navigating to Settings &gt; Security. Here is the link to the <a class="text-primary underline decoration-primary/30" href="#">documentation</a>.</p>
+<div class="mt-2 text-[10px] text-gray-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]">description</span> Source: Product_Manual_v2.pdf
+                                                    </div>
+</div>
+</div>
+</div>
+<div class="p-3 bg-white border-t border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+<div class="relative">
+<input class="w-full text-sm rounded-md border-gray-300 pr-10 focus:border-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" placeholder="Type a message..." type="text"/>
+<button class="absolute right-2 top-1.5 text-primary hover:text-primary/80">
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Trusted By Bar -->
+<div class="mt-16 sm:mt-24">
+<p class="text-center text-sm font-semibold text-gray-500 dark:text-gray-400">TRUSTED BY INNOVATIVE TEAMS</p>
+<div class="mx-auto mt-8 grid max-w-lg grid-cols-4 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:grid-cols-6 sm:gap-x-10 lg:mx-0 lg:max-w-none lg:grid-cols-5">
+<img alt="Google Logo" class="col-span-2 max-h-8 w-full object-contain grayscale opacity-60 hover:opacity-100 transition-opacity lg:col-span-1 invert dark:invert-0" data-alt="Google logo grayscale" height="48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqCHjIGxwg54cg_gPf-tWw9CxSvTPVc7Z0DJuQeHXulRU9tkQWbjlgDdxiRoHZ7hVZ3RW4XMPph7VXkYjY1xYJ8dQwrS7lg1RhYk29i-6Go3FeWSJDyWWxjFa7G-aThQuL7SbKPIs9gLPgSMouvU-s5890pzXbyHheDrw0OW83Rh_rDst4H5BgCFbXVWsqIwRKlFQDExz9GUzuacRC_ejbvB0RVyvQDeX5n6WYCi5f7Bi-LQoEvSWsAXG6yXLOjMebzBkDFjJTf2x7" width="158"/>
+<img alt="IBM Logo" class="col-span-2 max-h-8 w-full object-contain grayscale opacity-60 hover:opacity-100 transition-opacity lg:col-span-1 invert dark:invert-0" data-alt="IBM logo grayscale" height="48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvVAqiVFD4xy1OK-fzVsDyJ-9V3XNax29rEj4VIY0DMnDwxrE4TYNGN15gC-DNhc9Hnxnfpx4SxeK3NBiReXraPFzlxTxEhbiMP-L0q6xSctWAJr9S9clM5erQmsigMN2wc1zHTTrgf3j1axqpwwyh5QczPdPMgDC7jq61r4oKsLsIlR23TyqXkJepwnFoFjNn5tZTEyXaKATPGG_SBTyd5gjxks7OSXMt5OHEtdjj4kJNlFdBWupP_kqGLfGoRw8X3XZFECqCWgFb" width="158"/>
+<img alt="Microsoft Logo" class="col-span-2 max-h-8 w-full object-contain grayscale opacity-60 hover:opacity-100 transition-opacity lg:col-span-1 invert dark:invert-0" data-alt="Microsoft logo grayscale" height="48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2QE_pkSmrSAiv67gXNvdIpA2LuW9Dgjn5wF9qb-bG1pCFcOXu5DMnshUyg6D8zSSUVgsFa-9OvGS2PaNwytFYWCdWNkPv4PyAOZV-ny0EsMywEU2Evn55bv9gPJKxxcPgGpm6paJMp6Wl4CTym41p-Sml_UbxYMZRx_eziC0K_uiEwkldJlDsBwoRy8JXcP_fxTzPFpL12krjEyNJMHA-RX6izPjrVwc4WrC2np2UIjrQb0nFdgq_HacOQyhmTWV0aAaBpIT0IDqw" width="158"/>
+<img alt="Netflix Logo" class="col-span-2 max-h-7 w-full object-contain grayscale opacity-60 hover:opacity-100 transition-opacity sm:col-start-2 lg:col-span-1 invert dark:invert-0" data-alt="Netflix logo grayscale" height="48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmeYDBeKTq-k53hDKMJm2WJTVV-6E9h0XaQDruxpjruW9jDt_XF0SqodFU0JdiZsUjfOuUJTLHjRsGdqeUoIYVqlfKSCsiJaeE5iLyDf3XVfW432qqrSz0FXFEZQoRSfTrmMSLRT5USnnyqpmkIKxszV6vw6Q_IoZUBF1-1fDij1-caH4-so0-oxQ9LUAU6zN_gJ6DR_YmQrklQjvVTpQsw3ncAr1ZkLxM_KM57ZANc9dDRrOs51XRv66bMP2izdyEe5oiz9rp-wff" width="158"/>
+<img alt="Spotify Logo" class="col-span-2 max-h-8 w-full object-contain grayscale opacity-60 hover:opacity-100 transition-opacity sm:col-start-auto lg:col-span-1 invert dark:invert-0" data-alt="Spotify logo grayscale" height="48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM4B45xbK6-ti1SgHpombXuYMbgBHw-Srt4YKf3WZxAij7_6lSE-xmSbXZoIEazsgZ0guPIX18V7tQXE64PtujXsW7z2McfygLdDKKBXpwiopvdNb7XerQxJRQJVSSd8c4aBJq2XeLr6LfWeaEM5PzhedQkG-_7xNA3Gf5rP76Lg43QVaKrbTO6QXXQZzOEebU8xSwqIB3fcPtRHSJ1zSe3j75yZ9l4mCB4u8fUz9IwRFrSj0tYNAv2K3UkRNy4xTB9KkEYYKyhGbX" width="158"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="bg-background-off dark:bg-background-dark py-24 sm:py-32">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-2xl lg:text-center">
+<h2 class="text-base font-semibold leading-7 text-primary">Everything you need</h2>
+<p class="mt-2 text-3xl font-bold tracking-tight text-text-main sm:text-4xl dark:text-white">Scale AI Support Without The Chaos</p>
+<p class="mt-6 text-lg leading-8 text-text-muted dark:text-gray-400">
+                        Stop building from scratch. OmniRAG provides the infrastructure to ingest data, manage context, and deliver accurate answers across any platform.
+                    </p>
+</div>
+<div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+<div class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-3 lg:gap-y-16">
+<!-- Feature 1 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">description</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">Document Intelligence</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">Parse PDFs, Word Docs, Wikis, and web pages instantly. Our OCR engine handles complex tables and formatting.</p>
+</div>
+</div>
+<!-- Feature 2 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">hub</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">Multi-channel Deploy</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">Write once, deploy everywhere. Connect your bot to Slack, Microsoft Teams, WhatsApp, and web widgets effortlessly.</p>
+</div>
+</div>
+<!-- Feature 3 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">drag_indicator</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">No-code Builder</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">Drag-and-drop conversational flows for custom logic. Handle edge cases and human handoff without writing code.</p>
+</div>
+</div>
+<!-- Feature 4 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">monitoring</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">Deep Analytics</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">Real-time insights into user queries. Identify knowledge gaps and improve your bot's answers over time.</p>
+</div>
+</div>
+<!-- Feature 5 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">groups</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">Team Collaboration</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">Shared workspaces and role-based access control. Invite your team to curate content and review logs together.</p>
+</div>
+</div>
+<!-- Feature 6 -->
+<div class="group relative flex flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100 hover:border-primary/20 dark:bg-surface-dark dark:border-gray-800 dark:hover:border-primary/30">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors duration-300">security</span>
+</div>
+<div>
+<h3 class="text-lg font-semibold leading-8 text-text-main dark:text-white">Enterprise Security</h3>
+<p class="mt-2 text-base leading-7 text-text-muted dark:text-gray-400">SOC2 Type II compliant with option for private LLM hosting on your own VPC. Your data never trains public models.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="bg-white dark:bg-background-dark py-16 sm:py-24">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<div class="relative isolate overflow-hidden bg-gray-900 px-6 py-24 text-center shadow-2xl rounded-3xl sm:px-16 lg:px-48">
+<!-- Decorative gradient -->
+<div class="absolute inset-0 -z-10 h-full w-full bg-gradient-to-br from-gray-900 via-[#101122] to-primary/40 opacity-90"></div>
+<h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">Start building your AI workforce today.</h2>
+<p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">Join 5,000+ companies using OmniRAG to automate support and internal knowledge retrieval.</p>
+<div class="mt-10 flex items-center justify-center gap-x-6">
+<a class="rounded-md bg-white px-8 py-3.5 text-sm font-bold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" href="#">Get started for free</a>
+<a class="text-sm font-semibold leading-6 text-white hover:text-primary transition-colors" href="#">Contact sales <span aria-hidden="true">→</span></a>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer aria-labelledby="footer-heading" class="bg-white border-t border-gray-100 dark:bg-background-dark dark:border-gray-800">
+<h2 class="sr-only" id="footer-heading">Footer</h2>
+<div class="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
+<div class="xl:grid xl:grid-cols-3 xl:gap-8">
+<div class="space-y-8">
+<div class="flex items-center gap-2">
+<div class="flex size-6 items-center justify-center rounded bg-primary text-white">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+</div>
+<span class="text-lg font-bold text-text-main dark:text-white">OmniRAG</span>
+</div>
+<p class="text-sm leading-6 text-text-muted dark:text-gray-400">
+                        Making enterprise knowledge accessible, secure, and actionable through AI.
+                    </p>
+<div class="flex space-x-6">
+<a class="text-gray-400 hover:text-gray-500" href="#">
+<span class="sr-only">Twitter</span>
+<svg aria-hidden="true" class="h-6 w-6" fill="currentColor" viewbox="0 0 24 24">
+<path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
+</svg>
+</a>
+<a class="text-gray-400 hover:text-gray-500" href="#">
+<span class="sr-only">GitHub</span>
+<svg aria-hidden="true" class="h-6 w-6" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
+</svg>
+</a>
+</div>
+</div>
+<div class="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
+<div class="md:grid md:grid-cols-2 md:gap-8">
+<div>
+<h3 class="text-sm font-semibold leading-6 text-text-main dark:text-white">Product</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Features</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Integrations</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Pricing</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Changelog</a></li>
+</ul>
+</div>
+<div class="mt-10 md:mt-0">
+<h3 class="text-sm font-semibold leading-6 text-text-main dark:text-white">Resources</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Documentation</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">API Reference</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Guides</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Community</a></li>
+</ul>
+</div>
+</div>
+<div class="md:grid md:grid-cols-2 md:gap-8">
+<div>
+<h3 class="text-sm font-semibold leading-6 text-text-main dark:text-white">Company</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">About</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Blog</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Careers</a></li>
+</ul>
+</div>
+<div class="mt-10 md:mt-0">
+<h3 class="text-sm font-semibold leading-6 text-text-main dark:text-white">Legal</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Privacy</a></li>
+<li><a class="text-sm leading-6 text-text-muted hover:text-text-main dark:text-gray-400 dark:hover:text-white" href="#">Terms</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-16 border-t border-gray-900/10 pt-8 sm:mt-20 lg:mt-24 dark:border-gray-700">
+<p class="text-xs leading-5 text-gray-500 text-center dark:text-gray-500">© 2024 OmniRAG, Inc. All rights reserved.</p>
+</div>
+</div>
+</footer>
+</body></html>

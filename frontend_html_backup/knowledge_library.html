@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Knowledge Base Library - OmniRAG</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2",
+                        "background-light": "#f8f8fc",
+                        "background-dark": "#0d0e1b",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a1b2e",
+                        "border-light": "#e7e7f3",
+                        "border-dark": "#2e2f45",
+                        "text-primary-light": "#0d0e1b",
+                        "text-primary-dark": "#f8f8fc",
+                        "text-secondary-light": "#4c4d9a",
+                        "text-secondary-dark": "#a0a1c3",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark min-h-screen flex flex-col transition-colors duration-200">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-6 py-3 bg-surface-light dark:bg-surface-dark sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">OmniRAG</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<button class="flex items-center justify-center rounded-lg h-9 px-4 text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-border-dark transition-colors text-sm font-medium">
+                Docs
+            </button>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-border-dark transition-colors text-sm font-medium">
+                Feedback
+            </button>
+<div class="h-6 w-px bg-border-light dark:bg-border-dark mx-2"></div>
+<div class="flex items-center gap-3 pl-2 cursor-pointer">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-8 border border-border-light dark:border-border-dark" data-alt="User avatar profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBZx5uFfDrQscquUSmwBOkJZITF82RafWxb20Qs2hHHllyQF6qh45B0BTWcu40hdIf-XT2SagnjJEh50ARCJNQQsjoDCbxIQ48IEztWP6iexBpa-tIyLKQfDPoe2EHWX1KJWA-s4Mx_-V_mr-HP7w_EpFDlwdfg93kgRuYaXVZEtHr2jFFz4Px3qOiYC52QW7jcDnzeeWLrk4H6wbJ-qOQcFC0OMNDrlWvpWz2XozziUHjWDkd3lGU22JNQCqlrWXTqs6NmRhwzz1bz");'></div>
+<span class="text-sm font-medium hidden sm:block">acme_corp</span>
+</div>
+</div>
+</header>
+<div class="flex flex-1 flex-col px-6 md:px-12 py-8 max-w-[1200px] mx-auto w-full">
+<!-- Breadcrumbs -->
+<nav class="flex flex-wrap gap-2 mb-6 text-sm">
+<a class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors font-medium" href="#">Projects</a>
+<span class="text-text-secondary-light dark:text-text-secondary-dark">/</span>
+<a class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors font-medium" href="#">OmniRAG</a>
+<span class="text-text-secondary-light dark:text-text-secondary-dark">/</span>
+<span class="text-text-primary-light dark:text-text-primary-dark font-semibold">Knowledge Base</span>
+</nav>
+<!-- Page Heading -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+<div class="flex flex-col gap-2 max-w-2xl">
+<h1 class="text-3xl font-black tracking-tight">Knowledge Base</h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-base">
+                    Upload documents to train your RAG model. Supported formats: .pdf, .docx, .txt.
+                </p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 rounded-lg h-10 px-4 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-primary-light dark:text-text-primary-dark hover:bg-gray-50 dark:hover:bg-border-dark transition-all text-sm font-bold shadow-sm">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span>Config</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg h-10 px-4 bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Add Source</span>
+</button>
+</div>
+</div>
+<!-- Upload Zone -->
+<div class="group relative flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer py-12 px-4 mb-10">
+<div class="flex flex-col items-center gap-4 text-center">
+<div class="size-12 rounded-full bg-background-light dark:bg-border-dark flex items-center justify-center text-text-secondary-light dark:text-text-secondary-dark group-hover:text-primary group-hover:bg-white dark:group-hover:bg-surface-dark shadow-sm transition-all">
+<span class="material-symbols-outlined text-[24px]">cloud_upload</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                        Drag and drop your files here
+                    </p>
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                        or click to browse from your computer (max 25MB)
+                    </p>
+</div>
+</div>
+<input class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" type="file"/>
+</div>
+<!-- Toolbar -->
+<div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+<div class="relative w-full sm:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-4 rounded-lg bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-text-secondary-light/60 dark:placeholder:text-text-secondary-dark/60" placeholder="Search files..." type="text"/>
+</div>
+<div class="flex gap-2 w-full sm:w-auto">
+<select class="h-10 pl-3 pr-8 rounded-lg bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm focus:outline-none focus:border-primary cursor-pointer text-text-secondary-light dark:text-text-secondary-dark font-medium">
+<option>All Statuses</option>
+<option>Success</option>
+<option>Processing</option>
+<option>Failed</option>
+</select>
+<button class="h-10 w-10 flex items-center justify-center rounded-lg bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-secondary-light dark:text-text-secondary-dark hover:text-primary hover:border-primary transition-colors" title="Reload">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+</button>
+</div>
+</div>
+<!-- Documents Table -->
+<div class="w-full overflow-hidden rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border-light dark:border-border-dark bg-background-light/50 dark:bg-border-dark/30 text-xs uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark font-semibold">
+<th class="px-6 py-4 w-[40%]">Name</th>
+<th class="px-6 py-4 w-[20%]">Status</th>
+<th class="px-6 py-4 w-[15%]">Size</th>
+<th class="px-6 py-4 w-[15%]">Uploaded</th>
+<th class="px-6 py-4 w-[10%] text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-sm divide-y divide-border-light dark:divide-border-dark">
+<!-- Row 1: Success PDF -->
+<tr class="group hover:bg-background-light dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="font-medium text-text-primary-light dark:text-text-primary-dark">Q3_Financial_Report.pdf</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark font-mono bg-background-light dark:bg-border-dark px-1.5 rounded border border-border-light dark:border-border-dark">id_8f3a21</span>
+<button class="text-text-secondary-light hover:text-primary" title="Copy ID">
+<span class="material-symbols-outlined text-[12px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+<span class="material-symbols-fill text-[12px]">check_circle</span>
+                                    Success
+                                </div>
+</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums font-mono text-xs">4.2 MB</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums">Oct 24, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1.5 rounded hover:bg-background-light dark:hover:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Processing DOCX -->
+<tr class="group hover:bg-background-light dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="flex flex-col">
+<span class="font-medium text-text-primary-light dark:text-text-primary-dark">HR_Policy_2024.docx</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark font-mono bg-background-light dark:bg-border-dark px-1.5 rounded border border-border-light dark:border-border-dark">id_b7c29x</span>
+<button class="text-text-secondary-light hover:text-primary" title="Copy ID">
+<span class="material-symbols-outlined text-[12px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-1.5 w-32">
+<div class="flex justify-between items-center text-xs">
+<span class="text-primary font-medium">Processing</span>
+<span class="text-text-secondary-light dark:text-text-secondary-dark font-mono">45%</span>
+</div>
+<div class="h-1.5 w-full bg-background-light dark:bg-border-dark rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[45%] animate-pulse"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums font-mono text-xs">1.1 MB</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums">Just now</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1.5 rounded hover:bg-background-light dark:hover:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Success PDF Large -->
+<tr class="group hover:bg-background-light dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="font-medium text-text-primary-light dark:text-text-primary-dark">Technical_Manual_v2.pdf</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark font-mono bg-background-light dark:bg-border-dark px-1.5 rounded border border-border-light dark:border-border-dark">id_9k2m44</span>
+<button class="text-text-secondary-light hover:text-primary" title="Copy ID">
+<span class="material-symbols-outlined text-[12px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+<span class="material-symbols-fill text-[12px]">check_circle</span>
+                                    Success
+                                </div>
+</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums font-mono text-xs">12.5 MB</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums">Oct 22, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1.5 rounded hover:bg-background-light dark:hover:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Failed TXT -->
+<tr class="group hover:bg-background-light dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">text_snippet</span>
+</div>
+<div class="flex flex-col">
+<span class="font-medium text-text-primary-light dark:text-text-primary-dark">notes_backup.txt</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark font-mono bg-background-light dark:bg-border-dark px-1.5 rounded border border-border-light dark:border-border-dark">id_x99p12</span>
+<button class="text-text-secondary-light hover:text-primary" title="Copy ID">
+<span class="material-symbols-outlined text-[12px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800">
+<span class="material-symbols-fill text-[12px]">error</span>
+                                    Failed
+                                </div>
+</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums font-mono text-xs">0.02 MB</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-text-secondary-dark tabular-nums">Oct 20, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1.5 rounded hover:bg-background-light dark:hover:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer/Pagination -->
+<div class="border-t border-border-light dark:border-border-dark px-6 py-3 flex items-center justify-between bg-surface-light dark:bg-surface-dark">
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                    Showing <span class="font-medium text-text-primary-light dark:text-text-primary-dark">1</span> to <span class="font-medium text-text-primary-light dark:text-text-primary-dark">4</span> of <span class="font-medium text-text-primary-light dark:text-text-primary-dark">24</span> results
+                </p>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-lg border border-border-light dark:border-border-dark text-xs font-medium text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-border-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="">
+                        Previous
+                    </button>
+<button class="px-3 py-1.5 rounded-lg border border-border-light dark:border-border-dark text-xs font-medium text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-border-dark transition-colors">
+                        Next
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

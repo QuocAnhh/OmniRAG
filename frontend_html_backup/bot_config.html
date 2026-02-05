@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OmniRAG - Bot Configuration Editor</title>
+<!-- Google Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101122",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for chat preview */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white transition-colors duration-200">
+<div class="flex flex-col min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-[#101122]/90 backdrop-blur-md px-6 py-3 lg:px-10">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">OmniRAG</h2>
+<div class="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-2"></div>
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<span>Editor</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">Customer Support Bot</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex items-center justify-center rounded-lg h-9 px-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-2">visibility</span>
+                    Preview
+                </button>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">
+                    Save Changes
+                </button>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-800 mx-2"></div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 ring-2 ring-white dark:ring-slate-800 cursor-pointer" data-alt="User profile picture showing a smiling professional woman" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBzyzMm0QVbrDJVPDwfv9aajO_e5ts0hbZtfAGj7lU17dgfG2XQctD8LW5nfl2-hofDlJ9kcJNpc7pF9fwRbAaygf5su-lpR4iWsTZDZFkAeAb2Qy2cWGN2o7hUkqmqe3Rt7p1t907t6Z0_wNz2tlhBAPvlAOwmLVAh4hxUbs0VzXxd-t4x80vcM_H7QiqYz72EV9Y1wJCe26yAZ75rfQxtrJGKk1ZdfYEULmt8PtoRfvcyyIa597iqO2jD3uBLZmkYucOHCTW5m8ib");'>
+</div>
+</div>
+</header>
+<!-- Secondary Navigation Tabs -->
+<div class="bg-white dark:bg-[#101122] border-b border-slate-200 dark:border-slate-800">
+<div class="max-w-7xl mx-auto px-6 lg:px-8">
+<nav aria-label="Tabs" class="flex gap-8 overflow-x-auto scrollbar-hide">
+<a class="flex items-center gap-2 border-b-[3px] border-primary text-slate-900 dark:text-white pb-3 pt-4 px-1" href="#">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+<p class="text-sm font-bold whitespace-nowrap">Basic Settings</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors pb-3 pt-4 px-1" href="#">
+<span class="material-symbols-outlined text-[20px]">library_books</span>
+<p class="text-sm font-bold whitespace-nowrap">Knowledge Base</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors pb-3 pt-4 px-1" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<p class="text-sm font-bold whitespace-nowrap">Channels</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors pb-3 pt-4 px-1" href="#">
+<span class="material-symbols-outlined text-[20px]">settings_suggest</span>
+<p class="text-sm font-bold whitespace-nowrap">Advanced</p>
+</a>
+</nav>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-grow bg-[#f8f8fc] dark:bg-[#0a0b14] py-8">
+<div class="max-w-7xl mx-auto px-6 lg:px-8 h-full">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+<!-- Left Pane: Configuration Form -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<!-- Header -->
+<div class="flex flex-col gap-2 mb-2">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Bot Configuration</h1>
+<p class="text-slate-500 dark:text-slate-400">Customize your bot's identity, appearance, and core behavior.</p>
+</div>
+<!-- Card: Identity -->
+<div class="bg-white dark:bg-[#16182e] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">badge</span>
+                                Identity
+                            </h3>
+<div class="space-y-6">
+<!-- Bot Name -->
+<label class="flex flex-col gap-2">
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Bot Name</span>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400" placeholder="e.g. Help Desk Bot" type="text" value="OmniSupport Agent"/>
+</label>
+<!-- Description -->
+<label class="flex flex-col gap-2">
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Description</span>
+<textarea class="form-textarea w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white min-h-[100px] p-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 resize-none">I'm here to help you with account issues, billing questions, and general inquiries about our platform.</textarea>
+<span class="text-xs text-slate-500 text-right">0/200 characters</span>
+</label>
+</div>
+</div>
+<!-- Card: Appearance & Behavior -->
+<div class="bg-white dark:bg-[#16182e] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Appearance Column -->
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">palette</span>
+                                        Appearance
+                                    </h3>
+<div class="space-y-6">
+<!-- Avatar Upload -->
+<div>
+<span class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Avatar</span>
+<div class="flex items-center gap-4">
+<div class="relative group cursor-pointer">
+<div class="size-16 rounded-full bg-slate-100 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
+<img alt="Bot Avatar Preview" class="w-full h-full object-cover" data-alt="Close up of a friendly female face representing the bot avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQkOVsI12inYYIxdvokCRG21mmQYWXBZU5aAvKvmbvIH2GPH6vb_suG09InyWO9nuIDhFHn6tldu87T9XIURpucdMF3hs897ZtHKPXvTJclXldatsVIdtFyjY2DN5c8PBWYwd2Nkac56pNOBG5WxWxQJ-Fq-xbKaI5HCQ7DaUYl1qklk6fV6CX8ZY1hpRoAI10SNCw02uuBBY-8AaAa7x2pZio0UwGLaPxC4s-ZktuzDeodYHoBTX7sw9o3gJ04FseAHf6TLcypKiV"/>
+</div>
+<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white text-lg">edit</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<button class="text-sm font-semibold text-primary hover:text-primary/80 text-left">Upload new image</button>
+<p class="text-xs text-slate-500">Recommended: 256x256px PNG</p>
+</div>
+</div>
+</div>
+<!-- Color Picker -->
+<div>
+<span class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Theme Color</span>
+<div class="flex flex-wrap gap-3">
+<button aria-label="Select Purple" class="size-8 rounded-full bg-[#6467f2] ring-2 ring-offset-2 ring-primary ring-offset-white dark:ring-offset-[#16182e]"></button>
+<button aria-label="Select Emerald" class="size-8 rounded-full bg-emerald-500 hover:ring-2 hover:ring-offset-2 hover:ring-emerald-500 hover:ring-offset-white dark:hover:ring-offset-[#16182e] transition-all"></button>
+<button aria-label="Select Blue" class="size-8 rounded-full bg-blue-500 hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 hover:ring-offset-white dark:hover:ring-offset-[#16182e] transition-all"></button>
+<button aria-label="Select Rose" class="size-8 rounded-full bg-rose-500 hover:ring-2 hover:ring-offset-2 hover:ring-rose-500 hover:ring-offset-white dark:hover:ring-offset-[#16182e] transition-all"></button>
+<div class="flex items-center justify-center size-8 rounded-full border border-slate-300 dark:border-slate-600 bg-transparent text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-lg">add</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Behavior Column -->
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">psychology</span>
+                                        Behavior
+                                    </h3>
+<div class="space-y-6">
+<!-- Personality Dropdown -->
+<label class="flex flex-col gap-2">
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Personality Tone</span>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 pl-4 pr-10 focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer">
+<option>Professional &amp; Concise</option>
+<option selected="">Friendly &amp; Empathetic</option>
+<option>Technical &amp; Detailed</option>
+<option>Casual &amp; Playful</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<p class="text-xs text-slate-500">Determines how the bot phrases its responses.</p>
+</label>
+<!-- Language -->
+<label class="flex flex-col gap-2">
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Primary Language</span>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 pl-4 pr-10 focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer">
+<option selected="">English (US)</option>
+<option>Spanish</option>
+<option>French</option>
+<option>German</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Pane: Live Preview -->
+<div class="lg:col-span-5 relative">
+<div class="sticky top-24 flex flex-col items-center">
+<!-- Toggle Device View -->
+<div class="flex items-center gap-4 mb-6 bg-white dark:bg-[#16182e] p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+<button class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold transition-all">
+<span class="material-symbols-outlined text-[16px]">desktop_windows</span>
+                                    Desktop
+                                </button>
+<button class="flex items-center gap-2 px-4 py-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all">
+<span class="material-symbols-outlined text-[16px]">smartphone</span>
+                                    Mobile
+                                </button>
+</div>
+<!-- Chat Widget Container -->
+<div class="w-full max-w-[380px] bg-white dark:bg-[#16182e] rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col h-[600px] transition-all duration-300">
+<!-- Widget Header -->
+<div class="bg-primary p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="size-10 rounded-full bg-white/20 overflow-hidden border border-white/30">
+<img alt="Bot Avatar Tiny" class="w-full h-full object-cover" data-alt="Small avatar of the bot in the chat header" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnXOXdw5L8uqm0pb_fLCkYOmwFR12twG55X9EYnTTXfAUsdnWc2WkEpsjY3rFzLxEUVteJD78_Yr0qNYGPxbGio6JBcO1bdKJ4v2N92sD0_QmfveknvoGpIZ6MZ7AXg5yz4LaGHrCb4FZ-CaCW1gYXOTywy_7LcDUjlILQPLeuh1rHkpAc1HgiK_RBZAY3fPDRW7Nj7BCThL47NsHD7nIDco4DGsvxCN2syVOuoWvX9PVcEKSRpX1TMLe1X024JmzjyMthIzd-S2YG"/>
+</div>
+<div class="absolute bottom-0 right-0 size-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
+</div>
+<div class="text-white">
+<h4 class="font-bold text-sm">OmniSupport Agent</h4>
+<p class="text-xs text-white/80 flex items-center gap-1">
+<span class="block size-1.5 rounded-full bg-green-400"></span>
+                                                Online now
+                                            </p>
+</div>
+</div>
+<div class="flex gap-1 text-white/80">
+<button class="hover:bg-white/10 p-1 rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_horiz</span></button>
+<button class="hover:bg-white/10 p-1 rounded transition-colors"><span class="material-symbols-outlined text-[20px]">close</span></button>
+</div>
+</div>
+<!-- Chat Body (Scrollable) -->
+<div class="flex-1 bg-slate-50 dark:bg-[#0f101a] p-4 overflow-y-auto space-y-4">
+<!-- Date Separator -->
+<div class="flex justify-center">
+<span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Today</span>
+</div>
+<!-- Bot Message 1 -->
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-slate-200 overflow-hidden shrink-0 mt-1">
+<img alt="Bot Avatar Message" class="w-full h-full object-cover" data-alt="Small avatar next to a chat bubble" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdNjjah0LseRdfOFVGRJ5egG8cLOVjdGMzwkPITqpXLuz-xaYvroLpbzNAt-zqTA9zSfIW6r4XjPYVht6JaXKMQf_YJ-l1vF54cGjUBj4cfW7QtYAKHZAdn0NY26RAXljGg-SFZlxaMzSfA1GTnWuhDmRrzS-6LP5JZoFj-EhDuS-pPSdZ-EA7Hs0ZlxGeKk121rp_H6PDwbMb7MKbAJQA6npi5-VevkihQiE-xoakQYQhc8tHFJsT4lbPRpkA_9rcmFs6Gp9bYx-n"/>
+</div>
+<div class="flex flex-col gap-1 max-w-[85%]">
+<div class="bg-white dark:bg-[#1e2030] p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                                                Hello! 👋 Welcome to OmniRAG. How can I help you today?
+                                            </div>
+<span class="text-[10px] text-slate-400 ml-1">10:23 AM</span>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-3 flex-row-reverse">
+<div class="flex flex-col gap-1 items-end max-w-[85%]">
+<div class="bg-primary text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed">
+                                                Hi there, I need some help configuring my new knowledge base.
+                                            </div>
+<span class="text-[10px] text-slate-400 mr-1">10:24 AM</span>
+</div>
+</div>
+<!-- Bot Message 2 (Typing indicator) -->
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-slate-200 overflow-hidden shrink-0 mt-1">
+<img alt="Bot Avatar Message" class="w-full h-full object-cover" data-alt="Small avatar next to a chat bubble" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUrUEQoGsWDG7cl48Asupcynj0nVotFBOHFI7TheOLK7ImDqP38ht_r3vOLsjFSB3dIfWyaLA4mljrrMJHb5i0PHlTL1zu_QnsiRBJxfYunCLTOgfLMlBPStQLh32qZGZ0Ks46p8c5dwGjAUm0vGoRA7l9fikFmCT0V1CFg6SQsq_GZ3ph6P836fabPaeVrslVmWlSGb2Qp9EkVGOjITavXNumffTQ-usO0DlyDmgDP45EHUuQv7DOBijpduM6Ul8peArPoXtFYiYz"/>
+</div>
+<div class="flex flex-col gap-1 max-w-[85%]">
+<div class="bg-white dark:bg-[#1e2030] p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-800 w-16">
+<div class="flex gap-1 justify-center items-center h-4">
+<div class="size-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+<div class="size-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+<div class="size-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Chat Input Area -->
+<div class="bg-white dark:bg-[#16182e] p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
+<div class="relative flex items-center">
+<input class="w-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:ring-1 focus:ring-primary border-none" disabled="" placeholder="Type a message..." type="text"/>
+<button class="absolute right-2 p-1.5 bg-primary rounded-full text-white flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+<!-- Branding Footer -->
+<div class="mt-2 flex items-center justify-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+<span class="text-[10px] text-slate-400 font-medium">Powered by</span>
+<span class="text-[10px] font-bold text-primary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[10px]">bolt</span>
+                                            OmniRAG
+                                        </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,577 @@
+{
+	"info": {
+		"_postman_id": "omnirag-api-collection",
+		"name": "OmniRAG API",
+		"description": "Complete API collection for OmniRAG - Multi-tenant RAG System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register Tenant + User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has user id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.environment.set(\"user_id\", jsonData.id);",
+									"});",
+									"",
+									"pm.test(\"User role is owner\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.role).to.eql(\"owner\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@mycompany.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"John Doe\",\n  \"tenant_name\": \"My Company\",\n  \"tenant_settings\": {\n    \"industry\": \"Technology\",\n    \"max_bots\": 10\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Register a new tenant and owner user"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Has access token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.access_token).to.exist;",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"});",
+									"",
+									"pm.test(\"Token type is bearer\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.token_type).to.eql(\"bearer\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "admin@mycompany.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "SecurePass123!",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login and get JWT access token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.email).to.exist;",
+									"    pm.expect(jsonData.tenant_id).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "me"]
+						},
+						"description": "Get current authenticated user info"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenants",
+			"item": [
+				{
+					"name": "Get Tenant Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tenants/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tenants", "me"]
+						},
+						"description": "Get current tenant information"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Tenant",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Company Updated\",\n  \"settings\": {\n    \"industry\": \"AI & Technology\",\n    \"max_bots\": 20,\n    \"custom_domain\": \"mycompany.com\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tenants/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tenants", "me"]
+						},
+						"description": "Update tenant settings"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Bots",
+			"item": [
+				{
+					"name": "Create Bot",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Bot has API key\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.api_key).to.exist;",
+									"    pm.environment.set(\"bot_id\", jsonData.id);",
+									"    pm.environment.set(\"bot_api_key\", jsonData.api_key);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Customer Support Bot\",\n  \"description\": \"AI assistant for customer inquiries\",\n  \"config\": {\n    \"llm_model\": \"gpt-4\",\n    \"temperature\": 0.7,\n    \"max_tokens\": 500,\n    \"system_prompt\": \"You are a helpful customer support assistant. Be polite and professional.\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots"]
+						},
+						"description": "Create a new bot with configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "List Bots",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots"]
+						},
+						"description": "Get all bots for current tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bot by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}"]
+						},
+						"description": "Get bot details"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Bot",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Customer Support Bot V2\",\n  \"description\": \"Enhanced AI assistant\",\n  \"config\": {\n    \"llm_model\": \"gpt-3.5-turbo\",\n    \"temperature\": 0.5,\n    \"system_prompt\": \"You are an expert customer support agent specializing in technical issues.\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}"]
+						},
+						"description": "Update bot configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Bot",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}"]
+						},
+						"description": "Delete a bot and all its documents"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Documents",
+			"item": [
+				{
+					"name": "Upload Document (Recursive)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Document uploaded\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.environment.set(\"doc_id\", jsonData.id);",
+									"    pm.expect(jsonData.status).to.eql(\"completed\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "chunking_strategy",
+									"value": "recursive",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/documents",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "documents"]
+						},
+						"description": "Upload document with recursive chunking (800/200)"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Document (Semantic)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "chunking_strategy",
+									"value": "semantic",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/documents",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "documents"]
+						},
+						"description": "Upload document with semantic chunking (500/100)"
+					},
+					"response": []
+				},
+				{
+					"name": "List Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/documents",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "documents"]
+						},
+						"description": "Get all documents for a bot"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/documents/{{doc_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "documents", "{{doc_id}}"]
+						},
+						"description": "Delete a document and its vectors"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Chat",
+			"item": [
+				{
+					"name": "Chat Simple Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"What are the main features of the product?\",\n  \"history\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/chat",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "chat"]
+						},
+						"description": "Simple RAG query without conversation history"
+					},
+					"response": []
+				},
+				{
+					"name": "Chat with History",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"What about the pricing?\",\n  \"history\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Tell me about the features\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"The main features include AI capabilities, multi-language support, and real-time processing.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"How does it work?\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"It works by processing documents and using RAG to provide accurate answers.\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/chat",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "chat"]
+						},
+						"description": "Chat with conversation context (last 5 messages)"
+					},
+					"response": []
+				},
+				{
+					"name": "Chat - Test Caching",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response faster than 500ms (cache hit)\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);",
+									"});",
+									"",
+									"pm.test(\"Has response and sources\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.response).to.exist;",
+									"    pm.expect(jsonData.sources).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"What are the main features of the product?\",\n  \"history\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}/chat",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bots", "{{bot_id}}", "chat"]
+						},
+						"description": "Send exact same query to test Redis caching (should be <500ms)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bot_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "doc_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bot_api_key",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

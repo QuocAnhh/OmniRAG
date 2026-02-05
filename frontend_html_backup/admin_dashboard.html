@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OmniRAG Super Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b2eee",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101122",
+                        "surface-dark": "#1a1b3a",
+                        "border-dark": "#232448",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex">
+<!-- SideNavBar -->
+<aside class="w-64 border-r border-slate-200 dark:border-border-dark flex flex-col bg-white dark:bg-background-dark h-screen sticky top-0">
+<div class="p-6 flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<div>
+<h1 class="text-sm font-bold leading-tight">OmniRAG Admin</h1>
+<p class="text-xs text-slate-500 dark:text-[#9293c9]">Super Admin Portal</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm">System Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">group</span>
+<span class="text-sm">User Management</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">payments</span>
+<span class="text-sm">Subscription Plans</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">monitoring</span>
+<span class="text-sm">Node Monitoring</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">settings</span>
+<span class="text-sm">Global Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-border-dark">
+<div class="flex items-center gap-3 p-2">
+<div class="size-8 rounded-full bg-slate-300 dark:bg-border-dark bg-cover bg-center" data-alt="Admin user avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuASGFx033_sUL7oVbu74mCT5ZERwZxR1bDmr3ygFboUCl-db4T6T2Owgf1l-3dtYmL-pVTbiZo3umqDzpvQPhDQCevLzYlIaC48WKeZjIZeyV-5DnoTk-mbhBut43CBczVA3l9JvatelXFyHyIN5KKHN2Vd4FO-smWOeyGBcWB2UjUEii7npLlaRo8SYe-rif2dDgW7pG0FUPI-_8dBAFg1uIWchLOvkHPVvqJ3pude_whegxOUFp8kdegF1C7zNyfVZU-mu-QZ0K3I')"></div>
+<div class="flex-1 overflow-hidden">
+<p class="text-xs font-semibold truncate">Alex Rivera</p>
+<p class="text-[10px] text-slate-500">alex@omnirag.ai</p>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-400">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar -->
+<header class="h-16 border-b border-slate-200 dark:border-border-dark flex items-center justify-between px-8 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-6 flex-1">
+<h2 class="text-lg font-bold tracking-tight">System Overview</h2>
+<div class="max-w-md w-full relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-border-dark border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Search enterprise accounts..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="size-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-border-dark text-slate-600 dark:text-slate-300 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Enterprise
+                </button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 space-y-8 overflow-y-auto">
+<!-- Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-[#9293c9]">Total Active Users</span>
+<span class="p-1.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+</span>
+</div>
+<p class="text-3xl font-bold">12,450</p>
+<p class="text-xs mt-2 text-emerald-500 font-medium">+5.2% from last month</p>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-[#9293c9]">Monthly Revenue (MRR)</span>
+<span class="p-1.5 rounded bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-sm">payments</span>
+</span>
+</div>
+<p class="text-3xl font-bold">$45,200</p>
+<p class="text-xs mt-2 text-blue-500 font-medium">+12.4% from last month</p>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-[#9293c9]">Avg. CPU Load</span>
+<span class="p-1.5 rounded bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-sm">memory</span>
+</span>
+</div>
+<p class="text-3xl font-bold">24%</p>
+<p class="text-xs mt-2 text-slate-400">Target below 40%</p>
+</div>
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-[#9293c9]">RAM Utilization</span>
+<span class="p-1.5 rounded bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined text-sm">storage</span>
+</span>
+</div>
+<p class="text-3xl font-bold">62%</p>
+<p class="text-xs mt-2 text-amber-500 font-medium">Moderate activity detected</p>
+</div>
+</div>
+<!-- Main Grid: Chart and Model Status -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- System Resource Trend (Chart) -->
+<div class="lg:col-span-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-base">System Resource Trends (24h)</h3>
+<select class="bg-slate-100 dark:bg-border-dark border-none rounded px-3 py-1 text-xs">
+<option>Last 24 Hours</option>
+<option>Last 7 Days</option>
+</select>
+</div>
+<div class="h-64 w-full relative">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<lineargradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#2b2eee" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#2b2eee" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0 160 Q 50 140, 100 150 T 200 120 T 300 100 T 400 80 T 500 60 V 200 H 0 Z" fill="url(#gradient)"></path>
+<path d="M0 160 Q 50 140, 100 150 T 200 120 T 300 100 T 400 80 T 500 60" fill="none" stroke="#2b2eee" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute bottom-0 w-full flex justify-between text-[10px] text-slate-400 pt-4">
+<span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>23:59</span>
+</div>
+</div>
+</div>
+<!-- Active AI Model Status -->
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-6 rounded-xl shadow-sm">
+<h3 class="font-bold text-base mb-6">Active AI Model Status</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-border-dark/50">
+<div class="flex items-center gap-3">
+<span class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+<span class="text-sm font-medium">GPT-4o</span>
+</div>
+<span class="text-xs text-slate-500">22ms latency</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-border-dark/50">
+<div class="flex items-center gap-3">
+<span class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+<span class="text-sm font-medium">Claude 3.5 Sonnet</span>
+</div>
+<span class="text-xs text-slate-500">18ms latency</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-border-dark/50">
+<div class="flex items-center gap-3">
+<span class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+<span class="text-sm font-medium">Gemini 1.5 Pro</span>
+</div>
+<span class="text-xs text-slate-500">45ms latency</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-border-dark/50">
+<div class="flex items-center gap-3">
+<span class="size-2 rounded-full bg-amber-500"></span>
+<span class="text-sm font-medium">Llama 3 (70B)</span>
+</div>
+<span class="text-xs text-amber-500">High Load</span>
+</div>
+<button class="w-full py-2 mt-2 text-sm text-primary font-medium hover:underline">Manage Models</button>
+</div>
+</div>
+</div>
+<!-- Recent Enterprise Accounts Table -->
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-border-dark flex items-center justify-between">
+<h3 class="font-bold text-base">Recently Registered Enterprises</h3>
+<button class="text-sm text-slate-500 hover:text-primary transition-colors">View All Accounts</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 dark:bg-background-dark/50">
+<tr>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Company</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Joined</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-border-dark">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-200 dark:bg-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">apartment</span>
+</div>
+<span class="text-sm font-medium">Acme Corp</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-primary/10 text-primary">Enterprise</span>
+</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 12, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-200 dark:bg-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">globe</span>
+</div>
+<span class="text-sm font-medium">Globex IT</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">Professional</span>
+</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs text-amber-500 font-medium">
+<span class="size-1.5 rounded-full bg-amber-500"></span>
+                                        Pending
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 14, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-border-dark/20 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-200 dark:bg-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">bolt</span>
+</div>
+<span class="text-sm font-medium">Stark Industries</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-primary/10 text-primary">Enterprise</span>
+</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Oct 15, 2023</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

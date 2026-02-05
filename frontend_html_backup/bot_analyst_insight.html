@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OmniRAG - Bot Analytics Insights</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2",
+                        "primary-light": "#8b8df5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101122",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e1e2e",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569; 
+        }
+        
+        /* Utility for donut chart */
+        .donut-chart {
+            background: conic-gradient(
+                #6467f2 0% 45%, 
+                #8b8df5 45% 70%, 
+                #c4c5fa 70% 90%, 
+                #e2e8f0 90% 100%
+            );
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased h-screen overflow-hidden flex">
+<!-- Side Navigation -->
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between hidden md:flex shrink-0 transition-colors duration-300">
+<div class="flex flex-col gap-6 p-6">
+<!-- Brand -->
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 rounded-lg p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl">smart_toy</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-tight">OmniRAG</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Enterprise Admin</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary group transition-all" href="#">
+<span class="material-symbols-outlined filled text-[22px]">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">chat</span>
+<span class="text-sm font-medium">Conversations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">menu_book</span>
+<span class="text-sm font-medium">Knowledge Base</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+<!-- User Profile -->
+<div class="p-6 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-slate-100 dark:ring-slate-700" data-alt="User profile picture showing a professional headshot" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYgkBTyKgRhw0pzqZnrj6eyRzSwvSfmK0BgqI6n1kNB2S-qzuQqJPkV3kWj7XP6dXO6xras0cihIO36pqXvoYv191V4J_dyIDsW3fVpcCcrVwMbP9x_3rlpE4UotHsc8LTYJZfj_msvOxTfTpP7kh_Lnrxzt0_5xyq2LFpNs2MSkQByUkg1Dik0P1Ix7HtY0lE74_da4ahz_Ir_oP0ia2IPTENjRgylvbLcgUlMoeGCuscvyKy4UjT0B2ZqJOmRKsrKrVUeXkj7-o2");'>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-semibold">Alex Morgan</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">alex@omnirag.com</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Top Bar / Header -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-6 md:px-8 border-b border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark z-10">
+<div class="flex flex-col gap-1">
+<h2 class="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Bot Analytics Insights</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Monitor performance, channel distribution, and user sentiment.</p>
+</div>
+<div class="flex items-center gap-3">
+<!-- Date Picker Mockup -->
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Last 30 Days</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+<!-- Export Button -->
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export Report</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-6 md:p-8">
+<div class="max-w-[1400px] mx-auto flex flex-col gap-6">
+<!-- Stats Cards Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Messages</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">chat_bubble_outline</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<p class="text-2xl font-bold tracking-tight">14,205</p>
+<span class="text-emerald-600 dark:text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-0.5">trending_up</span>12%
+                            </span>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Avg Response Time</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">timer</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<p class="text-2xl font-bold tracking-tight">1.5s</p>
+<span class="text-emerald-600 dark:text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-0.5">trending_down</span>0.2s
+                            </span>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Users</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">group</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<p class="text-2xl font-bold tracking-tight">3,400</p>
+<span class="text-emerald-600 dark:text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-0.5">trending_up</span>5%
+                            </span>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Avg CSAT Score</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">star_rate</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<p class="text-2xl font-bold tracking-tight">4.8<span class="text-lg text-slate-400 font-normal">/5</span></p>
+<span class="text-emerald-600 dark:text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-0.5">trending_up</span>0.1
+                            </span>
+</div>
+</div>
+</div>
+<!-- Main Chart Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Line Chart (Span 2 cols on large) -->
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Messages per Day</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Total volume over the last 30 days</p>
+</div>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- SVG Chart Area -->
+<div class="relative w-full h-[300px] flex items-end gap-2 pt-4">
+<!-- Y-Axis Labels -->
+<div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-slate-400 w-8">
+<span>15k</span>
+<span>10k</span>
+<span>5k</span>
+<span>0</span>
+</div>
+<!-- Chart Canvas -->
+<div class="ml-10 flex-1 h-full relative">
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="border-t border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="border-b border-slate-200 dark:border-slate-700 w-full h-0"></div>
+</div>
+<!-- Line Path SVG -->
+<svg class="absolute inset-0 w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="gradientArea" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#6467f2" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#6467f2" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Area Fill -->
+<path d="M0 80 Q 15 70, 25 50 T 50 40 T 75 60 T 100 20 V 100 H 0 Z" fill="url(#gradientArea)"></path>
+<!-- Stroke Line -->
+<path d="M0 80 Q 15 70, 25 50 T 50 40 T 75 60 T 100 20" fill="none" stroke="#6467f2" stroke-linecap="round" stroke-width="0.75" vector-effect="non-scaling-stroke"></path>
+<!-- Tooltip Dot Example -->
+<circle class="hover:r-2 transition-all cursor-pointer" cx="75" cy="60" fill="white" r="1.5" stroke="#6467f2" stroke-width="0.5"></circle>
+</svg>
+</div>
+</div>
+<!-- X-Axis Labels -->
+<div class="ml-10 flex justify-between text-xs text-slate-400 mt-2">
+<span>Mon</span>
+<span>Tue</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Sun</span>
+</div>
+</div>
+<!-- Secondary Charts Column -->
+<div class="flex flex-col gap-6">
+<!-- Donut Chart -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex-1 min-h-[280px]">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Channel Distribution</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Traffic source breakdown</p>
+<div class="flex items-center gap-6">
+<!-- Donut -->
+<div class="relative size-32 rounded-full donut-chart flex items-center justify-center shrink-0">
+<div class="size-24 bg-surface-light dark:bg-surface-dark rounded-full flex items-center justify-center shadow-inner">
+<span class="text-xs font-bold text-slate-500">Total<br/>14.2k</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex flex-col gap-3 flex-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#6467f2]"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Web Widget</span>
+</div>
+<span class="text-xs font-bold text-slate-900 dark:text-white">45%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#8b8df5]"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Slack</span>
+</div>
+<span class="text-xs font-bold text-slate-900 dark:text-white">25%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#c4c5fa]"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Teams</span>
+</div>
+<span class="text-xs font-bold text-slate-900 dark:text-white">20%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#e2e8f0]"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">WhatsApp</span>
+</div>
+<span class="text-xs font-bold text-slate-900 dark:text-white">10%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Top Questions (Bar Chart) -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex-1 min-h-[280px]">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Top Questions</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Most frequent user queries</p>
+<div class="flex flex-col gap-4">
+<!-- Bar 1 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-700 dark:text-slate-200">Reset Password</span>
+<span class="text-slate-500">1,240</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-700 dark:text-slate-200">Pricing Plans</span>
+<span class="text-slate-500">980</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-primary/80 h-2 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-700 dark:text-slate-200">API Keys</span>
+<span class="text-slate-500">750</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-primary/60 h-2 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-700 dark:text-slate-200">Integration Help</span>
+<span class="text-slate-500">520</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-primary/40 h-2 rounded-full" style="width: 30%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Conversations Table -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Recent Conversations</h3>
+<a class="text-sm font-semibold text-primary hover:text-primary/80 flex items-center gap-1" href="#">
+                            View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+<th class="px-6 py-4">ID</th>
+<th class="px-6 py-4">User</th>
+<th class="px-6 py-4 w-1/3">Last Query</th>
+<th class="px-6 py-4">Channel</th>
+<th class="px-6 py-4">Time</th>
+<th class="px-6 py-4">Sentiment</th>
+<th class="px-6 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 text-sm font-mono text-slate-500">#10294</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-bold">
+                                                JD
+                                            </div>
+<span class="text-sm font-medium text-slate-900 dark:text-white">John Doe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs">
+                                        How do I integrate with Jira for ticketing?
+                                    </td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px] text-slate-400">laptop_mac</span> Web
+                                        </div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">2 min ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+<span class="size-1.5 rounded-full bg-emerald-500"></span> Positive
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 text-sm font-mono text-slate-500">#10293</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-300 text-xs font-bold">
+                                                SM
+                                            </div>
+<span class="text-sm font-medium text-slate-900 dark:text-white">Sarah Miller</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs">
+                                        My login isn't working, getting error 503.
+                                    </td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px] text-slate-400">chat</span> Slack
+                                        </div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">15 min ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800">
+<span class="size-1.5 rounded-full bg-rose-500"></span> Negative
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 text-sm font-mono text-slate-500">#10292</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-300 text-xs font-bold">
+                                                MK
+                                            </div>
+<span class="text-sm font-medium text-slate-900 dark:text-white">Mike K.</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs">
+                                        Is there a discount for annual billing?
+                                    </td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px] text-slate-400">mail</span> Email
+                                        </div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">42 min ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+<span class="size-1.5 rounded-full bg-slate-500"></span> Neutral
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 text-sm font-mono text-slate-500">#10291</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-300 text-xs font-bold">
+                                                EL
+                                            </div>
+<span class="text-sm font-medium text-slate-900 dark:text-white">Emma Lee</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs">
+                                        Thanks, that solved my issue!
+                                    </td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px] text-slate-400">laptop_mac</span> Web
+                                        </div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">1 hr ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+<span class="size-1.5 rounded-full bg-emerald-500"></span> Positive
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Footer Spacing -->
+<div class="h-10"></div>
+</div>
+</main>
+</body></html>

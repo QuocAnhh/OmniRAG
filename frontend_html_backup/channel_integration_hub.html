@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Channel Integrations Hub - OmniRAG</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2",
+                        "background-light": "#f8f8fc",
+                        "background-dark": "#101122",
+                        "card-light": "#ffffff",
+                        "card-dark": "#1e1f3a",
+                        "text-main": "#0d0e1b",
+                        "text-secondary": "#4c4d9a",
+                        "border-light": "#e7e7f3",
+                        "border-dark": "#2d2e4f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-white transition-colors duration-200">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- SideNavBar -->
+<aside class="w-64 flex-shrink-0 border-r border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark hidden lg:flex flex-col">
+<div class="h-16 flex items-center px-6 border-b border-border-light dark:border-border-dark">
+<div class="flex items-center gap-2 text-text-main dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold tracking-tight">OmniRAG</h2>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<p class="px-3 text-xs font-semibold text-text-secondary dark:text-slate-400 uppercase tracking-wider">Workspace</p>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="text-sm font-medium">Conversations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="text-sm font-medium">Knowledge Base</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+</div>
+<div class="flex flex-col gap-2">
+<p class="px-3 text-xs font-semibold text-text-secondary dark:text-slate-400 uppercase tracking-wider">Configuration</p>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">Team</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary dark:text-primary" href="#">
+<span class="material-symbols-outlined filled text-[20px]">extension</span>
+<span class="text-sm font-medium">Integrations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-border-light dark:hover:bg-border-dark text-text-main dark:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">api</span>
+<span class="text-sm font-medium">API Keys</span>
+</a>
+</div>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3 px-2">
+<div class="w-8 h-8 rounded-full bg-cover bg-center" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJh_aIrp81dBtji2uqP2b1jY1sbuQrgEvNHou8v-WMjV7-ECRR3zpt3mr6KMoOx6leUOwo_he8d64CkEk8pszAqcHNRkLyCKQ1WBtTwsPgNMJLYyuw6xb8MkEC__XZ9oJhrlfmhY6A0r5pvqIlvH--R0UJz21Rd35g4Up8yG82-f2jXvldxRo4POLmLPHNXmaYFHHMoMlCk-bPWCs84HjL5Wv5KbQ-iKbLdsKlP9sMXUHOlqWuWni9j3R88iHyILQYdDw77Nwmd4M0");'></div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-sm font-medium text-text-main dark:text-white truncate">Admin User</span>
+<span class="text-xs text-text-secondary dark:text-slate-400 truncate">admin@omnirag.com</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full relative overflow-y-auto">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-20 flex items-center justify-between px-6 py-3 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-border-light dark:border-border-dark">
+<div class="flex items-center gap-4 lg:hidden">
+<button class="p-2 -ml-2 text-text-secondary hover:text-text-main dark:text-slate-400 dark:hover:text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="text-lg font-bold text-text-main dark:text-white">OmniRAG</h2>
+</div>
+<div class="flex-1 max-w-xl hidden lg:block">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-text-secondary dark:text-slate-400 text-[20px]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-none rounded-lg leading-5 bg-white dark:bg-card-dark text-text-main dark:text-white placeholder-text-secondary dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm shadow-sm" placeholder="Search integrations, settings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4 ml-auto">
+<button class="p-2 text-text-secondary hover:text-text-main dark:text-slate-400 dark:hover:text-white relative rounded-full hover:bg-white dark:hover:bg-card-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-background-light dark:border-background-dark"></span>
+</button>
+<button class="p-2 text-text-secondary hover:text-text-main dark:text-slate-400 dark:hover:text-white lg:hidden">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</button>
+</div>
+</header>
+<div class="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full">
+<!-- Breadcrumbs -->
+<nav aria-label="Breadcrumb" class="flex mb-6">
+<ol class="inline-flex items-center space-x-1 md:space-x-3">
+<li class="inline-flex items-center">
+<a class="inline-flex items-center text-sm font-medium text-text-secondary hover:text-primary dark:text-slate-400 dark:hover:text-white" href="#">
+                            Home
+                        </a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-text-secondary dark:text-slate-600 text-sm mx-1">chevron_right</span>
+<a class="text-sm font-medium text-text-secondary hover:text-primary dark:text-slate-400 dark:hover:text-white" href="#">Settings</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-text-secondary dark:text-slate-600 text-sm mx-1">chevron_right</span>
+<span class="text-sm font-medium text-text-main dark:text-white">Integrations</span>
+</div>
+</li>
+</ol>
+</nav>
+<!-- Page Heading -->
+<div class="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+<div>
+<h1 class="text-3xl font-bold tracking-tight text-text-main dark:text-white mb-2">Channel Integrations Hub</h1>
+<p class="text-text-secondary dark:text-slate-400 max-w-2xl">Connect your AI agent to your customers' favorite platforms to start automating conversations.</p>
+</div>
+<button class="inline-flex items-center justify-center rounded-lg bg-white dark:bg-card-dark px-4 py-2 text-sm font-medium text-text-main dark:text-white shadow-sm ring-1 ring-inset ring-border-light dark:ring-border-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined mr-2 text-[20px]">book</span>
+                    View Documentation
+                </button>
+</div>
+<!-- Grid of Integrations -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Card 1: Website Widget (Connected) -->
+<div class="group relative flex flex-col bg-card-light dark:bg-card-dark rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg dark:shadow-none dark:border dark:border-border-dark transition-all duration-300">
+<div class="p-6 flex-1">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[24px]">public</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-text-main dark:text-white">Website Widget</h3>
+<p class="text-xs text-text-secondary dark:text-slate-500">Web Chat</p>
+</div>
+</div>
+<span class="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/10">Connected</span>
+</div>
+<p class="text-sm text-text-secondary dark:text-slate-400 mb-6 leading-relaxed">Embed the customizable AI chat bubble directly onto your public facing website or customer portal.</p>
+<div class="p-3 bg-background-light dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark mb-2">
+<div class="flex items-center justify-between text-xs text-text-secondary dark:text-slate-400 mb-1">
+<span>Domains</span>
+<span class="text-emerald-600 dark:text-emerald-400 font-medium">Active</span>
+</div>
+<p class="text-sm font-medium text-text-main dark:text-white truncate">omnirag.com, help.omnirag.com</p>
+</div>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50/50 dark:bg-white/5 rounded-b-xl">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-xs font-medium text-text-secondary dark:text-slate-400">Live</span>
+</div>
+<button class="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                            Customize Widget
+                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Telegram (Not Connected) -->
+<div class="group relative flex flex-col bg-card-light dark:bg-card-dark rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg dark:shadow-none dark:border dark:border-border-dark transition-all duration-300">
+<div class="p-6 flex-1">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-10 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400">
+<span class="material-symbols-outlined filled text-[24px]">send</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-text-main dark:text-white">Telegram</h3>
+<p class="text-xs text-text-secondary dark:text-slate-500">Messaging</p>
+</div>
+</div>
+<span class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10">Not Connected</span>
+</div>
+<p class="text-sm text-text-secondary dark:text-slate-400 mb-6 leading-relaxed">Connect your Telegram Bot to allow users to chat with your AI directly through Telegram.</p>
+<div class="flex flex-col gap-3">
+<div>
+<label class="block text-xs font-medium text-text-main dark:text-white mb-1" for="telegram-token">Bot Token</label>
+<input class="block w-full rounded-md border-0 py-1.5 text-text-main dark:text-white dark:bg-background-dark shadow-sm ring-1 ring-inset ring-border-light dark:ring-border-dark placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" id="telegram-token" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" type="text"/>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-end bg-gray-50/50 dark:bg-white/5 rounded-b-xl">
+<button class="rounded-md bg-primary px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors w-full sm:w-auto">
+                            Connect Telegram
+                        </button>
+</div>
+</div>
+<!-- Card 3: Zalo OA (Pending) -->
+<div class="group relative flex flex-col bg-card-light dark:bg-card-dark rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg dark:shadow-none dark:border dark:border-border-dark transition-all duration-300">
+<div class="p-6 flex-1">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+<!-- Using chat bubble as approximation for Zalo -->
+<span class="material-symbols-outlined text-[24px]">forum</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-text-main dark:text-white">Zalo OA</h3>
+<p class="text-xs text-text-secondary dark:text-slate-500">Social Network</p>
+</div>
+</div>
+<span class="inline-flex items-center rounded-full bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-400 ring-1 ring-inset ring-yellow-600/20">Pending</span>
+</div>
+<p class="text-sm text-text-secondary dark:text-slate-400 mb-6 leading-relaxed">Official Account integration allows you to reach customers on Vietnam's most popular messaging app.</p>
+<div class="rounded-lg bg-yellow-50/50 dark:bg-yellow-900/10 p-4 border border-yellow-100 dark:border-yellow-900/30 flex gap-3">
+<span class="material-symbols-outlined text-yellow-600 dark:text-yellow-500 text-[20px] flex-shrink-0">info</span>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-yellow-800 dark:text-yellow-500">Verification in progress</p>
+<p class="text-xs text-yellow-700 dark:text-yellow-600/80">We are verifying your Official Account details. This usually takes 24-48 hours.</p>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50/50 dark:bg-white/5 rounded-b-xl">
+<span class="text-xs text-text-secondary dark:text-slate-500">Submitted 12 hours ago</span>
+<button class="text-sm font-medium text-text-secondary dark:text-slate-400 hover:text-text-main dark:hover:text-white transition-colors">
+                            Check Status
+                        </button>
+</div>
+</div>
+<!-- Card 4: REST API (Active) -->
+<div class="group relative flex flex-col bg-card-light dark:bg-card-dark rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg dark:shadow-none dark:border dark:border-border-dark transition-all duration-300">
+<div class="p-6 flex-1">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-[24px]">webhook</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-text-main dark:text-white">REST API</h3>
+<p class="text-xs text-text-secondary dark:text-slate-500">Developer Tools</p>
+</div>
+</div>
+<span class="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/10">Active</span>
+</div>
+<p class="text-sm text-text-secondary dark:text-slate-400 mb-6 leading-relaxed">Programmatic access to your AI agent. Use this API key to integrate with any custom backend.</p>
+<div class="flex flex-col gap-2">
+<label class="block text-xs font-medium text-text-main dark:text-white">Secret Key</label>
+<div class="flex rounded-md shadow-sm ring-1 ring-inset ring-border-light dark:ring-border-dark bg-background-light dark:bg-background-dark">
+<span class="flex select-none items-center pl-3 text-gray-500 sm:text-sm font-mono">sk-live-</span>
+<input class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-text-main dark:text-white placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6 font-mono" readonly="" type="password" value="omnirag_8a92b3c7d1e5f"/>
+<button class="relative -ml-px inline-flex items-center gap-x-1.5 px-3 py-2 text-sm font-semibold text-text-secondary hover:text-primary dark:text-slate-400 dark:hover:text-white" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility_off</span>
+</button>
+<div class="w-[1px] bg-border-light dark:bg-border-dark my-1"></div>
+<button class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-text-secondary hover:text-primary dark:text-slate-400 dark:hover:text-white" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+<p class="text-xs text-text-secondary dark:text-slate-500 mt-1">Never share your API key with unauthorized users.</p>
+</div>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50/50 dark:bg-white/5 rounded-b-xl">
+<a class="text-sm font-medium text-primary hover:text-primary/80 transition-colors" href="#">
+                            API Documentation
+                        </a>
+<button class="text-sm font-medium text-red-600 hover:text-red-500 transition-colors">
+                            Revoke Key
+                        </button>
+</div>
+</div>
+<!-- Add New Integration Placeholder -->
+<div class="group relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-border-light dark:border-border-dark rounded-xl bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-300 min-h-[300px] cursor-pointer">
+<div class="size-16 rounded-full bg-border-light dark:bg-border-dark flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-text-secondary dark:text-slate-400 text-[32px]">add</span>
+</div>
+<h3 class="text-base font-bold text-text-main dark:text-white mb-1">Add Channel</h3>
+<p class="text-sm text-text-secondary dark:text-slate-500 text-center max-w-[200px]">Browse our marketplace to find more integrations.</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

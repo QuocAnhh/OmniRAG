@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Subscription &amp; Billing Management - OmniRAG</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#6464f2",
+                "background-light": "#f6f6f8",
+                "background-dark": "#101022",
+              },
+              fontFamily: {
+                "display": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 bg-background-light dark:bg-background-dark">
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-primary rounded-lg p-1.5 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-2xl">hub</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-bold leading-none">OmniRAG</h1>
+<p class="text-slate-500 dark:text-[#9292c9] text-[10px] font-medium uppercase tracking-wider">Enterprise RAG</p>
+</div>
+</div>
+<!-- Nav Items -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#232348] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#232348] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">forum</span>
+<p class="text-sm font-medium">Chatbots</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#232348] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">database</span>
+<p class="text-sm font-medium">Knowledge Base</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#232348] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">bar_chart</span>
+<p class="text-sm font-medium">Analytics</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 dark:bg-primary/20 text-primary rounded-lg border border-primary/20" href="#">
+<span class="material-symbols-outlined text-[22px] font-fill">settings</span>
+<p class="text-sm font-semibold">Settings</p>
+</a>
+</nav>
+</div>
+<!-- Bottom Nav -->
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#232348] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">help</span>
+<p class="text-sm font-medium">Support</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">logout</span>
+<p class="text-sm font-medium">Log out</p>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+<div class="max-w-[1024px] mx-auto py-8 px-8">
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-3 mb-8">
+<div class="flex flex-col gap-1">
+<h2 class="text-slate-900 dark:text-white text-3xl font-black tracking-tight">Subscription &amp; Billing</h2>
+<p class="text-slate-500 dark:text-[#9292c9] text-base font-normal">Manage your enterprise plan, usage, and payment history.</p>
+</div>
+</div>
+<!-- Current Plan Overview Card -->
+<div class="mb-10">
+<div class="flex flex-col items-stretch justify-start rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#191933] overflow-hidden">
+<div class="flex flex-col md:flex-row">
+<!-- Image/Decorative side -->
+<div class="w-full md:w-1/3 bg-gradient-to-br from-primary to-indigo-800 flex flex-col justify-center items-center p-8 text-white relative overflow-hidden" data-alt="Abstract purple geometric pattern">
+<span class="material-symbols-outlined text-6xl opacity-20 absolute -right-4 -bottom-4 rotate-12 scale-150">verified_user</span>
+<div class="relative z-10 flex flex-col items-center">
+<div class="h-16 w-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-3xl">auto_awesome</span>
+</div>
+<h3 class="text-2xl font-bold">Pro Plan</h3>
+<p class="text-white/80 text-sm">Active since May 2023</p>
+</div>
+</div>
+<!-- Content side -->
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div class="space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-400 dark:text-[#9292c9] text-xs font-bold uppercase tracking-widest mb-1">CURRENT STATUS</p>
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-green-500"></div>
+<p class="text-slate-900 dark:text-white text-lg font-bold">Renewal on Nov 12, 2023</p>
+</div>
+</div>
+<button class="flex items-center justify-center rounded-lg h-10 px-6 bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-all shadow-lg shadow-primary/20">
+                                            Manage Billing
+                                        </button>
+</div>
+<div class="border-t border-slate-100 dark:border-slate-800 pt-4">
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<p class="text-slate-700 dark:text-white text-sm font-medium">Monthly Message Usage</p>
+<p class="text-slate-900 dark:text-white text-sm font-bold">8,000 / 10,000 <span class="text-slate-400 font-normal ml-1">(80%)</span></p>
+</div>
+<div class="h-2 w-full rounded-full bg-slate-100 dark:bg-[#323267] overflow-hidden">
+<div class="h-full rounded-full bg-primary" style="width: 80%;"></div>
+</div>
+<p class="text-slate-500 dark:text-[#9292c9] text-xs leading-relaxed italic">
+                                                Your plan includes 10 chatbots and advanced enterprise analytics. 2,000 messages remaining this cycle.
+                                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section: Available Plans -->
+<div class="mb-12">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">layers</span>
+                        Available Plans
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Free Plan -->
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#191933] p-6 flex flex-col hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+<h4 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Free</h4>
+<p class="text-slate-500 dark:text-[#9292c9] text-sm mb-4">For individuals &amp; hobbyists</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-3xl font-black text-slate-900 dark:text-white">$0</span>
+<span class="text-slate-500 dark:text-[#9292c9] text-sm">/mo</span>
+</div>
+<ul class="space-y-3 mb-8 flex-1">
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    1 Active Chatbot
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    100 Messages/mo
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300 opacity-50">
+<span class="material-symbols-outlined text-lg">cancel</span>
+                                    Custom API access
+                                </li>
+</ul>
+<button class="w-full py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                Downgrade
+                            </button>
+</div>
+<!-- Pro Plan (Active) -->
+<div class="rounded-xl border-2 border-primary bg-white dark:bg-[#191933] p-6 flex flex-col relative shadow-xl shadow-primary/10">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                                CURRENT PLAN
+                            </div>
+<h4 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Pro</h4>
+<p class="text-slate-500 dark:text-[#9292c9] text-sm mb-4">For growing startups</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-3xl font-black text-slate-900 dark:text-white">$49</span>
+<span class="text-slate-500 dark:text-[#9292c9] text-sm">/mo</span>
+</div>
+<ul class="space-y-3 mb-8 flex-1">
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    10 Active Chatbots
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    10,000 Messages/mo
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    Advanced Analytics
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    API &amp; Webhook Access
+                                </li>
+</ul>
+<button class="w-full py-2.5 rounded-lg bg-primary/10 text-primary text-sm font-bold cursor-default">
+                                Active Plan
+                            </button>
+</div>
+<!-- Enterprise Plan -->
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#191933] p-6 flex flex-col hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+<h4 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Enterprise</h4>
+<p class="text-slate-500 dark:text-[#9292c9] text-sm mb-4">Full power for scale</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-3xl font-black text-slate-900 dark:text-white">Custom</span>
+</div>
+<ul class="space-y-3 mb-8 flex-1">
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    Unlimited Chatbots
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    Custom Message Volume
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    SAML/SSO Integration
+                                </li>
+<li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                    Dedicated Support
+                                </li>
+</ul>
+<button class="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors">
+                                Contact Sales
+                            </button>
+</div>
+</div>
+</div>
+<!-- Billing History Table -->
+<div class="mb-12">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+                            Billing History
+                        </h3>
+<p class="text-xs text-slate-500 dark:text-[#9292c9] flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">lock</span>
+                            Secure billing by Stripe
+                        </p>
+</div>
+<div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#191933]">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-white/5 border-bottom border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-[#9292c9] uppercase tracking-wider">Invoice Date</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-[#9292c9] uppercase tracking-wider">Amount</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-[#9292c9] uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-[#9292c9] uppercase tracking-wider text-right">Invoice</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Oct 12, 2023</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">$49.00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400">
+                                            Paid
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80 flex items-center gap-1 ml-auto text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">download</span>
+                                            PDF
+                                        </button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Sep 12, 2023</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">$49.00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400">
+                                            Paid
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80 flex items-center gap-1 ml-auto text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">download</span>
+                                            PDF
+                                        </button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Aug 12, 2023</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">$49.00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400">
+                                            Paid
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80 flex items-center gap-1 ml-auto text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">download</span>
+                                            PDF
+                                        </button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Jul 12, 2023</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">$49.00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400">
+                                            Refunded
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-primary/80 flex items-center gap-1 ml-auto text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">download</span>
+                                            PDF
+                                        </button>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="px-6 py-4 bg-slate-50 dark:bg-white/5 border-t border-slate-200 dark:border-slate-800 text-center">
+<button class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Load more transactions</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

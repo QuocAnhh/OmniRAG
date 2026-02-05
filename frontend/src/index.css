@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* Raycast Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@theme {
+  /* Raycast Deep Midnight Palette */
+  --color-ray-bg: #05070a;
+  --color-ray-surface: #0d1117;
+  --color-ray-surface-elevated: #161b22;
+  --color-ray-border: rgba(255, 255, 255, 0.08);
+  --color-ray-border-bright: rgba(255, 255, 255, 0.15);
+  --color-ray-text: #f0f6fc;
+  --color-ray-muted: #8b949e;
+  --color-ray-primary: #ff6363;
+  --color-ray-blue: #58a6ff;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius */
+  --radius-ray-button: 8px;
+  --radius-ray-card: 12px;
+  --radius-ray-panel: 16px;
+
+  /* Shadow */
+  --shadow-ray-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-ray-elevated: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+@layer base {
+  body {
+    @apply bg-ray-bg text-ray-text antialiased font-sans selection:bg-ray-primary selection:text-white;
+    letter-spacing: -0.02em;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(88, 166, 255, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(255, 99, 99, 0.1) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Raycast Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ray-border-bright);
+    border: 3px solid var(--color-ray-bg);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ray-muted);
+  }
+}
+
+@layer components {
+
+  /* Raycast Card Style */
+  .ray-card {
+    @apply bg-ray-surface border border-ray-border rounded-ray-card shadow-ray-subtle overflow-hidden;
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .ray-card-elevated {
+    @apply bg-ray-surface-elevated border border-ray-border-bright rounded-ray-card shadow-ray-elevated;
+  }
+
+  .ray-card-interactive:hover {
+    @apply border-ray-border-bright bg-ray-surface-elevated;
+  }
+
+  /* Raycast Search-like Input */
+  .ray-input {
+    @apply w-full bg-transparent border-none focus:ring-0 text-[18px] py-4 px-6 text-ray-text placeholder-ray-muted;
+  }
+
+  /* Raycast Action Item */
+  .ray-list-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-ray-button text-ray-text hover:bg-white/5 active:bg-white/10 cursor-pointer transition-colors;
+  }
+
+  .ray-list-item-active {
+    @apply bg-white/10;
+  }
+
+  /* Glassmorphism Refined */
+  .ray-glass {
+    @apply bg-ray-surface/80 backdrop-blur-xl border border-white/10;
+  }
+}
+
+/* Animations */
+.animate-ray-slide-up {
+  animation: ray-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ray-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

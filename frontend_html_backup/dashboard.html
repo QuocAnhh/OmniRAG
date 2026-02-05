@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OmniRAG Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6467f2",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101122",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a1c2e",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display transition-colors duration-200">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-colors duration-200">
+<!-- Logo Section -->
+<div class="h-16 flex items-center gap-3 px-6 border-b border-slate-100 dark:border-slate-800/50">
+<div class="size-8 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-bold leading-tight">OmniRAG</h1>
+<span class="text-slate-500 dark:text-slate-400 text-xs font-medium">Enterprise Platform</span>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary group" href="#">
+<span class="material-symbols-outlined fill">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="text-sm font-medium group-hover:text-slate-900 dark:group-hover:text-white">Bots</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium group-hover:text-slate-900 dark:group-hover:text-white">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-sm font-medium group-hover:text-slate-900 dark:group-hover:text-white">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined">extension</span>
+<span class="text-sm font-medium group-hover:text-slate-900 dark:group-hover:text-white">Integrations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium group-hover:text-slate-900 dark:group-hover:text-white">Settings</span>
+</a>
+</nav>
+<!-- User Profile (Bottom) -->
+<div class="p-4 border-t border-slate-100 dark:border-slate-800/50">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<div class="size-9 rounded-full bg-cover bg-center" data-alt="User profile avatar image" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuACDwWcp0o3ZZsG8PWXoTWiQotf-uom_95TXqkSJS5m9Wxtr2H2YgxOj6W6exOey4Fey_UqZxjQqYm3NPX28DmWBUrN0OSeGBOfM6lqMLREspq0gNtDlR1wWmIOA9BmomRZSpIs3aNNMZdisnjbQmPLHXp9G3JNA153Zt1tj9RPfLQl2SE-EMsnIABF9UPMheJWs1SZh5KQUGHyrVLIfwGYLDLNr8oOrWc-X5xmZuGt_qZtypGaCjn8SpX_Ar9gVUKZCoQZQBHkgWAw');"></div>
+<div class="flex flex-col overflow-hidden">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">Admin User</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 truncate">admin@omnirag.com</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 ml-auto" style="font-size: 20px;">more_vert</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Top Header -->
+<header class="h-16 flex items-center justify-between px-8 bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm">
+<a class="text-slate-500 hover:text-primary transition-colors" href="#">Home</a>
+<span class="text-slate-400">/</span>
+<span class="font-medium text-slate-900 dark:text-white">Dashboard</span>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4">
+<!-- Search -->
+<div class="relative hidden md:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+</span>
+<input class="pl-10 pr-4 py-2 w-64 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-slate-100 placeholder-slate-500" placeholder="Search bots, logs..." type="text"/>
+</div>
+<!-- Notifications -->
+<button class="relative p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-surface-dark"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<!-- Page Heading -->
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+<div>
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Welcome back, here's what's happening today.</p>
+</div>
+<div class="flex gap-3">
+<span class="text-sm text-slate-500 self-center hidden sm:block">Last updated: Just now</span>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1: Total Bots (Indigo) -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+<div class="flex items-start justify-between">
+<div class="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full">+2 this week</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Bots</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-white mt-1">12</p>
+</div>
+</div>
+<!-- Card 2: Active Sessions (Emerald) -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+<div class="flex items-start justify-between">
+<div class="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined">group</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full">+12%</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Active Sessions</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-white mt-1">843</p>
+</div>
+</div>
+<!-- Card 3: Messages Today (Blue) -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+<div class="flex items-start justify-between">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">chat</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full">+5%</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Messages Today</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-white mt-1">14.2k</p>
+</div>
+</div>
+<!-- Card 4: Avg Response (Orange) -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+<div class="flex items-start justify-between">
+<div class="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<span class="flex items-center text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">Stable</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Avg Response Time</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-white mt-1">1.2s</p>
+</div>
+</div>
+</div>
+<!-- Main Split Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left Column: Recent Activity (2/3) -->
+<div class="lg:col-span-2 flex flex-col gap-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+<div class="p-5 border-b border-slate-100 dark:border-slate-800/50 flex justify-between items-center">
+<h3 class="font-semibold text-slate-900 dark:text-white">Recent Activity</h3>
+<a class="text-sm text-primary hover:text-primary/80 font-medium" href="#">View All</a>
+</div>
+<div class="p-5">
+<div class="relative pl-4 border-l border-slate-200 dark:border-slate-700 space-y-8">
+<!-- Item 1 -->
+<div class="relative">
+<span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-white dark:ring-surface-dark"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Knowledge Base Updated</p>
+<span class="text-xs text-slate-400">2 min ago</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">Admin uploaded <span class="font-medium text-slate-700 dark:text-slate-300">Q3_Financial_Report.pdf</span> to Finance Bot.</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative">
+<span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-900 dark:text-white">New Integration Connected</p>
+<span class="text-xs text-slate-400">1 hour ago</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">Slack workspace has been successfully connected.</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative">
+<span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Bot "Support_v1" Deployed</p>
+<span class="text-xs text-slate-400">3 hours ago</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">Version 1.2.4 was deployed to production environment.</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="relative">
+<span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-900 dark:text-white">System Alert</p>
+<span class="text-xs text-slate-400">5 hours ago</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">High traffic detected on API endpoint /v1/chat/completions.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Chart Placeholder (Visual interest) -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-semibold text-slate-900 dark:text-white">Response Volume</h3>
+<select class="text-xs bg-slate-100 dark:bg-slate-800 border-none rounded py-1 px-2 text-slate-600 dark:text-slate-300">
+<option>Last 7 Days</option>
+<option>Last 30 Days</option>
+</select>
+</div>
+<div class="h-48 w-full bg-gradient-to-t from-primary/5 via-transparent to-transparent rounded-lg relative flex items-end justify-between px-2 pb-0 gap-2">
+<!-- Fake Bars -->
+<div class="w-full bg-primary/20 rounded-t-sm h-[40%] hover:bg-primary/30 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.2k</div></div>
+<div class="w-full bg-primary/40 rounded-t-sm h-[65%] hover:bg-primary/50 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">2.4k</div></div>
+<div class="w-full bg-primary/30 rounded-t-sm h-[50%] hover:bg-primary/40 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.8k</div></div>
+<div class="w-full bg-primary/60 rounded-t-sm h-[85%] hover:bg-primary/70 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">3.1k</div></div>
+<div class="w-full bg-primary/50 rounded-t-sm h-[70%] hover:bg-primary/60 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">2.8k</div></div>
+<div class="w-full bg-primary/20 rounded-t-sm h-[45%] hover:bg-primary/30 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.5k</div></div>
+<div class="w-full bg-primary rounded-t-sm h-[60%] hover:bg-primary/90 transition-all cursor-pointer relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">2.1k</div></div>
+</div>
+<div class="flex justify-between text-xs text-slate-400 mt-2 px-1">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Quick Actions & Status (1/3) -->
+<div class="lg:col-span-1 flex flex-col gap-6">
+<!-- Quick Actions -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+<h3 class="font-semibold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
+<div class="flex flex-col gap-3">
+<button class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors font-medium">
+<span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+                                        Create New Bot
+                                    </button>
+<button class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors font-medium">
+<span class="material-symbols-outlined" style="font-size: 20px;">upload_file</span>
+                                        Upload Knowledge Base
+                                    </button>
+<button class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors font-medium">
+<span class="material-symbols-outlined" style="font-size: 20px;">link</span>
+                                        Connect Integration
+                                    </button>
+</div>
+</div>
+<!-- System Status -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold text-slate-900 dark:text-white">System Health</h3>
+<span class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-xs font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                        All Systems Operational
+                                    </span>
+</div>
+<div class="space-y-4">
+<!-- Vector Storage -->
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="text-slate-600 dark:text-slate-400">Vector Storage</span>
+<span class="text-slate-900 dark:text-white font-medium">65%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+</div>
+<p class="text-xs text-slate-400 mt-1">45.2GB / 70GB used</p>
+</div>
+<!-- API Usage -->
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="text-slate-600 dark:text-slate-400">API Usage (Monthly)</span>
+<span class="text-slate-900 dark:text-white font-medium">28%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+<div class="bg-blue-500 h-2 rounded-full" style="width: 28%"></div>
+</div>
+<p class="text-xs text-slate-400 mt-1">280k / 1M tokens</p>
+</div>
+</div>
+</div>
+<!-- Promo/Help -->
+<div class="bg-gradient-to-br from-primary to-indigo-600 rounded-xl p-5 text-white relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-bold text-lg mb-1">Need help setting up?</h3>
+<p class="text-indigo-100 text-sm mb-4">Check our documentation or schedule a call with support.</p>
+<button class="px-4 py-2 bg-white text-primary text-sm font-medium rounded-lg hover:bg-indigo-50 transition-colors">
+                                        View Documentation
+                                    </button>
+</div>
+<!-- Abstract decorative circles -->
+<div class="absolute -right-4 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+<div class="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
