@@ -8,57 +8,74 @@ interface TopHeaderProps {
 export default function TopHeader({ breadcrumbs }: TopHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
+
   return (
-    <header className="h-14 flex items-center justify-between px-6 bg-ray-surface/40 backdrop-blur-xl border-b border-white/5 flex-shrink-0 z-50">
-      {/* Breadcrumbs / Context */}
-      <div className="flex items-center gap-1.5 text-[13px] font-medium">
+    <header className="h-16 flex items-center justify-between px-8 bg-background/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-40">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground animate-in fade-in slide-in-from-left-2">
         {breadcrumbs ? (
           breadcrumbs.map((crumb, index) => (
-            <div key={index} className="flex items-center gap-1.5">
-              {index > 0 && <span className="text-ray-muted">/</span>}
+            <div key={index} className="flex items-center gap-2">
+              {index > 0 && <span className="text-muted-foreground/40">/</span>}
               {crumb.path ? (
-                <Link to={crumb.path} className="text-ray-muted hover:text-ray-text transition-colors">
+                <Link
+                  to={crumb.path}
+                  className="hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30"
+                >
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="text-ray-text">{crumb.label}</span>
+                <span className="text-foreground font-semibold">{crumb.label}</span>
               )}
             </div>
           ))
         ) : (
-          <>
-            <Link to="/" className="text-ray-muted hover:text-ray-text transition-colors">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30">
               Home
             </Link>
-            <span className="text-ray-muted">/</span>
-            <span className="text-ray-text">Dashboard</span>
-          </>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="text-foreground font-semibold">Dashboard</span>
+          </div>
         )}
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-3">
-        {/* Command-like Search */}
+      <div className="flex items-center gap-4">
+        {/* Search */}
         <div className="relative group hidden md:block">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-ray-muted group-focus-within:text-ray-primary transition-colors">
-            <span className="material-symbols-outlined text-[18px]">search</span>
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground group-focus-within:text-primary transition-colors">
+            <span className="material-symbols-outlined text-[20px]">search</span>
           </span>
           <input
-            className="pl-9 pr-3 py-1.5 w-48 bg-white/5 border border-white/10 rounded-ray-button text-[13px] text-ray-text placeholder-ray-muted outline-none focus:border-ray-blue/40 focus:w-64 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(88,166,255,0.1)] transition-all duration-300 backdrop-blur-md"
+            className="pl-9 pr-12 py-2 w-48 focus:w-64 bg-muted/30 border-transparent hover:bg-muted/50 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary/30 rounded-full transition-all duration-300 text-sm placeholder:text-muted-foreground/70"
             placeholder="Search..."
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <div className="absolute right-2 top-1.2 flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-ray-border bg-ray-surface-elevated text-[10px] text-ray-muted font-mono pointer-events-none">
-            <span>⌘K</span>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold text-muted-foreground/60 border border-border/50 bg-background/50">
+            ⌘K
           </div>
         </div>
 
+        <div className="h-6 w-px bg-border/60 mx-1"></div>
+
         {/* Notifications */}
-        <button className="p-1.5 text-ray-muted hover:text-ray-text hover:bg-white/5 rounded-ray-button transition-colors relative" aria-label="Notifications">
+        <button
+          className="relative p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Notifications"
+        >
           <span className="material-symbols-outlined text-[20px]">notifications</span>
-          <span className="absolute top-1.5 right-1.5 size-1.5 bg-ray-primary rounded-full shadow-[0_0_4px_rgba(255,99,99,0.5)]"></span>
+          <span className="absolute top-2 right-2 size-2 bg-accent-500 rounded-full ring-2 ring-background"></span>
+        </button>
+
+        {/* Quick Actions */}
+        <button
+          className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Apps"
+        >
+          <span className="material-symbols-outlined text-[20px]">apps</span>
         </button>
       </div>
     </header>

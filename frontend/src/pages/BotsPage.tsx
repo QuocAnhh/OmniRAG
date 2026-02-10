@@ -3,6 +3,7 @@ import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
 import { Link } from 'react-router-dom';
+import GradientText from '../components/ui/GradientText';
 
 export default function BotsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -29,8 +30,6 @@ export default function BotsPage() {
     try {
       await botsApi.delete(id);
       setBots(bots.filter(bot => bot.id !== id));
-
-      // Dispatch custom event to refresh dashboard stats
       window.dispatchEvent(new CustomEvent('bot-deleted'));
     } catch (error) {
       alert('Failed to delete bot');
@@ -38,105 +37,123 @@ export default function BotsPage() {
   };
 
   return (
-    <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Bots' }]}>
-      <div className="p-8 bg-background-off dark:bg-background-dark min-h-full relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-20 right-10 w-96 h-96 bg-ocean-blue/10 blob-shape opacity-30 blur-3xl"></div>
+    <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents' }]}>
+      <div className="flex flex-col gap-8">
 
-        <div className="max-w-7xl mx-auto relative z-10">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-            <div className="animate-slide-up">
-              <h1 className="text-4xl font-display font-bold text-text-main dark:text-white mb-2">
-                Your <span className="text-gradient-ocean">AI Assistants</span>
-              </h1>
-              <p className="text-text-muted dark:text-gray-400">Manage your RAG-powered chatbots</p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3 border border-primary/20">
+              <span className="size-1.5 rounded-full bg-primary animate-pulse"></span>
+              AI Workforce
             </div>
-            <Link to="/bots/new" className="animate-slide-up stagger-1">
-              <button className="btn-ocean inline-flex h-12 items-center justify-center px-6 shadow-xl hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[20px] mr-2">add_circle</span>
-                Create Bot
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Your AI Assistants
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage and monitor your fleet of intelligent agents.
+            </p>
+          </div>
+          <Link to="/bots/new">
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Create Bot
+            </button>
+          </Link>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Bots</p>
+            <p className="text-3xl font-bold text-foreground">{bots.length}</p>
+          </div>
+          <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Active</p>
+            <p className="text-3xl font-bold text-primary">
+              {bots.filter(b => b.is_active).length}
+            </p>
+          </div>
+          <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Inactive</p>
+            <p className="text-3xl font-bold text-muted-foreground/60">
+              {bots.filter(b => !b.is_active).length}
+            </p>
+          </div>
+          <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Uptime</p>
+            <p className="text-3xl font-bold text-accent-600">98.7%</p>
+          </div>
+        </div>
+
+        {/* Bots Grid */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="inline-block size-10 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground mt-4 text-sm font-medium">Loading ecosystem...</p>
+          </div>
+        ) : bots.length === 0 ? (
+          <div className="text-center py-20 bg-muted/20 rounded-3xl border border-dashed border-border">
+            <div className="size-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+              <span className="material-symbols-outlined text-4xl text-muted-foreground">smart_toy</span>
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-2">No Bots Yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+              Your garden is empty. Plant your first seed of intelligence.
+            </p>
+            <Link to="/bots/new">
+              <button className="px-6 py-3 bg-background border border-border hover:border-primary/50 text-foreground font-semibold rounded-xl hover:bg-muted/50 transition-all">
+                Create First Bot
               </button>
             </Link>
           </div>
-
-          {/* Bots Grid */}
-          {loading ? (
-            <div className="text-center py-20">
-              <div className="inline-block size-16 animate-spin rounded-full border-4 border-ocean-blue border-t-transparent"></div>
-              <p className="text-text-muted mt-4 font-medium">Loading your bots...</p>
-            </div>
-          ) : bots.length === 0 ? (
-            <div className="text-center py-20 card-elevated max-w-md mx-auto animate-scale-in">
-              <div className="size-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-ocean-blue/20 to-coral/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-6xl text-ocean-blue">smart_toy</span>
-              </div>
-              <h3 className="text-2xl font-display font-bold text-text-main dark:text-white mb-3">No bots yet</h3>
-              <p className="text-text-muted dark:text-gray-400 mb-8 max-w-sm mx-auto">
-                Create your first RAG chatbot to start automating support and knowledge retrieval
-              </p>
-              <Link to="/bots/new">
-                <button className="btn-ocean inline-flex h-12 items-center px-8 shadow-xl">
-                  <span className="material-symbols-outlined mr-2">rocket_launch</span>
-                  Create Your First Bot
-                </button>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bots.map((bot, idx) => (
-                <div
-                  key={bot.id}
-                  className="group card-elevated p-6 relative overflow-hidden animate-slide-up hover:scale-105 transition-all duration-300"
-                  style={{ contentVisibility: 'auto', animationDelay: `${idx * 0.1}s` }}
-                >
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-ocean-blue/5 to-coral/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-14 rounded-2xl bg-gradient-to-br from-ocean-blue to-ocean-light flex items-center justify-center text-white shadow-lg shadow-ocean-blue/30 group-hover:scale-110 transition-transform duration-300">
-                          <span className="material-symbols-outlined text-[28px]">smart_toy</span>
-                        </div>
-                        <div>
-                          <h3 className="font-display font-bold text-text-main dark:text-white text-lg mb-1">{bot.name}</h3>
-                          <span className={`text-xs px-3 py-1 rounded-full font-medium border ${bot.is_active
-                            ? 'bg-sage/10 text-sage border-sage/20'
-                            : 'bg-text-muted/10 text-text-muted border-text-muted/20'
-                            }`}>
-                            {bot.is_active ? '● Active' : '○ Inactive'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-text-muted dark:text-gray-400 mb-6 line-clamp-2 min-h-[40px]">
-                      {bot.description || 'No description provided'}
-                    </p>
-
-                    <div className="flex gap-2">
-                      <Link to={`/bots/${bot.id}/config`} className="flex-1">
-                        <button className="w-full px-4 py-2.5 bg-ocean-blue text-white rounded-xl font-semibold hover:bg-ocean-light transition-colors flex items-center justify-center gap-2">
-                          <span className="material-symbols-outlined text-[18px]">tune</span>
-                          Configure
-                        </button>
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(bot.id)}
-                        className="px-3 py-2.5 bg-coral/10 text-coral rounded-xl hover:bg-coral hover:text-white transition-colors border border-coral/20"
-                        aria-label="Delete bot"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
-                    </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bots.map((bot, idx) => (
+              <div
+                key={bot.id}
+                className="group bg-card hover:bg-muted/30 border border-border hover:border-primary/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 relative"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`size-12 rounded-xl flex items-center justify-center text-2xl shadow-sm ${bot.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    <span className="material-symbols-outlined">smart_toy</span>
                   </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${bot.is_active ? 'bg-primary/5 text-primary border-primary/20' : 'bg-muted text-muted-foreground border-border'}`}>
+                    {bot.is_active ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                  {bot.name}
+                </h3>
+                <p className="text-xs font-mono text-muted-foreground/60 mb-4">
+                  {bot.id.slice(0, 8).toUpperCase()}
+                </p>
+
+                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 min-h-[40px]">
+                  {bot.description || 'No description provided for this agent.'}
+                </p>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                  <Link to={`/bots/${bot.id}/config`} className="flex-1">
+                    <button className="w-full py-2 px-3 bg-muted/50 hover:bg-primary/10 text-foreground hover:text-primary rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-lg">tune</span>
+                      Configure
+                    </button>
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(bot.id)}
+                    className="p-2 rounded-lg bg-muted/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Delete Bot"
+                  >
+                    <span className="material-symbols-outlined text-lg">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -11,7 +11,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [statsRes, quickStatsRes, activitiesRes] = await Promise.all([
         dashboardApi.getStats(),
@@ -30,6 +29,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatTime = (timestamp: string) => {
@@ -39,196 +40,384 @@ export default function DashboardPage() {
     const diffMins = Math.floor(diffMs / 60000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return `${Math.floor(diffMins / 1440)}d ago`;
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+    return `${Math.floor(diffMins / 1440)} days ago`;
   };
+
+  const getTrendColor = (trend: 'up' | 'down' | 'neutral') => {
+    const colors = {
+      up: 'bg-primary/10 text-primary',
+      down: 'bg-destructive/10 text-destructive',
+      neutral: 'bg-muted text-muted-foreground',
+    };
+    return colors[trend];
+  };
+
+  const getActivityIcon = (type: 'info' | 'success' | 'warning' | 'error') => {
+    const icons = {
+      info: { icon: 'info', color: 'text-accent' },
+      success: { icon: 'check_circle', color: 'text-primary' },
+      warning: { icon: 'warning', color: 'text-accent' },
+      error: { icon: 'error', color: 'text-destructive' },
+    };
+    return icons[type] || icons.info;
+  };
+
+  const statsData = [
+    {
+      label: 'Total Bots',
+      value: stats?.total_bots || 0,
+      change: `+${quickStats?.active_bots || 0} active`,
+      icon: 'smart_toy',
+      trend: 'up' as const
+    },
+    {
+      label: 'Active Sessions',
+      value: stats?.active_sessions || 0,
+      change: 'Live',
+      icon: 'sensors',
+      trend: 'up' as const
+    },
+    {
+      label: 'Messages Today',
+      value: stats?.messages_today || 0,
+      change: 'Today',
+      icon: 'chat',
+      trend: 'up' as const
+    },
+    {
+      label: 'Avg Response Time',
+      value: stats?.avg_response_time || '0ms',
+      change: 'Stable',
+      icon: 'bolt',
+      trend: 'neutral' as const
+    },
+  ];
 
   return (
     <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Dashboard' }]}>
-      <div className="p-6 bg-transparent min-h-full animate-ray-slide-up relative">
-        {/* Atmospheric Glows */}
-        <div className="absolute top-[-10%] left-[-10%] size-[400px] bg-ray-blue/5 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] size-[400px] bg-ray-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="flex flex-col gap-8">
 
-        <div className="max-w-[1200px] mx-auto flex flex-col gap-6 relative z-10">
-          {/* Bento Grid Header */}
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="text-[28px] font-bold tracking-tight text-ray-text drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">System Intelligence</h2>
-              <p className="text-[14px] text-ray-muted font-medium">Monitoring OmniRAG nodes and agent performance.</p>
-            </div>
+        {/* Page Heading */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">
+              Dashboard Overview
+            </h2>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Welcome back, here's what's happening today.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              Last updated: Just now
+            </span>
             <button
               onClick={fetchData}
               disabled={loading}
-              className="group flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-ray-text rounded-ray-button border border-white/5 transition-all text-xs font-semibold backdrop-blur-md"
+              className={`
+                p-2.5 rounded-xl
+                text-muted-foreground hover:text-primary
+                bg-card border border-border
+                hover:border-primary/50 hover:shadow-sm
+                transition-all duration-200
+                ${loading ? 'animate-spin' : ''}
+              `}
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
-              Sync Data
+              <span className="material-symbols-outlined">refresh</span>
             </button>
           </div>
+        </div>
 
-          {/* Main Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Stat Card 1 */}
-            <div className="md:col-span-1 ray-card bg-ray-surface/40 backdrop-blur-xl p-4 flex flex-col justify-between min-h-[140px] border-white/5 hover:border-white/10 group">
-              <div className="flex items-center gap-2 text-ray-muted group-hover:text-ray-text transition-colors">
-                <span className="material-symbols-outlined text-[18px]">smart_toy</span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Total Agents</span>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statsData.map((stat, idx) => (
+            <div
+              key={idx}
+              className="
+                group
+                bg-card
+                p-6 rounded-2xl
+                border border-border
+                hover:border-primary/30
+                shadow-sm hover:shadow-lg hover:shadow-primary/5
+                transition-all duration-300
+                hover:-translate-y-1
+              "
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div className="
+                  p-3 rounded-xl
+                  bg-primary/5 text-primary
+                  group-hover:bg-primary/10
+                  transition-all duration-300
+                ">
+                  <span className="material-symbols-outlined text-2xl">
+                    {stat.icon}
+                  </span>
+                </div>
+
+                <span className={`
+                  text-xs font-semibold px-3 py-1 rounded-full
+                  ${getTrendColor(stat.trend)}
+                `}>
+                  {stat.change}
+                </span>
               </div>
-              <div>
-                <p className="text-[36px] font-bold text-ray-text tabular-nums tracking-tight">{stats?.total_bots || 0}</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                  <p className="text-[11px] text-ray-muted font-medium">{quickStats?.active_bots || 0} online</p>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </p>
+                <p className="text-3xl font-bold text-foreground tracking-tight">
+                  {stat.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* Left Column: Recent Activity & Charts */}
+          <div className="lg:col-span-2 flex flex-col gap-8">
+
+            {/* Recent Activity */}
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-border flex justify-between items-center bg-muted/5">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Recent Activity
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Latest updates from your bots
+                  </p>
+                </div>
+                <Link
+                  to="/analytics"
+                  className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+                >
+                  View All →
+                </Link>
+              </div>
+
+              <div className="p-6">
+                <div className="relative pl-8 border-l border-border/60 space-y-8">
+                  {activities.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">No recent activity</div>
+                  ) : (
+                    activities.map((activity, idx) => {
+                      const activityIcon = getActivityIcon('success');
+                      return (
+                        <div key={idx} className="relative group">
+                          <div className={`
+                            absolute -left-[37px] top-1
+                            h-4 w-4 rounded-full border-2 border-background
+                            ${idx === 0
+                              ? 'bg-primary ring-4 ring-primary/10'
+                              : 'bg-muted-foreground/30 group-hover:bg-muted-foreground/50'
+                            }
+                            transition-all duration-200
+                          `} />
+
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`material-symbols-outlined text-lg ${activityIcon.color}`}>
+                                  {activityIcon.icon}
+                                </span>
+                                <p className="font-medium text-foreground">
+                                  {activity.bot_name}
+                                </p>
+                              </div>
+                              <span className="text-xs text-muted-foreground whitesapce-nowrap">
+                                {formatTime(activity.timestamp)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {activity.message}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Stat Card 2 */}
-            <div className="md:col-span-1 ray-card bg-ray-surface/40 backdrop-blur-xl p-4 flex flex-col justify-between min-h-[140px] border-white/5 hover:border-white/10 group">
-              <div className="flex items-center gap-2 text-ray-muted group-hover:text-ray-text transition-colors">
-                <span className="material-symbols-outlined text-[18px]">bolt</span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Average Latency</span>
+            {/* Response Volume Chart (Mock) */}
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Response Volume
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Daily message count
+                  </p>
+                </div>
+                <select className="
+                  text-sm 
+                  bg-background 
+                  border border-border
+                  rounded-lg
+                  py-1.5 px-3
+                  text-foreground
+                  focus:outline-none focus:ring-2 focus:ring-primary/20
+                  transition-all
+                ">
+                  <option>Last 7 Days</option>
+                  <option>Last 30 Days</option>
+                </select>
               </div>
-              <div>
-                <p className="text-[36px] font-bold text-ray-text tabular-nums tracking-tight">{stats?.avg_response_time || '0ms'}</p>
-                <p className="text-[11px] text-ray-blue font-medium mt-1">Faster than 92% of nodes</p>
-              </div>
-            </div>
 
-            {/* Stat Card 3 (Bento Large) */}
-            <div className="md:col-span-2 md:row-span-2 ray-card bg-ray-surface/30 backdrop-blur-2xl p-6 flex flex-col gap-6 border-white/5 hover:border-white/10 group overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <span className="material-symbols-outlined text-[120px]">insights</span>
-              </div>
-              <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-2 text-ray-muted group-hover:text-ray-text transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">analytics</span>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Intelligence Stream</span>
-                </div>
-                <div className="flex gap-1">
-                  {['7D', '24H'].map(t => (
-                    <button key={t} className={`text-[10px] font-bold px-2 py-0.5 rounded border border-white/5 transition-colors ${t === '7D' ? 'bg-white/10 text-ray-text' : 'text-ray-muted hover:bg-white/5'}`}>{t}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1 flex items-end gap-2 py-4 relative z-10">
-                {[40, 65, 50, 85, 70, 45, 90, 60, 75, 55, 80, 65].map((h, i) => (
+              <div className="h-48 w-full flex items-end justify-between px-2 gap-3">
+                {[40, 65, 50, 85, 70, 45, 60].map((height, idx) => (
                   <div
-                    key={i}
-                    className="flex-1 bg-gradient-to-t from-ray-blue/20 to-ray-blue/60 group-hover:to-ray-blue rounded-t-[2px] transition-all cursor-pointer relative"
-                    style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }}
+                    key={idx}
+                    className="
+                      w-full 
+                      bg-primary/20
+                      rounded-t-sm
+                      hover:bg-primary/40
+                      transition-all duration-300
+                      cursor-pointer relative group
+                    "
+                    style={{ height: `${height}%` }}
                   >
+                    <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-sm transition-opacity">
+                      {height}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] text-ray-muted font-mono tracking-widest relative z-10 opacity-60">
-                <span>PERIOD_START</span><span>ACTIVE_MONITORING</span><span>PERIOD_END</span>
-              </div>
-            </div>
 
-            {/* Stat Card 4 */}
-            <div className="md:col-span-1 ray-card bg-ray-surface/40 backdrop-blur-xl p-4 flex flex-col justify-between min-h-[140px] border-white/5 hover:border-white/10 group">
-              <div className="flex items-center gap-2 text-ray-muted group-hover:text-ray-text transition-colors">
-                <span className="material-symbols-outlined text-[18px]">neurology</span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Total Tokens</span>
-              </div>
-              <div>
-                <p className="text-[36px] font-bold text-ray-text tabular-nums tracking-tight">{stats?.messages_today || 0}</p>
-                <p className="text-[11px] text-ray-muted font-medium mt-1">Last 24 hours</p>
-              </div>
-            </div>
-
-            {/* Stat Card 5 */}
-            <div className="md:col-span-1 ray-card bg-ray-surface/40 backdrop-blur-xl p-4 flex flex-col justify-between min-h-[140px] border-white/5 hover:border-white/10 group">
-              <div className="flex items-center gap-2 text-ray-muted group-hover:text-ray-text transition-colors">
-                <span className="material-symbols-outlined text-[18px]">sensors</span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Live Sessions</span>
-              </div>
-              <div>
-                <p className="text-[36px] font-bold text-ray-text tabular-nums tracking-tight">{stats?.active_sessions || 0}</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="size-1.5 rounded-full bg-ray-blue animate-pulse shadow-[0_0_8px_rgba(88,166,255,0.5)]"></div>
-                  <p className="text-[11px] text-ray-muted font-medium">Real-time tracking</p>
-                </div>
+              <div className="flex justify-between text-xs font-medium text-muted-foreground mt-4 px-1">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Bottom Grid Split */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Recent Activity (Raycast List Style) */}
-            <div className="lg:col-span-2 ray-card bg-ray-surface/20 backdrop-blur-md flex flex-col border-white/5">
-              <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-ray-muted">Live Intelligence Feed</span>
-                <Link to="/analytics" className="text-[10px] font-bold text-ray-blue hover:text-white transition-colors uppercase tracking-widest">Open Stream ↗</Link>
-              </div>
-              <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1">
-                {activities.length === 0 ? (
-                  <div className="py-20 text-center flex flex-col items-center gap-4">
-                    <span className="material-symbols-outlined text-[48px] text-ray-muted/20">bubble_chart</span>
-                    <p className="text-[13px] text-ray-muted/50 font-medium tracking-wide">Awaiting system signals...</p>
-                  </div>
-                ) : (
-                  activities.map((activity, idx) => (
-                    <div key={idx} className="ray-list-item group bg-transparent hover:bg-white/[0.03] border border-transparent hover:border-white/5 transition-all py-3">
-                      <div className="size-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-ray-primary group-hover:scale-110 transition-transform">
-                        <span className="material-symbols-outlined text-[20px]">history_edu</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13px] font-semibold text-ray-text truncate tracking-tight">
-                            {activity.bot_name}
-                          </p>
-                          <span className="size-1 rounded-full bg-ray-muted/30"></span>
-                          <span className="text-[10px] text-ray-muted font-mono">{formatTime(activity.timestamp)}</span>
-                        </div>
-                        <p className="text-[11px] text-ray-muted truncate mt-0.5 group-hover:text-ray-text/70 transition-colors uppercase tracking-wider">{activity.message}</p>
-                      </div>
-                      <span className="text-[10px] font-bold text-ray-muted group-hover:text-ray-primary transition-colors">DETAILS</span>
-                    </div>
-                  ))
-                )}
+          {/* Right Column: Quick Actions & Status */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+
+            {/* Quick Actions */}
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-6">
+                Quick Actions
+              </h3>
+
+              <div className="flex flex-col gap-3">
+                <Link
+                  to="/bots/new"
+                  className="
+                    flex items-center justify-center gap-2
+                    w-full py-3 px-6
+                    bg-primary text-primary-foreground
+                    hover:bg-primary/90
+                    font-medium
+                    rounded-xl
+                    shadow-lg shadow-primary/20
+                    hover:translate-y-px
+                    transition-all duration-200
+                  "
+                >
+                  <span className="material-symbols-outlined text-[20px]">add</span>
+                  Create New Bot
+                </Link>
+
+                <Link
+                  to="/documents"
+                  className="
+                    flex items-center justify-center gap-2
+                    w-full py-3 px-6
+                    bg-background border border-border
+                    hover:bg-muted/50
+                    text-foreground
+                    font-medium
+                    rounded-xl
+                    hover:border-primary/30
+                    transition-all duration-200
+                  "
+                >
+                  <span className="material-symbols-outlined text-[20px]">upload_file</span>
+                  Upload Knowledge
+                </Link>
+
+                <Link
+                  to="/settings"
+                  className="
+                    flex items-center justify-center gap-2
+                    w-full py-3 px-6
+                    text-muted-foreground hover:text-foreground
+                    font-medium
+                    rounded-xl
+                    hover:bg-muted/50
+                    transition-all duration-200
+                  "
+                >
+                  <span className="material-symbols-outlined text-[20px]">settings</span>
+                  Settings
+                </Link>
               </div>
             </div>
 
-            {/* Quick Actions (Control Center Style) */}
-            <div className="lg:col-span-1 flex flex-col gap-4">
-              <div className="ray-card bg-ray-surface/40 backdrop-blur-xl p-6 flex flex-col gap-4 border-white/5">
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-ray-muted mb-2">Neural Controls</span>
-                <Link to="/bots/new" className="group flex items-center gap-3 px-4 py-3 bg-ray-primary/10 hover:bg-ray-primary text-ray-primary hover:text-white rounded-ray-button text-sm font-bold transition-all border border-ray-primary/20 shadow-[0_0_20px_rgba(255,99,99,0.05)]">
-                  <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 transition-transform">add</span>
-                  Initialize New Agent
-                  <span className="ml-auto text-[10px] bg-black/20 px-1.5 py-0.5 rounded font-mono">⌘N</span>
-                </Link>
-                <Link to="/documents" className="group flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-ray-text rounded-ray-button border border-white/5 text-sm font-bold transition-all">
-                  <span className="material-symbols-outlined text-[20px] group-hover:-translate-y-0.5 transition-transform">upload_file</span>
-                  Knowledge Ingest
-                  <span className="ml-auto text-[10px] text-ray-muted font-mono">⌘U</span>
-                </Link>
-                <Link to="/settings" className="group flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-ray-text rounded-ray-button border border-white/5 text-sm font-bold transition-all">
-                  <span className="material-symbols-outlined text-[20px] group-hover:rotate-45 transition-transform">settings_input_component</span>
-                  Core Configuration
-                  <span className="ml-auto text-[10px] text-ray-muted font-mono">⌘S</span>
-                </Link>
+            {/* System Health */}
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    System Health
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    All services running
+                  </p>
+                </div>
+                <span className="
+                  flex items-center gap-2 
+                  px-2.5 py-1
+                  rounded-full 
+                  bg-primary/10
+                  text-xs font-semibold 
+                  text-primary
+                ">
+                  <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                  Stable
+                </span>
               </div>
 
-              {/* Status Indicator (High-End) */}
-              <div className="ray-card bg-ray-surface/60 backdrop-blur-2xl p-5 flex flex-col gap-4 border-white/5 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <p className="text-[14px] font-bold text-ray-text tracking-tight">Pulse Status: Nominal</p>
-                    <p className="text-[10px] text-ray-muted font-mono uppercase tracking-[0.2em]">All systems operational</p>
+              <div className="space-y-4">
+                {[
+                  { name: 'API Gateway', status: 99.9, color: 'text-primary' },
+                  { name: 'Database', status: 100, color: 'text-primary' },
+                  { name: 'Vector Store', status: 98.5, color: 'text-primary' },
+                  { name: 'LLM Provider', status: 97.2, color: 'text-accent' },
+                ].map((service, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {service.name}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-foreground">
+                        {service.status}%
+                      </span>
+                      <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`
+                            h-full rounded-full
+                            ${service.color === 'text-primary' ? 'bg-primary' : 'bg-accent'}
+                          `}
+                          style={{ width: `${service.status}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="size-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-emerald-500 text-[20px] animate-pulse">check_circle</span>
-                  </div>
-                </div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 w-[99.9%] shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
-                </div>
+                ))}
               </div>
             </div>
           </div>

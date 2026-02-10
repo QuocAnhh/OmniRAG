@@ -61,13 +61,10 @@ export default function BotFormPage() {
 
       if (isEdit && id) {
         await botsApi.update(id, botData);
-        // Dispatch event to refresh dashboard stats
         window.dispatchEvent(new CustomEvent('bot-updated'));
         navigate('/bots');
       } else {
-        // Create new bot and redirect to config page
         const newBot = await botsApi.create(botData);
-        // Dispatch event to refresh dashboard stats
         window.dispatchEvent(new CustomEvent('bot-created'));
         navigate(`/bots/${newBot.id}/config?tab=knowledge`);
       }
@@ -82,174 +79,213 @@ export default function BotFormPage() {
   return (
     <Layout breadcrumbs={[
       { label: 'Home', path: '/' },
-      { label: 'Bots', path: '/bots' },
-      { label: isEdit ? 'Edit Bot' : 'New Bot' }
+      { label: 'Agents', path: '/bots' },
+      { label: isEdit ? 'Edit Agent' : 'Deploy Agent' }
     ]}>
-      <div className="p-8 bg-background-off dark:bg-[#0a0b14] min-h-full">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col gap-2 mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {isEdit ? 'Edit Bot Configuration' : 'Create New Bot'}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400">
-              Customize your bot's identity, appearance, and core behavior.
-            </p>
+      <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
+
+        {/* Header */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3 border border-primary/20">
+            <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+            AI Agent
           </div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {isEdit ? 'Modify Agent' : 'Create New Agent'}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Define the identity, personality, and operational parameters of your AI assistant.
+          </p>
+        </div>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl text-red-700 dark:text-red-400">
-              {error}
-            </div>
-          )}
+        {/* Error Message */}
+        {error && (
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-3">
+            <span className="material-symbols-outlined">error</span>
+            <span>{error}</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Identity Card */}
-            <div className="bg-white dark:bg-[#16182e] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">badge</span>
-                Identity
-              </h3>
-              <div className="space-y-6">
-                {/* Bot Name */}
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Bot Name <span className="text-red-500">*</span>
-                  </span>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Help Desk Bot"
-                    required
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400"
-                  />
-                </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Description */}
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Description
-                  </span>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe what your bot does..."
-                    rows={3}
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white min-h-[100px] p-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 resize-none"
-                  />
-                  <span className="text-xs text-slate-500 text-right">
-                    {formData.description.length}/200 characters
-                  </span>
-                </label>
+          {/* Identity Card */}
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 sm:p-8">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[20px]">badge</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Agent Identity</h2>
+                <p className="text-xs text-muted-foreground">Core identification details</p>
               </div>
             </div>
 
-            {/* Behavior Configuration Card */}
-            <div className="bg-white dark:bg-[#16182e] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">psychology</span>
-                Behavior Configuration
-              </h3>
-              <div className="space-y-6">
-                {/* Welcome Message */}
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Welcome Message
-                  </span>
-                  <textarea
-                    value={formData.welcome_message}
-                    onChange={(e) => setFormData({ ...formData, welcome_message: e.target.value })}
-                    placeholder="Hi! How can I help you today?"
-                    rows={2}
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white p-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 resize-none"
-                  />
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">
+                  Agent Name <span className="text-destructive">*</span>
                 </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g. Customer Support Alpha"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                />
+              </div>
 
-                {/* Fallback Message */}
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Fallback Message
-                  </span>
-                  <textarea
-                    value={formData.fallback_message}
-                    onChange={(e) => setFormData({ ...formData, fallback_message: e.target.value })}
-                    placeholder="I'm sorry, I don't have enough information to answer that question."
-                    rows={2}
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white p-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 resize-none"
-                  />
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">
+                  Description
                 </label>
-
-                {/* Model Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Temperature */}
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      Temperature
-                    </span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="2"
-                      value={formData.temperature}
-                      onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
-                      className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                    />
-                    <span className="text-xs text-slate-500">
-                      Controls randomness (0-2). Higher values make output more creative.
-                    </span>
-                  </label>
-
-                  {/* Max Tokens */}
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      Max Tokens
-                    </span>
-                    <input
-                      type="number"
-                      step="100"
-                      min="100"
-                      max="4000"
-                      value={formData.max_tokens}
-                      onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
-                      className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#101122] text-slate-900 dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                    />
-                    <span className="text-xs text-slate-500">
-                      Maximum response length
-                    </span>
-                  </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe the agent's role and purpose..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm placeholder:text-muted-foreground/50 resize-none"
+                />
+                <div className="flex justify-end">
+                  <span className="text-xs text-muted-foreground">{formData.description.length}/200 characters</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/bots')}
-                disabled={loading}
-                className="flex items-center justify-center rounded-lg h-10 px-6 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center justify-center rounded-lg h-10 px-6 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
-                    Saving...
-                  </>
-                ) : (
-                  <>{isEdit ? 'Save Changes' : 'Create Bot'}</>
-                )}
-              </button>
+          {/* Behavior Configuration */}
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 sm:p-8">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent-600">
+                <span className="material-symbols-outlined text-[20px]">psychology</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Behavior & Personality</h2>
+                <p className="text-xs text-muted-foreground">How the agent interacts with users</p>
+              </div>
             </div>
-          </form>
-        </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">Welcome Message</label>
+                <textarea
+                  value={formData.welcome_message}
+                  onChange={(e) => setFormData({ ...formData, welcome_message: e.target.value })}
+                  placeholder="Hello! How can I assist you today?"
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm placeholder:text-muted-foreground/50 resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">Fallback Message</label>
+                <textarea
+                  value={formData.fallback_message}
+                  onChange={(e) => setFormData({ ...formData, fallback_message: e.target.value })}
+                  placeholder="I'm not sure I understand. Could you rephrase that?"
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm placeholder:text-muted-foreground/50 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <label className="text-sm font-semibold text-foreground">Temperature</label>
+                    <span className="text-xs font-mono font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">{formData.temperature}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={formData.temperature}
+                    onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <span>Precise</span>
+                    <span>Balanced</span>
+                    <span>Creative</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Max Tokens</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="100"
+                      max="4000"
+                      step="100"
+                      value={formData.max_tokens}
+                      onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <span className="text-muted-foreground text-xs">tokens</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Controls maximum length of the response.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Preview - Optional, keep simple */}
+          <div className="bg-gradient-to-br from-muted/50 to-muted/10 rounded-2xl border border-border/50 p-5">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-4">Estimated Performance</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Avg Latency</p>
+                <p className="text-sm font-bold text-foreground">
+                  ~{Math.floor(50 + formData.max_tokens / 20)}ms
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Cost Efficiency</p>
+                <p className="text-sm font-bold text-foreground">
+                  High
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Response Style</p>
+                <p className={`text-sm font-bold ${formData.temperature < 0.5 ? 'text-blue-500' : formData.temperature > 1.0 ? 'text-orange-500' : 'text-green-500'}`}>
+                  {formData.temperature < 0.5 ? 'Analytical' : formData.temperature > 1.0 ? 'Imaginative' : 'Balanced'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-4 pt-4 border-t border-border">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  processing...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[20px]">{isEdit ? 'save' : 'rocket_launch'}</span>
+                  {isEdit ? 'Save Changes' : 'Deploy Agent'}
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/bots')}
+              disabled={loading}
+              className="px-6 py-3 bg-background border border-border text-foreground font-semibold rounded-xl hover:bg-muted/50 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </Layout>
   );

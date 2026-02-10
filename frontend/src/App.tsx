@@ -13,30 +13,26 @@ const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const DataGridPage = lazy(() => import('./pages/DataGridPage'));
+const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
 
 // Premium loading component
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-ray-bg flex items-center justify-center relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] size-[500px] bg-ray-blue/10 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] size-[500px] bg-ray-primary/5 blur-[120px] rounded-full"></div>
-
-      <div className="text-center relative z-10">
-        <div className="size-24 mx-auto mb-8 rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-ray-blue/20 animate-ray-slide-up">
+    <div className="min-h-screen ops-root flex items-center justify-center">
+      <div className="text-center">
+        <div className="size-20 mx-auto mb-6 rounded-xl overflow-hidden border border-[var(--color-ops-border)] bg-[var(--color-ops-panel)]">
           <img src="/logo.png" alt="Loading OmniRAG" className="w-full h-full object-cover" />
         </div>
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-2 mb-4">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="size-2 bg-ray-blue rounded-full animate-bounce"
+              className="size-2 bg-[var(--color-ops-accent)] rounded-full animate-bounce"
               style={{ animationDelay: `${i * 0.15}s` }}
             ></div>
           ))}
         </div>
-        <p className="text-ray-muted font-bold tracking-[0.2em] uppercase text-[10px]">Synchronizing Neural Network...</p>
+        <p className="ops-section-title text-[10px] ops-muted">Loading workspace...</p>
       </div>
     </div>
   );
@@ -112,14 +108,14 @@ function App() {
               <AnalyticsPage />
             </ProtectedRoute>
           } />
-          <Route path="/data-grid" element={
-            <ProtectedRoute>
-              <DataGridPage />
-            </ProtectedRoute>
-          } />
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/linear-showcase" element={
+            <ProtectedRoute>
+              <LinearShowcasePage />
             </ProtectedRoute>
           } />
 

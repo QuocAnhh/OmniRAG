@@ -1,0 +1,88 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        // Terminal Mission Control Palette
+        'terminal-bg': '#0A1929',
+        'terminal-surface': '#0F2137',
+        'terminal-panel': '#142A3F',
+        'terminal-elevated': '#1A3347',
+        'terminal-border': '#1E3A52',
+        'terminal-border-bright': '#2A4A66',
+        'terminal-text': '#E0E7F1',
+        'terminal-text-bright': '#F5F8FA',
+        'terminal-muted': '#8499AD',
+        'terminal-cyan': '#00BCD4',
+        'terminal-cyan-bright': '#26C6DA',
+        'terminal-amber': '#FFB74D',
+        'terminal-green': '#26A69A',
+        'terminal-red': '#EF5350',
+        'terminal-purple': '#9575CD',
+      },
+      fontFamily: {
+        mono: ['IBM Plex Mono', 'Courier New', 'monospace'],
+        sans: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'xs': '10px',
+        'sm': '12px',
+        'base': '14px',
+        'lg': '16px',
+        'xl': '18px',
+        '2xl': '24px',
+        '3xl': '36px',
+        '4xl': '48px',
+      },
+      spacing: {
+        '1': '4px',
+        '2': '8px',
+        '3': '12px',
+        '4': '16px',
+        '5': '20px',
+        '6': '24px',
+        '8': '32px',
+        '10': '40px',
+        '12': '48px',
+        '16': '64px',
+        '20': '80px',
+      },
+      borderRadius: {
+        'sm': '2px',
+        'md': '4px',
+        'lg': '6px',
+        'xl': '8px',
+      },
+      boxShadow: {
+        'terminal-sm': '0 1px 2px rgba(0, 0, 0, 0.3)',
+        'terminal-md': '0 2px 4px rgba(0, 0, 0, 0.4)',
+        'terminal-lg': '0 4px 8px rgba(0, 0, 0, 0.5)',
+      },
+      animation: {
+        'terminal-fade': 'terminal-fade 0.3s ease-out',
+        'terminal-slide': 'terminal-slide 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        'terminal-pulse': 'terminal-pulse 2s ease-in-out infinite',
+      },
+      keyframes: {
+        'terminal-fade': {
+          'from': { opacity: '0', transform: 'translateY(-4px)' },
+          'to': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'terminal-slide': {
+          'from': { opacity: '0', transform: 'translateX(-8px)' },
+          'to': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'terminal-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+      },
+    },
+  },
+  plugins: [],
+}
