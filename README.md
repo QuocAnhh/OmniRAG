@@ -2,6 +2,32 @@
 
 Hệ thống RAG (Retrieval-Augmented Generation) đa thuê bao với các tính năng tối ưu hóa nâng cao.
 
+## ⚡ Quick Start với OpenRouter
+
+**Chỉ cần 3 bước để chạy ngay!**
+
+```bash
+# 1. Get FREE OpenRouter API key → https://openrouter.ai/keys
+export OPENROUTER_API_KEY=sk-or-v1-your-key-here
+
+# 2. Run setup script
+./setup_openrouter.sh
+
+# 3. Start services
+cd backend && docker-compose up -d
+```
+
+**Xong!** 🎉 Giờ bạn đã có:
+- ✅ Access đến 400+ AI models (GPT-4, Claude, Gemini, Llama...)
+- ✅ Embeddings cho RAG
+- ✅ Automatic fallbacks & cost optimization
+
+**Test ngay**: `python test_openrouter.py`
+
+📖 **Chi tiết migration**: Xem [OPENROUTER_MIGRATION.md](OPENROUTER_MIGRATION.md)
+
+---
+
 ## 📋 Mục lục
 
 - [Tính năng](#tính-năng)
@@ -21,8 +47,11 @@ Hệ thống RAG (Retrieval-Augmented Generation) đa thuê bao với các tính
 - ✅ **Role-Based Access Control (RBAC)**: Phân quyền owner/admin/member
 - ✅ **Bot Management**: Tạo và quản lý nhiều chatbot với API key riêng
 - ✅ **Document Processing**: Upload và xử lý PDF, DOCX, PPTX, TXT
+- ⭐ **Golang API Gateway**: High-performance gateway với caching & rate limiting
 
 ### Advanced RAG Features
+- ✅ **OpenRouter Integration**: Access 400+ AI models (GPT-4, Claude, Gemini, Llama...)
+- ✅ **Unified Embeddings**: Single API for all embedding models
 - ✅ **Hybrid Search**: Kết hợp vector search (semantic) và keyword matching
 - ✅ **Query Transformation**: 
   - HyDE (Hypothetical Document Embeddings)
@@ -33,9 +62,9 @@ Hệ thống RAG (Retrieval-Augmented Generation) đa thuê bao với các tính
 - ✅ **Document Re-ranking**: Sắp xếp lại documents theo độ liên quan
 - ✅ **Redis Caching**: Cache responses với TTL 1 giờ
 - ✅ **Conversation History**: Hỗ trợ ngữ cảnh hội thoại (5 messages cuối)
-- ✅ **Multiple LLM Support**: GPT-3.5-turbo / GPT-4 configurable
 
 ### Infrastructure
+- ⭐ **Golang Gateway**: High-performance API layer (10-50x faster I/O)
 - ✅ **PostgreSQL**: Database chính với Alembic migrations
 - ✅ **MongoDB**: Lưu chat logs và analytics
 - ✅ **Redis**: Caching và Celery broker
@@ -48,20 +77,26 @@ Hệ thống RAG (Retrieval-Augmented Generation) đa thuê bao với các tính
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Frontend                            │
-│                    (Postman / React)                        │
+│                    (React / Postman)                        │
 └─────────────────────┬───────────────────────────────────────┘
                       │
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      FastAPI Backend                        │
+│               ⭐ Golang API Gateway (Port 8080)             │
+│  - CORS  - Logging  - Rate Limiting  - Caching             │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  FastAPI Backend (Port 8000)                │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ Auth API     │  │ Bot API      │  │ Document API │     │
+│  │ Auth API     │  │ Bot API      │  │ OpenRouter  │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │        Advanced RAG Service                         │   │
-│  │  - Hybrid Search   - Query Transform                │   │
-│  │  - Re-ranking      - Caching                        │   │
+│  │        OpenRouter RAG Service                       │   │
+│  │  - Hybrid Search   - Query Transform               │   │
+│  │  - Re-ranking      - Embeddings                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 └────┬────────┬─────────┬─────────┬────────┬────────┬────────┘
      │        │         │         │        │        │

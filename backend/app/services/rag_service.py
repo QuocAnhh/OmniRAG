@@ -19,9 +19,33 @@ import uuid
 
 class RAGService:
     def __init__(self):
-        self.embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
+        # Configure AI Provider (OpenRouter or OpenAI)
+        self.api_key = settings.OPENAI_API_KEY
+        self.api_base = None
+        self.chat_model = "gpt-3.5-turbo"
+        self.embedding_model = "text-embedding-ada-002"
+
+        if settings.AI_PROVIDER == "openrouter":
+            self.api_key = settings.OPENROUTER_API_KEY
+            self.api_base = "https://openrouter.ai/api/v1"
+            self.chat_model = settings.OPENROUTER_CHAT_MODEL
+            self.embedding_model = settings.OPENROUTER_EMBEDDING_MODEL
+
+        if not self.api_key:
+            print(f"WARNING: API Key missing for provider {settings.AI_PROVIDER}. RAGService may fail.")
+
+        self.embeddings = OpenAIEmbeddings(
+            openai_api_key=self.api_key,
+            openai_api_base=self.api_base,
+            model=self.embedding_model
+        )
         self.qdrant_client = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
-        self.llm = ChatOpenAI(temperature=0, openai_api_key=settings.OPENAI_API_KEY, model_name="gpt-3.5-turbo")
+        self.llm = ChatOpenAI(
+            temperature=0, 
+            openai_api_key=self.api_key, 
+            openai_api_base=self.api_base,
+            model_name=self.chat_model
+        )
 
     async def ingest_file(self, file: UploadFile, bot_id: int):
         # 1. Save temp file

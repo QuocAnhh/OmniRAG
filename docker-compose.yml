@@ -49,7 +49,12 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
+      - AI_PROVIDER=openrouter
+      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_EMBEDDING_MODEL=${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
@@ -72,7 +77,12 @@ services:
     command: celery -A app.worker worker --loglevel=info
     volumes:
       - ./backend:/app
+    env_file:
+      - ./backend/.env
     environment:
+      - AI_PROVIDER=openrouter
+      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_EMBEDDING_MODEL=${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
@@ -97,6 +107,30 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  # Golang API Gateway - sits in front of Python backend
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"  # External gateway port
+    env_file:
+      - ./backend/.env
+    environment:
+      - GATEWAY_PORT=8080
+      - ENVIRONMENT=development
+      - PYTHON_BACKEND_URL=http://backend:8000
+      # - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-me}
+      - REDIS_URL=redis://redis:6379/0
+      - RATE_LIMIT_ENABLED=true
+    depends_on:
+      - backend
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
   frontend:
     build: ./frontend
     command: npm run dev -- --host 0.0.0.0
@@ -107,8 +141,10 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - VITE_BACKEND_URL=http://backend:8000
     depends_on:
       - backend
+      - gateway
 
 volumes:
   postgres_data:

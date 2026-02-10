@@ -42,32 +42,36 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # AI / Vector DB
-    # AI Provider Configuration
-    AI_PROVIDER: str = "megallm"  # Options: "openai", "megallm"
+    # ============================================================
+    # AI Configuration - OpenRouter (Primary)
+    # ============================================================
+    # OpenRouter provides unified access to 400+ models
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_CHAT_MODEL: str = "openai/gpt-4o-mini"  # Default chat model
+    OPENROUTER_EMBEDDING_MODEL: str = "openai/text-embedding-3-small"  # Default embedding model
+    OPENROUTER_ENABLE_FALLBACKS: bool = True  # Enable automatic provider fallbacks
+    OPENROUTER_SITE_URL: str = ""  # Optional: Your site URL for rankings
+    OPENROUTER_SITE_NAME: str = "OmniRAG"  # Optional: Your site name for rankings
     
-    # OpenAI API (kept for backward compatibility)
-    OPENAI_API_KEY: str = ""
-    
-    # MegaLLM API (primary provider)
-    MEGALLM_API_KEY: str = ""
+    # ============================================================
+    # Legacy AI Providers (Optional - can be removed if not needed)
+    # ============================================================
+    # Kept for backward compatibility with existing services
+    # Recommended: Migrate to OpenRouter for unified access
+    AI_PROVIDER: str = "openrouter"  # Options: "openai", "megallm", "openrouter"
+    OPENAI_API_KEY: str = ""  # Legacy - not needed if using OpenRouter
+    MEGALLM_API_KEY: str = ""  # Legacy - not needed if using OpenRouter
     MEGALLM_BASE_URL: str = "https://ai.megallm.io/v1"
     
-    # Default AI Models
+    # Legacy model configs (can be removed)
     DEFAULT_LLM_MODEL: str = "moonshotai/kimi-k2-instruct-0905"
     DEFAULT_LLM_FAST_MODEL: str = "gpt-3.5-turbo"
     DEFAULT_LLM_QUALITY_MODEL: str = "gpt-4"
     DEFAULT_EMBEDDING_MODEL: str = "text-embedding-ada-002"
+    FALLBACK_LLM_MODELS: List[str] = ["claude-3.5-sonnet", "gpt-4", "gpt-3.5-turbo"]
     
-    # Fallback Models (used when primary fails)
-    FALLBACK_LLM_MODELS: List[str] = [
-        "claude-3.5-sonnet",
-        "gpt-4",
-        "gpt-3.5-turbo"
-    ]
-    
-    # Local embeddings (free alternative to API embeddings)
-    USE_LOCAL_EMBEDDINGS: bool = True
+    # Local embeddings (optional alternative to API)
+    USE_LOCAL_EMBEDDINGS: bool = False  # Set to True to use local model instead of API
     LOCAL_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     
     # Qdrant Vector DB

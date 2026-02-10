@@ -13,10 +13,12 @@ from app.models.user import User
 from app.schemas.bot import Bot, BotCreate, BotUpdate
 from app.schemas.document import Document
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.rag_service import rag_service
-from app.services.advanced_rag_service import advanced_rag_service
+from app.services.openrouter_rag_service import get_openrouter_rag_service
 
 logger = logging.getLogger(__name__)
+
+# Initialize the correct RAG service
+rag_service = get_openrouter_rag_service()
 router = APIRouter()
 
 @router.get("/", response_model=List[Bot])
@@ -143,13 +145,14 @@ async def upload_document(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    # Use advanced RAG service
+    # Use OpenRouter RAG service for ingestion
     try:
-        num_chunks = await advanced_rag_service.ingest_file(
+        ingest_stats = await rag_service.ingest_file(
             file, 
             str(bot_id),
             chunking_strategy=chunking_strategy
         )
+        num_chunks = ingest_stats.get("chunks_created", 0)
     except Exception as e:
         logger.error(f"Failed to process document {file.filename} for bot {bot_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
@@ -245,11 +248,11 @@ async def chat_with_bot(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    # Use advanced RAG with conversation history
+    # Use OpenRouter RAG with conversation history
     conversation_history = chat_in.history if hasattr(chat_in, 'history') else []
     session_id = chat_in.session_id if hasattr(chat_in, 'session_id') else None
     
-    result = await advanced_rag_service.chat(
+    result = await rag_service.chat(
         bot_id=str(bot_id),
         query=chat_in.message,
         bot_config=bot.config or {},
@@ -259,5 +262,5 @@ async def chat_with_bot(
     
     return ChatResponse(
         response=result["response"],
-        sources=list(set(result["sources"])) # deduplicate sources
+        sources=list(set(result.get("sources", []))) # deduplicate sources
     )
