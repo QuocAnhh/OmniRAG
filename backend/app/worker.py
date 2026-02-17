@@ -5,7 +5,7 @@ celery_app = Celery(
     "omnirag",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.document_tasks"]
+    include=["app.tasks.document_tasks", "app.tasks.zalo_tasks"]
 )
 
 celery_app.conf.update(

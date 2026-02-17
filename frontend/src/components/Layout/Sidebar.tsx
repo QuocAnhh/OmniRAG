@@ -10,7 +10,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid_view' },
   { path: '/bots', label: 'Bots', icon: 'smart_toy' },
-  { path: '/documents', label: 'Documents', icon: 'folder' },
   { path: '/analytics', label: 'Analytics', icon: 'leaderboard' },
   { path: '/integrations', label: 'Integrations', icon: 'hub' },
   { path: '/settings', label: 'Settings', icon: 'settings' },
@@ -26,8 +25,8 @@ export default function Sidebar() {
     <aside className="w-64 flex-shrink-0 bg-muted/30 border-r border-border/60 flex flex-col h-full relative z-20 backdrop-blur-xl">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 gap-3 border-b border-border/40">
-        <div className="size-8 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-          <span className="text-sm font-bold text-primary-foreground tracking-tight">OR</span>
+        <div className="size-9 rounded-xl overflow-hidden border border-border bg-card flex items-center justify-center shadow-lg shadow-primary/10">
+          <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground tracking-tight">OmniRAG</span>

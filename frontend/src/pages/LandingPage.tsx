@@ -15,10 +15,10 @@ export default function LandingPage() {
       <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-lg font-bold text-primary-foreground tracking-tight">OR</span>
+            <div className="size-12 rounded-xl overflow-hidden border border-border bg-card flex items-center justify-center shadow-lg shadow-primary/10">
+              <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">OmniRAG</span>
+            <span className="text-xl font-black tracking-tighter text-foreground bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">OmniRAG</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <a className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors" href="#features">Features</a>
@@ -160,10 +160,10 @@ export default function LandingPage() {
       <footer className="border-t border-border py-12 bg-background">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="size-6 rounded-lg bg-primary flex items-center justify-center shadow-md">
-              <span className="text-xs font-bold text-primary-foreground">OR</span>
+            <div className="size-8 rounded-lg overflow-hidden border border-border bg-card flex items-center justify-center shadow-md">
+              <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-sm font-semibold text-foreground">OmniRAG</span>
+            <span className="text-sm font-bold tracking-tight text-foreground">OmniRAG</span>
           </div>
           <p className="text-sm text-muted-foreground">© 2026 OmniRAG Systems. Crafted with intention.</p>
         </div>

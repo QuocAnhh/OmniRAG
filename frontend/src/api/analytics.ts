@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import apiClient from './client';
 
 export interface AnalyticsStats {
   total_messages: number;
@@ -7,7 +7,7 @@ export interface AnalyticsStats {
   avg_csat_score: number;
 }
 
-export interface Conversation {
+export interface ConversationItem {
   id: string;
   bot_id: string;
   bot_name: string;
@@ -15,38 +15,48 @@ export interface Conversation {
   user_message: string;
   response: string;
   timestamp: string;
-  response_time?: number;
+  response_time: number;
   satisfaction_score?: number;
 }
 
-export interface MessageOverTime {
+export interface MessageVolume {
   date: string;
   count: number;
 }
 
-export interface BotUsage {
-  bot_id: string;
-  bot_name: string;
-  is_active: boolean;
-  message_count: number;
-  avg_response_time: number;
-  unique_sessions: number;
+export interface TopQuery {
+  query: string;
+  count: number;
+}
+
+export interface ResponseTimeDistribution {
+  range: string;
+  count: number;
 }
 
 export const analyticsApi = {
-  getStats: () => 
-    apiClient.get<AnalyticsStats>('/api/v1/analytics/stats'),
-  
-  getConversations: (limit: number = 10) => 
-    apiClient.get<Conversation[]>('/api/v1/analytics/conversations', {
-      params: { limit }
-    }),
-  
-  getMessagesOverTime: (period: string = '30d') => 
-    apiClient.get<MessageOverTime[]>('/api/v1/analytics/messages-over-time', {
-      params: { period }
-    }),
-  
-  getBotUsage: () => 
-    apiClient.get<BotUsage[]>('/api/v1/analytics/bot-usage'),
+  getStats: async (): Promise<AnalyticsStats> => {
+    const response = await apiClient.get<AnalyticsStats>('/api/v1/analytics/stats');
+    return response.data;
+  },
+
+  getConversations: async (limit: number = 10): Promise<ConversationItem[]> => {
+    const response = await apiClient.get<ConversationItem[]>(`/api/v1/analytics/conversations?limit=${limit}`);
+    return response.data;
+  },
+
+  getMessagesOverTime: async (period: string = '24h'): Promise<MessageVolume[]> => {
+    const response = await apiClient.get<MessageVolume[]>(`/api/v1/analytics/messages-over-time?period=${period}`);
+    return response.data;
+  },
+
+  getTopQueries: async (limit: number = 5): Promise<TopQuery[]> => {
+    const response = await apiClient.get<TopQuery[]>(`/api/v1/analytics/top-queries?limit=${limit}`);
+    return response.data;
+  },
+
+  getResponseTimeDistribution: async (): Promise<ResponseTimeDistribution[]> => {
+    const response = await apiClient.get<ResponseTimeDistribution[]>('/api/v1/analytics/response-time-distribution');
+    return response.data;
+  }
 };

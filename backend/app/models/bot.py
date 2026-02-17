@@ -30,3 +30,4 @@ class Bot(Base):
     # Relationships
     tenant = relationship("Tenant", back_populates="bots")
     documents = relationship("Document", back_populates="bot", cascade="all, delete-orphan")
+    folders = relationship("Folder", back_populates="bot", cascade="all, delete-orphan")

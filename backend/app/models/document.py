@@ -22,6 +22,10 @@ class Document(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
     
+    # Organization
+    folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id", ondelete="SET NULL"), nullable=True)
+    tags = Column(JSONB, default=[])
+
     # Document metadata stored as JSONB
     doc_metadata = Column(JSONB, default={})
     
@@ -31,3 +35,4 @@ class Document(Base):
     
     # Relationships
     bot = relationship("Bot", back_populates="documents")
+    folder = relationship("Folder", back_populates="documents")

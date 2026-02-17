@@ -69,8 +69,8 @@ export default function AuthPage() {
 
       <div className="w-full max-w-md p-8 m-4 bg-card border border-border/50 rounded-3xl shadow-xl shadow-primary/5 relative z-10">
         <div className="text-center mb-8">
-          <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-            <span className="material-symbols-outlined text-3xl">spa</span>
+          <div className="size-16 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/10">
+            <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
             {isLogin ? 'Welcome back' : 'Join our garden'}

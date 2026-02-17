@@ -1,9 +1,9 @@
 import { apiClient } from './client';
-import type { 
-  LoginRequest, 
-  LoginResponse, 
-  RegisterRequest, 
-  User 
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  User
 } from '../types/api';
 
 export const authApi = {
@@ -11,7 +11,7 @@ export const authApi = {
     const formData = new URLSearchParams();
     formData.append('username', data.username);
     formData.append('password', data.password);
-    
+
     const response = await apiClient.post<LoginResponse>(
       '/api/v1/auth/login',
       formData,

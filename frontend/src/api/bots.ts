@@ -32,4 +32,9 @@ export const botsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/api/v1/bots/${id}`);
   },
+
+  generatePrompt: async (name: string, description: string, botId?: string): Promise<string> => {
+    const response = await apiClient.post<{ system_prompt: string }>('/api/v1/bots/generate-prompt', { name, description, bot_id: botId });
+    return response.data.system_prompt;
+  },
 };

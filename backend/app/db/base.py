@@ -3,3 +3,4 @@ from app.models.tenant import Tenant  # noqa
 from app.models.user import User  # noqa
 from app.models.bot import Bot  # noqa
 from app.models.document import Document  # noqa
+from app.models.folder import Folder  # noqa

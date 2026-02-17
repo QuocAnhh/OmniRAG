@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { useAuthStore } from './store/authStore';
+import { useSecurity } from './hooks/useSecurity';
+import { Toaster } from 'react-hot-toast';
 
 // Lazy load all route components for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -8,12 +10,14 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const BotsPage = lazy(() => import('./pages/BotsPage'));
 const BotFormPage = lazy(() => import('./pages/BotFormPage'));
+const BotWizardPage = lazy(() => import('./pages/BotWizardPage'));
 const BotConfigPage = lazy(() => import('./pages/BotConfigPage'));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 
 // Premium loading component
 function LoadingScreen() {
@@ -54,6 +58,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
+  // Initialize security checks
+  useSecurity();
+
   // Initialize auth state on mount
   useEffect(() => {
     initializeAuth();
@@ -61,6 +68,33 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '12px',
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          success: {
+            iconTheme: {
+              primary: 'hsl(var(--primary))',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'hsl(var(--destructive))',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
           {/* Public routes */}
@@ -80,12 +114,12 @@ function App() {
           } />
           <Route path="/bots/new" element={
             <ProtectedRoute>
-              <BotFormPage />
+              <BotWizardPage />
             </ProtectedRoute>
           } />
           <Route path="/bots/:id/edit" element={
             <ProtectedRoute>
-              <BotFormPage />
+              <BotConfigPage />
             </ProtectedRoute>
           } />
           <Route path="/bots/:id/config" element={
@@ -111,6 +145,11 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/bots/:id/chat" element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           } />
           <Route path="/linear-showcase" element={

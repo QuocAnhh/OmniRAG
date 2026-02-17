@@ -213,7 +213,6 @@ docker-compose up --build
 | **Users** | ✅ `/api/v1/users/*` | ✅ `usersApi` | 🔧 Ready | ⚠️ **API Ready** |
 | **Tenants** | ✅ `/api/v1/tenants/*` | ✅ `tenantsApi` | 🔧 Ready | ⚠️ **API Ready** |
 | **Integrations** | ✅ `/api/v1/integrations/*` | ✅ `integrationsApi` | 🔧 Ready | ⚠️ **API Ready** |
-| **Data Grid** | ✅ `/api/v1/data-grid/*` | ✅ `dataGridApi` | ✅ DataGridPage | ✅ **Complete** |
 
 **Legend**:
 - ✅ Complete: Fully implemented and tested

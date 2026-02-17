@@ -156,14 +156,6 @@ if [ -n "$BOT_ID" ]; then
     }' "Chat with Bot"
 fi
 
-# ============= DATA GRID TESTS (OLD) =============
-echo -e "${BLUE}=== DATA GRID TESTS (OLD) ===${NC}\n"
-
-test_endpoint "GET" "/data-grid/postgres/users" "" "List Users (Data Grid)"
-test_endpoint "GET" "/data-grid/postgres/tenants" "" "List Tenants (Data Grid)"
-test_endpoint "GET" "/data-grid/postgres/bots" "" "List Bots (Data Grid)"
-test_endpoint "GET" "/data-grid/postgres/documents" "" "List Documents (Data Grid)"
-
 # ============= DASHBOARD TESTS (NEW) =============
 echo -e "${BLUE}=== DASHBOARD TESTS (NEW) ===${NC}\n"
 

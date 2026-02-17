@@ -27,11 +27,14 @@ export interface Bot {
   api_key: string;
   config: {
     llm_model?: string;
+    model?: string; // Add alias/alternative if needed
     temperature?: number;
     max_tokens?: number;
     system_prompt?: string;
     welcome_message?: string;
     fallback_message?: string;
+    top_k?: number;
+    similarity_threshold?: number;
   };
   created_at: string;
   updated_at: string;
@@ -44,6 +47,8 @@ export interface Document {
   file_type: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   file_size?: number;
+  folder_id?: string | null;
+  tags?: string[];
   doc_metadata?: {
     num_chunks?: number;
     chunking_strategy?: string;
@@ -56,14 +61,55 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  message_id?: string;
+  sources?: any[];
+  retrieved_chunks?: any[];
+}
+
 export interface ChatRequest {
   message: string;
   history: ChatMessage[];
+  session_id?: string;
+}
+
+export interface RetrievedChunk {
+  text: string;
+  source: string;
+  score?: number;
+  hybrid_score?: number;
+  metadata?: Record<string, any>;
+  highlights?: string[];
+}
+
+export interface AgentLog {
+  step: string;
+  description: string;
+  status: string;
+  timestamp: string;
 }
 
 export interface ChatResponse {
   response: string;
   sources: string[];
+  retrieved_chunks?: RetrievedChunk[];
+  agent_logs?: AgentLog[];
+  reasoning?: string;
+  message_id: string;
+  search_query?: string;
+  session_id?: string;
+  model?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  response_time?: number;
+  from_cache?: boolean;
 }
 
 export interface LoginRequest {

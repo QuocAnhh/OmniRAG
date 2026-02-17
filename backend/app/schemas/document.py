@@ -1,5 +1,5 @@
 from pydantic import BaseModel, UUID4
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 class DocumentBase(BaseModel):
@@ -9,9 +9,15 @@ class DocumentBase(BaseModel):
 class DocumentCreate(DocumentBase):
     pass
 
+class DocumentUpdate(BaseModel):
+    folder_id: Optional[UUID4] = None
+    tags: Optional[List[str]] = None
+
 class Document(DocumentBase):
     id: UUID4
     bot_id: UUID4
+    folder_id: Optional[UUID4] = None
+    tags: Optional[List[str]] = []
     file_path: Optional[str] = None
     file_size: Optional[int] = None
     status: str

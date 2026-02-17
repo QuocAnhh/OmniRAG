@@ -5,6 +5,7 @@ from pydantic import AnyHttpUrl, validator
 class Settings(BaseSettings):
     PROJECT_NAME: str = "OmniRAG"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"  # development | staging | production
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
@@ -41,6 +42,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "YOUR_SUPER_SECRET_KEY_CHANGE_ME"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    @validator("SECRET_KEY")
+    def validate_secret_key(cls, v: str, values: dict) -> str:
+        if v == "YOUR_SUPER_SECRET_KEY_CHANGE_ME" and values.get("ENVIRONMENT") == "production":
+            raise ValueError("SECRET_KEY must be set in production")
+        return v
 
     # ============================================================
     # AI Configuration - OpenRouter (Primary)
@@ -95,6 +102,12 @@ class Settings(BaseSettings):
     # Celery
     CELERY_BROKER_URL: str = "redis://redis:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://redis:6379/0"
+
+    # ============================================================
+    # Func.vn Hub Configuration (Zalo, etc.)
+    # ============================================================
+    FUNC_API_URL: str = ""  # The URL to call Func.vn API (Reply Zalo Message)
+    FUNC_API_TOKEN: str = "" # The Token provided by Func.vn for authentication
 
     class Config:
         case_sensitive = True
