@@ -9,11 +9,10 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const BotsPage = lazy(() => import('./pages/BotsPage'));
-const BotFormPage = lazy(() => import('./pages/BotFormPage'));
 const BotWizardPage = lazy(() => import('./pages/BotWizardPage'));
 const BotConfigPage = lazy(() => import('./pages/BotConfigPage'));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
-const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
+
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
@@ -132,11 +131,7 @@ function App() {
               <DocumentsPage />
             </ProtectedRoute>
           } />
-          <Route path="/integrations" element={
-            <ProtectedRoute>
-              <IntegrationsPage />
-            </ProtectedRoute>
-          } />
+
           <Route path="/analytics" element={
             <ProtectedRoute>
               <AnalyticsPage />

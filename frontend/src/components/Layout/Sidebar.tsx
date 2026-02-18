@@ -11,8 +11,8 @@ const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid_view' },
   { path: '/bots', label: 'Bots', icon: 'smart_toy' },
   { path: '/analytics', label: 'Analytics', icon: 'leaderboard' },
-  { path: '/integrations', label: 'Integrations', icon: 'hub' },
   { path: '/settings', label: 'Settings', icon: 'settings' },
+
 ];
 
 export default function Sidebar() {

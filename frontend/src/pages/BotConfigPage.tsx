@@ -208,29 +208,28 @@ export default function BotConfigPage() {
                 <p className="text-sm text-muted-foreground mt-0.5">Manage behavior, knowledge, and integrations</p>
               </div>
             </div>
-            <button
-              onClick={() => navigate('/bots')}
-              className="px-4 py-2 bg-background border border-border text-foreground hover:bg-muted/50 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-              Back to Fleet
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(`/bots/${id}/chat`)}
+                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
+                Open Playground
+              </button>
+              <button
+                onClick={() => navigate('/bots')}
+                className="px-4 py-2 bg-background border border-border text-foreground hover:bg-muted/50 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                Back
+              </button>
+            </div>
           </div>
 
 
           {/* Connected Tabs */}
           <div className="px-2 bg-muted/20">
             <nav className="flex gap-2 overflow-x-auto scrollbar-hide p-2">
-              <button
-                onClick={() => setActiveTab('playground' as TabType)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${activeTab === 'playground'
-                  ? 'bg-card text-primary shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">smart_toy</span>
-                <span className="whitespace-nowrap">Playground</span>
-              </button>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}

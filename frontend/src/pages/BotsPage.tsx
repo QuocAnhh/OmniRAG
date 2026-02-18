@@ -3,7 +3,6 @@ import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 
 export default function BotsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -24,7 +23,8 @@ export default function BotsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation if button is inside a link
     if (!confirm('Are you sure you want to delete this bot?')) return;
 
     try {
@@ -37,73 +37,128 @@ export default function BotsPage() {
 
   return (
     <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Bots' }]}>
-      <div className="p-8 bg-background-light dark:bg-background-dark min-h-full">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Chatbots</h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your RAG-powered AI assistants</p>
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">
+              Chatbots
+            </h2>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Manage your RAG-powered AI assistants
+            </p>
+          </div>
+          <Link
+            to="/bots/new"
+            className="
+              inline-flex items-center justify-center gap-2
+              w-full sm:w-auto px-6 py-3
+              bg-primary text-primary-foreground
+              hover:bg-primary/90
+              font-semibold
+              rounded-xl
+              shadow-lg shadow-primary/20
+              hover:-translate-y-0.5
+              transition-all duration-200
+            "
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Create Bot
+          </Link>
+        </div>
+
+        {/* Bots Grid */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground mt-4 text-sm font-medium">Loading bots...</p>
+          </div>
+        ) : bots.length === 0 ? (
+          <div className="bg-card rounded-2xl border border-border dashed border-2 p-12 text-center flex flex-col items-center justify-center gap-4">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center">
+              <span className="material-symbols-outlined text-4xl text-muted-foreground">smart_toy</span>
             </div>
-            <Link to="/bots/new">
-              <Button variant="primary">
-                <span className="material-symbols-outlined text-[20px] mr-2">add</span>
-                Create Bot
-              </Button>
+            <div>
+              <h3 className="text-xl font-semibold text-foreground">No bots yet</h3>
+              <p className="text-muted-foreground mt-1 max-w-xs mx-auto">Create your first RAG chatbot to get started with AI assistance.</p>
+            </div>
+            <Link
+              to="/bots/new"
+              className="mt-4 px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-all"
+            >
+              Create Your First Bot
             </Link>
           </div>
-
-          {/* Bots Grid */}
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-            </div>
-          ) : bots.length === 0 ? (
-            <div className="text-center py-12 bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800">
-              <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">smart_toy</span>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No bots yet</h3>
-              <p className="text-slate-500 dark:text-slate-400 mb-6">Create your first RAG chatbot to get started</p>
-              <Link to="/bots/new">
-                <Button variant="primary">Create Your First Bot</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bots.map((bot) => (
-                <div key={bot.id} className="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all p-6">
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bots.map((bot) => (
+              <div
+                key={bot.id}
+                className="
+                  group
+                  bg-card
+                  rounded-2xl
+                  border border-border
+                  hover:border-primary/30
+                  shadow-sm hover:shadow-lg hover:shadow-primary/5
+                  transition-all duration-300
+                  hover:-translate-y-1
+                  flex flex-col
+                  h-full
+                "
+              >
+                <div className="p-6 flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <span className="material-symbols-outlined">smart_toy</span>
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+                        <span className="material-symbols-outlined text-2xl">smart_toy</span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">{bot.name}</h3>
-                        <span className={`text-xs px-2 py-1 rounded-full ${bot.is_active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                        <h3 className="font-bold text-lg text-foreground line-clamp-1">{bot.name}</h3>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${bot.is_active
+                          ? 'bg-success-50 text-success-600 border-success-400/20'
+                          : 'bg-muted text-muted-foreground border-border'
+                          }`}>
                           {bot.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">{bot.description || 'No description'}</p>
-                  <div className="flex gap-2">
-                    <Link to={`/bots/${bot.id}/chat`} className="flex-none">
-                      <Button variant="secondary" className="px-3" title="Open Full Screen Chat">
-                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                      </Button>
-                    </Link>
-                    <Link to={`/bots/${bot.id}/config`} className="flex-1">
-                      <Button variant="secondary" className="w-full">Config</Button>
-                    </Link>
-                    <Button variant="danger" onClick={() => handleDelete(bot.id)}>
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </Button>
-                  </div>
+
+                  <p className="text-sm text-muted-foreground line-clamp-3 mb-6 bg-muted/10 p-3 rounded-lg border border-border/50 min-h-[5rem]">
+                    {bot.description || 'No description provided.'}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                <div className="p-4 border-t border-border bg-muted/5 rounded-b-2xl flex gap-2">
+                  <Link
+                    to={`/bots/${bot.id}/chat`}
+                    className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                    title="Open Chat Playground"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                  </Link>
+                  <Link
+                    to={`/bots/${bot.id}/config`}
+                    className="flex-1 px-4 py-2.5 bg-background border border-border text-foreground hover:bg-muted font-medium rounded-xl text-sm transition-all text-center flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">settings</span>
+                    Config
+                  </Link>
+                  <button
+                    onClick={(e) => handleDelete(bot.id, e)}
+                    className="p-2.5 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Delete Bot"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Layout>
   );
 }
+
