@@ -25,13 +25,19 @@ export default function Sidebar() {
     <aside className="w-64 flex-shrink-0 bg-muted/30 border-r border-border/60 flex flex-col h-full relative z-20 backdrop-blur-xl">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 gap-3 border-b border-border/40">
-        <div className="size-9 rounded-xl overflow-hidden border border-border bg-card flex items-center justify-center shadow-lg shadow-primary/10">
-          <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold text-foreground tracking-tight">OmniRAG</span>
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Workspace</span>
-        </div>
+        <Link
+          to="/"
+          title="Back to Landing Page"
+          className="flex items-center gap-3 group/logo flex-1 min-w-0"
+        >
+          <div className="size-9 rounded-xl overflow-hidden border border-border bg-card flex items-center justify-center shadow-lg shadow-primary/10 group-hover/logo:shadow-primary/30 group-hover/logo:border-primary/30 transition-all duration-200 flex-shrink-0">
+            <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold text-foreground tracking-tight group-hover/logo:text-primary transition-colors">OmniRAG</span>
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Workspace</span>
+          </div>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -64,6 +70,25 @@ export default function Sidebar() {
             )}
           </Link>
         ))}
+
+        {/* Divider + Quick Links */}
+        <div className="mt-4 pt-4 border-t border-border/40">
+          <div className="px-2 mb-2 text-xs font-medium text-muted-foreground/60 uppercase tracking-widest">
+            Quick Links
+          </div>
+          <Link
+            to="/"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          >
+            <span className="material-symbols-outlined text-[20px] transition-transform duration-300 group-hover:scale-110">
+              home
+            </span>
+            <span>Landing Page</span>
+            <span className="ml-auto material-symbols-outlined text-[14px] opacity-40 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all">
+              open_in_new
+            </span>
+          </Link>
+        </div>
       </nav>
 
       {/* User Profile */}

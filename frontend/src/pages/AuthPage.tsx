@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { STORAGE_KEYS } from '../utils/constants';
@@ -16,6 +16,13 @@ export default function AuthPage() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const { token } = useAuthStore();
+
+  // Already logged in → go directly to dashboard
+  const isLoggedIn = !!(token || localStorage.getItem('access_token'));
+  if (isLoggedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

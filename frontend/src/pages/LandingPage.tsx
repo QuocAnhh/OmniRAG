@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useAuthStore } from '../store/authStore';
 
 export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false);
+  const { token } = useAuthStore();
+  const isLoggedIn = !!(token || localStorage.getItem('access_token'));
 
   useEffect(() => {
     setIsVisible(true);
@@ -27,10 +30,22 @@ export default function LandingPage() {
             <Link to="/docs/zalo-bot" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Docs</Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link to="/auth" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Log in</Link>
-            <Link to="/auth" className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5">
-              Get Started
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">grid_view</span>
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Log in</Link>
+                <Link to="/auth" className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -65,9 +80,19 @@ export default function LandingPage() {
               </p>
 
               <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/auth" className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground text-lg font-semibold rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 hover:scale-105 transition-all duration-300">
-                  Start Curator Journey
-                </Link>
+                {isLoggedIn ? (
+                  <Link
+                    to="/dashboard"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground text-lg font-semibold rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 hover:scale-105 transition-all duration-300"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">grid_view</span>
+                    Go to Dashboard
+                  </Link>
+                ) : (
+                  <Link to="/auth" className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground text-lg font-semibold rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 hover:scale-105 transition-all duration-300">
+                    Start Curator Journey
+                  </Link>
+                )}
                 <button className="w-full sm:w-auto px-8 py-4 bg-card text-foreground border border-border text-lg font-semibold rounded-2xl hover:bg-muted/50 hover:border-primary/20 transition-all duration-300">
                   View Demo
                 </button>

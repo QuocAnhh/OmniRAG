@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    environment:
+      - GATEWAY_PORT=8080
+      - ENVIRONMENT=production
+      - PYTHON_BACKEND_URL=http://backend:8000
+      - REDIS_URL=redis://redis:6379/0
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_RPS=200
+    depends_on:
+      - backend
+      - redis
+    restart: always
+
   db:
     image: postgres:15-alpine
     volumes:
@@ -102,7 +122,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - gateway
     restart: always
 
 volumes:

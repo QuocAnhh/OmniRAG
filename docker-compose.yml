@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - GATEWAY_PORT=8080
+      - ENVIRONMENT=development
+      - PYTHON_BACKEND_URL=http://backend:8000
+      - REDIS_URL=redis://redis:6379/0
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_RPS=100
+    depends_on:
+      - backend
+      - redis
+    restart: unless-stopped
+
   db:
     image: postgres:15-alpine
     volumes:
@@ -109,9 +125,9 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8080
     depends_on:
-      - backend
+      - gateway
 
 volumes:
   postgres_data:
