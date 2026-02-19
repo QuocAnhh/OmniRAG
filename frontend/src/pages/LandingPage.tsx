@@ -24,6 +24,7 @@ export default function LandingPage() {
             <a className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors" href="#features">Features</a>
             <a className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors" href="#solutions">Solutions</a>
             <a className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors" href="#pricing">Pricing</a>
+            <Link to="/docs/zalo-bot" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Docs</Link>
           </nav>
           <div className="flex items-center gap-4">
             <Link to="/auth" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Log in</Link>

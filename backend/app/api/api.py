@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import bots, auth, tenants, data_grid, analytics, dashboard, users, integrations, openrouter, bot_templates, folders
-from app.api.v1.endpoints.channels import zalo_hub
+from app.api.v1.endpoints.channels import zalo_hub, zalo_bot
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -15,3 +15,4 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["integrations"])
 api_router.include_router(openrouter.router, prefix="/openrouter", tags=["openrouter"])
 api_router.include_router(zalo_hub.router, prefix="/channels/zalo", tags=["channels"])
+api_router.include_router(zalo_bot.router, prefix="/channels/zalo-bot", tags=["channels"])

@@ -17,6 +17,7 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
+const ZaloBotGuidePage = lazy(() => import('./pages/Docs/ZaloBotGuidePage'));
 
 // Premium loading component
 function LoadingScreen() {
@@ -99,6 +100,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/docs/zalo-bot" element={<ZaloBotGuidePage />} />
 
           {/* Protected routes */}
           <Route path="/dashboard" element={

@@ -104,6 +104,11 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://redis:6379/0"
 
     # ============================================================
+    # Public URL (for webhook registration)
+    # ============================================================
+    PUBLIC_URL: str = ""  # Public-facing URL of this backend (e.g. https://yourdomain.com)
+
+    # ============================================================
     # Func.vn Hub Configuration (Zalo, etc.)
     # ============================================================
     FUNC_API_URL: str = ""  # The URL to call Func.vn API (Reply Zalo Message)

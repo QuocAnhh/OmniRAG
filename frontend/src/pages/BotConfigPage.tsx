@@ -5,6 +5,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import { documentsApi } from '../api/documents';
+import { apiClient } from '../api/client';
 import type { Bot, Document } from '../types/api';
 
 
@@ -24,7 +25,9 @@ export default function BotConfigPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-
+  // Zalo Bot connect state
+  const [zaloBotConnecting, setZaloBotConnecting] = useState(false);
+  const [zaloBotToken, setZaloBotToken] = useState('');
 
   // Form data for settings
   const [formData, setFormData] = useState({
@@ -41,7 +44,8 @@ export default function BotConfigPage() {
     zalo_integration: {
       account_id: '',
       is_active: false
-    }
+    },
+    zalo_bot: null as any
   });
 
   const loadBot = async (botId: string) => {
@@ -62,7 +66,8 @@ export default function BotConfigPage() {
         zalo_integration: botData.config?.zalo_integration || {
           account_id: '',
           is_active: false
-        }
+        },
+        zalo_bot: botData.config?.zalo_bot || null
       });
     } catch (error) {
       setError('Failed to load bot');
@@ -119,7 +124,8 @@ export default function BotConfigPage() {
           max_tokens: formData.max_tokens,
           top_k: formData.top_k,
           similarity_threshold: formData.similarity_threshold,
-          zalo_integration: formData.zalo_integration
+          zalo_integration: formData.zalo_integration,
+          ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {})
         },
       };
 
@@ -571,6 +577,191 @@ export default function BotConfigPage() {
           {/* Channels Tab */}
           {activeTab === 'channels' && (
             <div className="space-y-6">
+
+              {/* ═══ ZALO BOT (New — Direct Integration) ═══ */}
+              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
+                      <span className="material-symbols-outlined text-3xl">smart_toy</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground">Zalo Bot</h3>
+                      <p className="text-sm text-muted-foreground">Connect your Zalo Bot to this AI agent — instant auto-reply.</p>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.zalo_bot?.is_active
+                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                    <span className={`size-2 rounded-full ${formData.zalo_bot?.is_active ? 'bg-success-500 animate-pulse' : 'bg-muted-foreground'}`}></span>
+                    {formData.zalo_bot?.is_active ? 'CONNECTED' : 'NOT CONNECTED'}
+                  </div>
+                </div>
+
+                {/* Connected State */}
+                {formData.zalo_bot?.bot_token ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <div>
+                          <p className="text-sm font-bold text-success-800">Zalo Bot Connected</p>
+                          <p className="text-xs text-success-700 mt-0.5">
+                            Bot Info: {JSON.stringify(formData.zalo_bot.bot_info?.result || formData.zalo_bot.bot_info || {})}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Webhook URL */}
+                    {formData.zalo_bot.webhook_url && (
+                      <div className="p-4 bg-muted/30 border border-border rounded-xl">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Webhook URL</label>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <code className="flex-1 px-3 py-2 bg-muted/50 rounded-lg text-xs font-mono text-foreground break-all">
+                            {formData.zalo_bot.webhook_url}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(formData.zalo_bot.webhook_url);
+                              toast.success('Webhook URL copied!');
+                            }}
+                            className="px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-sm">content_copy</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active toggle + Disconnect */}
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">AI Auto-Reply</p>
+                        <p className="text-xs text-muted-foreground">Bot will automatically reply to incoming Zalo messages.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            zalo_bot: { ...formData.zalo_bot, is_active: !formData.zalo_bot?.is_active }
+                          });
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.zalo_bot?.is_active ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.zalo_bot?.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSaveBasicSettings}
+                        className="flex-1 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all"
+                      >
+                        Save Settings
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!id) return;
+                          if (!confirm('Disconnect Zalo Bot? Your bot will stop responding on Zalo.')) return;
+                          try {
+                            await apiClient.post(`/api/v1/channels/zalo-bot/disconnect/${id}`);
+                            setFormData({ ...formData, zalo_bot: null });
+                            toast.success('Zalo Bot disconnected');
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Failed to disconnect');
+                          }
+                        }}
+                        className="px-6 py-3 bg-red-500/10 text-red-600 font-semibold rounded-xl hover:bg-red-500/20 transition-all border border-red-200"
+                      >
+                        <span className="material-symbols-outlined text-sm mr-1">link_off</span>
+                        Disconnect
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Not Connected State — Connect Form */
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Zalo Bot Token</label>
+                        <input
+                          type="password"
+                          placeholder="e.g. 4045714827:FrVAleoZATgg..."
+                          value={zaloBotToken}
+                          onChange={(e) => setZaloBotToken(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground pl-1">Get this from Zalo Bot Platform when you create a bot.</p>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!id || !zaloBotToken.trim()) {
+                            toast.error('Please enter your Zalo Bot Token');
+                            return;
+                          }
+                          setZaloBotConnecting(true);
+                          const connectToast = toast.loading('Connecting Zalo Bot...');
+                          try {
+                            const res = await apiClient.post('/api/v1/channels/zalo-bot/connect', {
+                              bot_id: id,
+                              bot_token: zaloBotToken.trim(),
+                            });
+                            // Reload bot to get updated config
+                            if (id) await loadBot(id);
+                            setZaloBotToken('');
+                            toast.success('Zalo Bot connected successfully!', { id: connectToast });
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Connection failed', { id: connectToast });
+                          } finally {
+                            setZaloBotConnecting(false);
+                          }
+                        }}
+                        disabled={zaloBotConnecting || !zaloBotToken.trim()}
+                        className="w-full px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {zaloBotConnecting ? (
+                          <><span className="animate-spin">⏳</span> Connecting...</>
+                        ) : (
+                          <><span className="material-symbols-outlined text-sm">link</span> Connect Zalo Bot</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Quick Guide */}
+                    <div className="bg-muted/10 rounded-2xl p-5 border border-border">
+                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-lg">rocket_launch</span>
+                        Quick Setup (30 seconds)
+                      </h4>
+                      <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">1</span>
+                          <p>Create a Zalo Bot on the <strong>Zalo Bot Platform</strong> and copy your <strong>Bot Token</strong>.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">2</span>
+                          <p>Paste the <strong>Bot Token</strong> and your <strong>Backend URL</strong> above.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">3</span>
+                          <p>Click <strong>Connect</strong> — we'll auto-configure the webhook. Done! ✅</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                        <p className="text-[10px] text-primary-700 font-medium">
+                          <strong>How it works:</strong> We call <code>setWebhook</code> + <code>getMe</code> on the Zalo Bot API automatically. Your bot will start responding to Zalo messages instantly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ═══ ZALO HUB (Legacy — Func.vn Integration) ═══ */}
+
               <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
@@ -719,6 +910,7 @@ export default function BotConfigPage() {
                   </button>
                 </div>
               </div>
+
             </div>
           )}
 
