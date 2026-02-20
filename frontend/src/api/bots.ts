@@ -3,7 +3,12 @@ import type { Bot } from '../types/api';
 
 export const botsApi = {
   list: async (): Promise<Bot[]> => {
-    const response = await apiClient.get<Bot[]>('/api/v1/bots/');
+    const response = await apiClient.get<Bot[]>('/api/v1/bots/', {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     return response.data;
   },
 

@@ -32,7 +32,7 @@ function HighlightedText({ text, highlights }: { text: string; highlights?: stri
     );
 }
 
-export default function ChatPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function ChatPage() {
     const { id } = useParams<{ id: string }>();
     const [bot, setBot] = useState<Bot | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
@@ -273,7 +273,6 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
 
     return (
         <ChatLayout
-            embedded={embedded}
             sessions={sessions}
             currentSessionId={sessionId}
             onSelectSession={handleSelectSession}

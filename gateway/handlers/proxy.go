@@ -73,8 +73,11 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 	isStreamingEndpoint := strings.Contains(path, "/chat-stream") ||
 		strings.Contains(path, "stream")
 
+	// Check if client requests cache bypass
+	bypassCache := c.GetHeader("Cache-Control") == "no-cache" || c.GetHeader("Pragma") == "no-cache" || strings.Contains(c.GetHeader("Cache-Control"), "no-cache")
+
 	// FIX #3: Cache only GET requests, and include Authorization to prevent user data leaks
-	if method == "GET" && !isStreamingEndpoint {
+	if method == "GET" && !isStreamingEndpoint && !bypassCache {
 		// FIX #3: Include auth token in cache key so each user gets their own cache
 		authHeader := c.GetHeader("Authorization")
 		cacheKey := h.generateCacheKey(path, string(bodyBytes), authHeader)

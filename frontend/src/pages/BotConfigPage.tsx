@@ -12,7 +12,7 @@ import type { Bot, Document } from '../types/api';
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
 
 
-export default function BotConfigPage() {
+export default function BotConfigPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -179,7 +179,7 @@ export default function BotConfigPage() {
 
   if (loading && !bot) {
     return (
-      <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: 'Config' }]}>
+      <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: 'Config' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
           <p className="text-muted-foreground mt-4 text-sm font-medium">Loading configuration...</p>
@@ -189,7 +189,7 @@ export default function BotConfigPage() {
   }
 
   return (
-    <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: bot?.name || 'Config' }]}>
+    <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: bot?.name || 'Config' }]}>
       <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
 
         {/* Top Header Card */}
@@ -214,22 +214,24 @@ export default function BotConfigPage() {
                 <p className="text-sm text-muted-foreground mt-0.5">Manage behavior, knowledge, and integrations</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate(`/bots/${id}/chat`)}
-                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
-                Open Playground
-              </button>
-              <button
-                onClick={() => navigate('/bots')}
-                className="px-4 py-2 bg-background border border-border text-foreground hover:bg-muted/50 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                Back
-              </button>
-            </div>
+            {!embedded && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate(`/bots/${id}`)}
+                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
+                  Open Playground
+                </button>
+                <button
+                  onClick={() => navigate('/bots')}
+                  className="px-4 py-2 bg-background border border-border text-foreground hover:bg-muted/50 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                  Back
+                </button>
+              </div>
+            )}
           </div>
 
 

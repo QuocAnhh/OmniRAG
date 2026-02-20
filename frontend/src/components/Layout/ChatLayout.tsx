@@ -27,6 +27,7 @@ interface ChatLayoutProps {
     onNewChat?: () => void;
     botName?: string;
     botModel?: string;
+    embedded?: boolean;
 }
 
 export default function ChatLayout({
@@ -39,7 +40,8 @@ export default function ChatLayout({
     onClearHistory,
     onNewChat,
     botName = "Bot Configuration",
-    botModel = "GPT-4o"
+    botModel = "GPT-4o",
+    embedded = false
 }: ChatLayoutProps) {
     const { id } = useParams<{ id: string }>();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function ChatLayout({
     return (
         <div className="h-screen w-full bg-background overflow-hidden flex flex-col font-sans">
             {/* Mobile Header */}
-            {!isDesktop && (
+            {!isDesktop && !embedded && (
                 <div className="h-14 border-b flex items-center px-4 justify-between bg-card">
                     <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                         <Menu className="h-5 w-5" />
@@ -74,7 +76,7 @@ export default function ChatLayout({
                 <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border">
 
                     {/* Left Panel: Sidebar / History */}
-                    {(isDesktop || isMobileMenuOpen) && (
+                    {!embedded && (isDesktop || isMobileMenuOpen) && (
                         <ResizablePanel
                             defaultSize={leftSize}
                             minSize={15}
@@ -178,7 +180,7 @@ export default function ChatLayout({
                         </ResizablePanel>
                     )}
 
-                    {isDesktop && <ResizableHandle withHandle />}
+                    {!embedded && isDesktop && <ResizableHandle withHandle />}
 
                     {/* Center Panel: Chat Interface */}
                     <ResizablePanel defaultSize={100 - leftSize - (isRightCollapsed ? 0 : rightSize)} minSize={30}>

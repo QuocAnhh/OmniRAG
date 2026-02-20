@@ -7,13 +7,11 @@ import { Toaster } from 'react-hot-toast';
 // Lazy load all route components for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const BotsPage = lazy(() => import('./pages/BotsPage'));
+const BotStudioPage = lazy(() => import('./pages/BotStudioPage'));
 const BotWizardPage = lazy(() => import('./pages/BotWizardPage'));
 const BotConfigPage = lazy(() => import('./pages/BotConfigPage'));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
-
-const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
@@ -106,16 +104,13 @@ function App() {
           <Route path="/docs/zalo-bot" element={<ZaloBotGuidePage />} />
 
           {/* Protected routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          } />
+          <Route path="/dashboard" element={<Navigate to="/bots" replace />} />
           <Route path="/bots" element={
             <ProtectedRoute>
               <BotsPage />
             </ProtectedRoute>
           } />
+          {/* IMPORTANT: Specific sub-routes MUST come before /bots/:id */}
           <Route path="/bots/new" element={
             <ProtectedRoute>
               <BotWizardPage />
@@ -131,15 +126,20 @@ function App() {
               <BotConfigPage />
             </ProtectedRoute>
           } />
+          <Route path="/bots/:id/chat" element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          } />
+          {/* Generic :id route comes LAST so it doesn't swallow the above */}
+          <Route path="/bots/:id" element={
+            <ProtectedRoute>
+              <BotStudioPage />
+            </ProtectedRoute>
+          } />
           <Route path="/documents" element={
             <ProtectedRoute>
               <DocumentsPage />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/analytics" element={
-            <ProtectedRoute>
-              <AnalyticsPage />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={

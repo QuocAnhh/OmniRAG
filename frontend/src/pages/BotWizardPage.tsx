@@ -162,7 +162,7 @@ export default function BotWizardPage() {
         setLoading(true);
         const toastId = toast.loading('Creating your agent...');
         try {
-            await botTemplatesApi.createFromTemplate({
+            const newBot = await botTemplatesApi.createFromTemplate({
                 template_id: formData.templateId,
                 name: formData.name,
                 description: formData.description,
@@ -173,7 +173,12 @@ export default function BotWizardPage() {
             });
             toast.success('Agent created successfully!', { id: toastId });
             window.dispatchEvent(new CustomEvent('bot-created'));
-            navigate('/bots');
+
+            if (newBot && newBot.id) {
+                navigate(`/bots/${newBot.id}`);
+            } else {
+                navigate('/bots');
+            }
         } catch (error) {
             console.error("Failed to create bot", error);
             toast.error('Failed to create agent. Please try again.', { id: toastId });

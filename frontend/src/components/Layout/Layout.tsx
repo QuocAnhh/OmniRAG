@@ -5,9 +5,22 @@ import TopHeader from './TopHeader';
 interface LayoutProps {
   children: ReactNode;
   breadcrumbs?: { label: string; path?: string }[];
+  hideSidebar?: boolean;
 }
 
-export default function Layout({ children, breadcrumbs }: LayoutProps) {
+export default function Layout({ children, breadcrumbs, hideSidebar = false }: LayoutProps) {
+  if (hideSidebar) {
+    return (
+      <div className="flex h-full w-full overflow-hidden bg-background relative font-sans text-foreground">
+        <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background font-sans text-foreground">
       <Sidebar />

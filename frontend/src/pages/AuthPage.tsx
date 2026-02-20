@@ -24,9 +24,8 @@ export default function AuthPage() {
     return null; // Let the LoadingScreen in App.tsx handle it
   }
 
-  // Already logged in → go directly to dashboard
   if (token) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/bots" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,7 +44,7 @@ export default function AuthPage() {
         const user = await authApi.getCurrentUser();
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
         login(loginData.access_token, user);
-        navigate('/dashboard');
+        navigate('/bots');
       } else {
         // Register flow
         await authApi.register({
@@ -64,7 +63,7 @@ export default function AuthPage() {
         const user = await authApi.getCurrentUser();
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
         login(loginData.access_token, user);
-        navigate('/dashboard');
+        navigate('/bots');
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Authentication failed');

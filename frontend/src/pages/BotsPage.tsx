@@ -69,9 +69,31 @@ export default function BotsPage() {
 
         {/* Bots Grid */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
-            <p className="text-muted-foreground mt-4 text-sm font-medium">Loading bots...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-2xl border border-border shadow-sm flex flex-col h-[220px] overflow-hidden animate-pulse">
+                <div className="p-6 flex-1 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 rounded-xl bg-muted"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-24 bg-muted rounded"></div>
+                        <div className="h-4 w-16 bg-muted rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <div className="h-4 w-full bg-muted rounded"></div>
+                    <div className="h-4 w-4/5 bg-muted rounded"></div>
+                  </div>
+                </div>
+                <div className="p-4 border-t border-border bg-muted/5 flex gap-2">
+                  <div className="h-10 w-10 bg-muted rounded-xl"></div>
+                  <div className="flex-1 h-10 bg-muted rounded-xl"></div>
+                  <div className="h-10 w-10 bg-muted rounded-xl"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : bots.length === 0 ? (
           <div className="bg-card rounded-2xl border border-border dashed border-2 p-12 text-center flex flex-col items-center justify-center gap-4">
@@ -132,11 +154,11 @@ export default function BotsPage() {
 
                 <div className="p-4 border-t border-border bg-muted/5 rounded-b-2xl flex gap-2">
                   <Link
-                    to={`/bots/${bot.id}/chat`}
+                    to={`/bots/${bot.id}`}
                     className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    title="Open Chat Playground"
+                    title="Open Chat Studio"
                   >
-                    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                    <span className="material-symbols-outlined text-[20px]">responsive_layout</span>
                   </Link>
                   <Link
                     to={`/bots/${bot.id}/config`}
