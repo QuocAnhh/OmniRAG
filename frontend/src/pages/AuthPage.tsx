@@ -16,11 +16,16 @@ export default function AuthPage() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const { token } = useAuthStore();
+  const { token, isInitialized } = useAuthStore();
+
+  // Wait until auth is initialized before making redirect decisions
+  // This prevents the loop: dashboard → 401 → /auth → token still in LS → /dashboard
+  if (!isInitialized) {
+    return null; // Let the LoadingScreen in App.tsx handle it
+  }
 
   // Already logged in → go directly to dashboard
-  const isLoggedIn = !!(token || localStorage.getItem('access_token'));
-  if (isLoggedIn) {
+  if (token) {
     return <Navigate to="/dashboard" replace />;
   }
 

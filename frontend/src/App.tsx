@@ -44,11 +44,14 @@ function LoadingScreen() {
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token } = useAuthStore();
-  const storageToken = localStorage.getItem('access_token');
+  const { token, isInitialized } = useAuthStore();
 
-  // Check both zustand state and localStorage
-  if (!token && !storageToken) {
+  // Wait until initializeAuth has run — prevents redirect flash on first load
+  if (!isInitialized) {
+    return <LoadingScreen />;
+  }
+
+  if (!token) {
     return <Navigate to="/auth" replace />;
   }
 

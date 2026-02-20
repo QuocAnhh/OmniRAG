@@ -25,10 +25,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired, clear storage and redirect to auth
+      // Token expired or invalid — clear all auth state
       localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
-      window.location.href = '/auth';
+      localStorage.removeItem('auth-storage'); // clear zustand persist remnant
+
+      // Only redirect if NOT already on the auth page — prevents infinite loop
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth';
+      }
     }
     return Promise.reject(error);
   }
