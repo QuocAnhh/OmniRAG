@@ -147,7 +147,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     setUploading(true);
     const uploadToast = toast.loading('Uploading document...');
     try {
-      await documentsApi.upload(id, file);
+      // Artificial delay (2.5s) to guarantee the vectorization animation shows properly
+      // while the file actually uploads to the backend.
+      const uploadPromise = documentsApi.upload(id, file);
+      const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
+
+      await Promise.all([uploadPromise, delayPromise]);
+
       await loadDocuments(id);
       toast.success('Document uploaded', { id: uploadToast });
     } catch (error) {
@@ -474,24 +480,105 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* Upload Zone */}
-              <label className="group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-border hover:border-primary/50 transition-all cursor-pointer py-10 bg-muted/10 hover:bg-muted/30">
+              <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all cursor-pointer py-12 overflow-hidden ${uploading ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30'}`}>
                 <input
                   type="file"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   onChange={handleUpload}
                   accept=".pdf,.docx,.txt"
                   disabled={uploading}
                 />
-                <div className="flex flex-col items-center gap-3 text-center pointer-events-none group-hover:-translate-y-1 transition-transform duration-300">
-                  <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <span className="material-symbols-outlined text-2xl">cloud_upload</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-base font-semibold text-foreground">
-                      {uploading ? 'Uploading...' : 'Drop files to ingest'}
+
+                {/* Background Grid Pattern */}
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEgMWgyMHYyMEgxVjF6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMTI4LDEyOCwxMjgsMC4wNSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==')] opacity-50"></div>
+
+                <div className="flex flex-col items-center gap-4 text-center pointer-events-none z-10 w-full">
+                  {uploading ? (
+                    // Uploading/Scanning SVG
+                    <div className="relative size-16">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full">
+                        <defs>
+                          <filter id="scanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                          <linearGradient id="docGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" className="text-primary" />
+                            <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" className="text-primary" />
+                          </linearGradient>
+                        </defs>
+                        {/* Document Base */}
+                        <path d="M30 20 h30 l20 20 v40 h-50 z" fill="url(#docGrad)" stroke="currentColor" strokeWidth="2" className="text-primary/60" />
+                        <path d="M60 20 v20 h20" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary/60" />
+                        {/* Lines */}
+                        <line x1="40" y1="45" x2="70" y2="45" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-primary/40" />
+                        <line x1="40" y1="55" x2="65" y2="55" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-primary/40" />
+                        <line x1="40" y1="65" x2="70" y2="65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-primary/40" />
+
+                        {/* Laser Scanner */}
+                        <g filter="url(#scanGlow)">
+                          <line x1="20" y1="20" x2="90" y2="20" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round">
+                            <animate attributeName="y1" values="20; 80; 20" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="y2" values="20; 80; 20" dur="2s" repeatCount="indefinite" />
+                          </line>
+                          <polygon points="20,20 90,20 85,35 25,35" fill="#06b6d4" opacity="0.2">
+                            <animate attributeName="points" values="20,20 90,20 85,35 25,35; 20,80 90,80 85,95 25,95; 20,20 90,20 85,35 25,35" dur="2s" repeatCount="indefinite" />
+                          </polygon>
+                        </g>
+
+                        {/* Upload Particles */}
+                        <circle cx="50" cy="85" r="2" fill="#8b5cf6">
+                          <animate attributeName="cy" values="85; 10" dur="1.5s" repeatCount="indefinite" />
+                          <animate attributeName="opacity" values="1; 0" dur="1.5s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="35" cy="80" r="1.5" fill="#3b82f6">
+                          <animate attributeName="cy" values="80; 20" dur="2s" repeatCount="indefinite" />
+                          <animate attributeName="opacity" values="1; 0" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="65" cy="85" r="2.5" fill="#06b6d4">
+                          <animate attributeName="cy" values="85; 15" dur="1.8s" repeatCount="indefinite" />
+                          <animate attributeName="opacity" values="1; 0" dur="1.8s" repeatCount="indefinite" />
+                        </circle>
+                      </svg>
+                    </div>
+                  ) : (
+                    // Idle Upload SVG
+                    <div className="relative size-16 group-hover:-translate-y-2 transition-transform duration-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full text-primary">
+                        <defs>
+                          <filter id="idleGlow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+
+                        {/* Cloud Base */}
+                        <path d="M25 60 a15 15 0 0 1 0 -30 a20 20 0 0 1 35 -10 a18 18 0 0 1 25 10 a15 15 0 0 1 0 30 z"
+                          fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"
+                          className="group-hover:stroke-primary group-hover:fill-primary/20 transition-colors duration-300" />
+
+                        {/* Floating Arrow */}
+                        <g className="group-hover:animate-bounce" style={{ transformOrigin: 'center' }}>
+                          <path d="M50 70 v-30 m-12 12 l12 -12 l12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#idleGlow)" />
+                        </g>
+
+                        {/* Orbiting Plus (Group hover) */}
+                        <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="8s" repeatCount="indefinite" />
+                          <circle cx="15" cy="50" r="3" fill="#8b5cf6" />
+                          <circle cx="85" cy="50" r="2" fill="#06b6d4" />
+                          <circle cx="50" cy="15" r="2.5" fill="#f43f5e" />
+                        </g>
+                      </svg>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    <p className={`text-base font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-600 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
+                      {uploading ? 'Vectorizing and Indexing...' : 'Drag & drop knowledge files'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      or click to browse
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {uploading ? 'Please wait, do not close this window.' : 'or click to browse from your computer'}
                     </p>
                   </div>
                 </div>
