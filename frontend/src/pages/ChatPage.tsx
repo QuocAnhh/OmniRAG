@@ -230,12 +230,6 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                             reasoning: chunk.reasoning,
                             search_query: chunk.search_query,
                         };
-                    } else if (chunk.type === 'log') {
-                        // Append new log step
-                        return {
-                            ...msg,
-                            agent_logs: [...(msg.agent_logs || []), chunk.log]
-                        };
                     } else if (chunk.type === 'content') {
                         // Append content chunk
                         return {
@@ -351,36 +345,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                             }}
                             className={cn("space-y-2", msg.retrieved_chunks ? "cursor-pointer" : "")}
                         >
-                            {/* Agent Thinking Logs for Assistant Messages */}
-                            {msg.role === 'assistant' && msg.agent_logs && msg.agent_logs.length > 0 && (
-                                <details
-                                    className="mb-3 group bg-muted/30 rounded-2xl border border-border/50 overflow-hidden"
-                                    open={true}
-                                >
-                                    <summary className="list-none cursor-pointer flex items-center justify-between px-4 py-2 hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            <span className="material-symbols-outlined text-[16px] animate-pulse text-primary">psychology</span>
-                                            Thinking Process
-                                        </div>
-                                        <span className="material-symbols-outlined text-[16px] group-open:rotate-180 transition-transform text-muted-foreground">expand_more</span>
-                                    </summary>
-                                    <div className="px-4 pb-3 space-y-2.5">
-                                        {msg.agent_logs.map((log: any, i: number) => (
-                                            <div key={i} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                                                <div className="mt-1 flex flex-col items-center">
-                                                    <div className="size-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]"></div>
-                                                    {i < msg.agent_logs.length - 1 && <div className="w-px flex-1 bg-border my-1"></div>}
-                                                </div>
-                                                <div className="flex flex-col gap-0.5 pb-1">
-                                                    <span className="text-[11px] font-bold text-foreground leading-none">{log.step}</span>
-                                                    <span className="text-[10px] text-muted-foreground leading-tight">{log.description}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </details>
-                            )}
-                            {(msg.role === 'user' || msg.content !== '' || (msg.agent_logs && msg.agent_logs.length > 0)) && <ChatMessage message={msg} />}
+                            {(msg.role === 'user' || msg.content !== '') && <ChatMessage message={msg} />}
                         </div>
                     ))}
                     {isTyping && (!messages[messages.length - 1]?.content) && <TypingIndicator />}

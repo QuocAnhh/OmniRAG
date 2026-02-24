@@ -701,19 +701,24 @@ Answer:"""
             max_tokens = bot_config.get("max_tokens", 1000)
 
             if context:
-                # Kotaemon-style grounded prompt
-                effective_system_prompt = (
-                    f"{base_system_prompt}\n\n"
-                    "CÁCH TRẢ LỜI (QUY TẮC BẮT BUỘC):\n"
-                    "1. Sử dụng DUY NHẤT ngữ cảnh được cung cấp dưới đây để trả lời.\n"
-                    "2. Nếu thông tin không có trong ngữ cảnh, hãy nói rằng bạn không biết, KHÔNG tự chế câu trả lời.\n"
-                    "3. TRÍCH DẪN NGUỒN: Sử dụng ký hiệu [[n]] (ví dụ [[1]], [[2]]) ngay sau câu hoặc cụm từ trích dẫn thông tin từ Segment tương ứng.\n"
-                    "4. Luôn trả lời bằng ngôn ngữ của người dùng (Tiếng Việt).\n\n"
-                    f"CONTEXT (TÀI LIỆU TRÍCH XUẤT):\n{context}"
-                )
+                if "{{context}}" in base_system_prompt:
+                    # User actively provided placeholder {{context}}
+                    effective_system_prompt = base_system_prompt.replace("{{context}}", context)
+                else:
+                    # Fallback for old bots without placeholder (append to end)
+                    effective_system_prompt = (
+                        f"{base_system_prompt}\n\n"
+                        "CÁCH TRẢ LỜI (QUY TẮC BẮT BUỘC):\n"
+                        "1. Sử dụng DUY NHẤT ngữ cảnh được cung cấp dưới đây để trả lời.\n"
+                        "2. Nếu thông tin không có trong ngữ cảnh, hãy nói rằng bạn không biết, KHÔNG tự chế câu trả lời.\n"
+                        "3. TRÍCH DẪN NGUỒN: Sử dụng ký hiệu [[n]] (ví dụ [[1]], [[2]]) ngay sau câu hoặc cụm từ trích dẫn thông tin từ Segment tương ứng.\n"
+                        "4. Luôn trả lời bằng ngôn ngữ của người dùng (Tiếng Việt).\n\n"
+                        f"CONTEXT (TÀI LIỆU TRÍCH XUẤT):\n{context}"
+                    )
                 user_content = query
             else:
-                effective_system_prompt = base_system_prompt
+                # If no context is found, clear the placeholder from prompt
+                effective_system_prompt = base_system_prompt.replace("{{context}}", "")
                 user_content = query
 
             messages = [
@@ -941,94 +946,31 @@ Answer:"""
         session_id = session_id or str(uuid.uuid4())
         bot_config = bot_config or {}
         
-        # --- STREAMING THINKING PROCESS START ---
-        agent_logs = []
-        
-        # 1. Analyzing Query
-        log_analyzing = {
-            "step": "Analyzing Query",
-            "description": f"Rewriting question for optimal search: '{query[:40]}...'",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        agent_logs.append(log_analyzing)
-        yield {"type": "log", "log": log_analyzing}
-        
-        search_query = await self._rewrite_query(query)
-        
-        # 2. Vectorization
-        log_vectorizing = {
-            "step": "Vectorization",
-            "description": "Generating embeddings for the optimized search query.",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        agent_logs.append(log_vectorizing)
-        yield {"type": "log", "log": log_vectorizing}
-        
-        query_embedding = self._embed_with_retry(search_query)
-        
-        # 3. Knowledge Retrieval
-        log_retrieval = {
-            "step": "Knowledge Retrieval",
-            "description": "Searching knowledge base for relevant context.",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        agent_logs.append(log_retrieval)
-        yield {"type": "log", "log": log_retrieval}
-        
-        search_results = await asyncio.to_thread(
-            self._hybrid_search,
-            bot_id=bot_id,
-            query=search_query,
-            query_embedding=query_embedding,
-            top_k=top_k
-        )
-        
-        # 4. Filter & Rerank (Internal logic, yield log if significant)
-        similarity_threshold = bot_config.get("similarity_threshold", 0.15)
-        filtered_results = [
-            r for r in search_results 
-            if r.get("hybrid_score", 0) >= similarity_threshold
-        ]
-        if not filtered_results and search_results:
-            filtered_results = search_results
-
-        # Prepare context and sources
-        sources = []
-        context_docs = []
-        for idx, result in enumerate(filtered_results):
-            doc_id = idx + 1
-            result["highlights"] = self._extract_smart_highlights(search_query, result.get("text", ""))
-            context_docs.append(f"[[{doc_id}]] Source: {result.get('source', 'Unknown')}\n{result['text']}")
-            source_name = result.get("source", "Unknown")
-            if source_name not in sources:
-                sources.append(source_name)
-        
-        context = "\n---\n".join(context_docs)
-        reasoning = f"I've analyzed {len(filtered_results)} segments from {len(sources)} documents."
-        if filtered_results:
-            top_score = filtered_results[0].get('hybrid_score', 0)
-            reasoning += f" Top relevance: {top_score:.2f}."
+        prep = await self._prepare_chat_context(bot_id, query, bot_config, top_k)
+        search_query = prep["search_query"]
+        filtered_results = prep["filtered_results"]
+        agent_logs = prep["agent_logs"]
+        context = prep["context"]
+        sources = prep["sources"]
+        reasoning = prep["reasoning"]
 
         # Yield metadata (FINAL context results)
         yield {
             "type": "metadata",
             "sources": sources,
             "retrieved_chunks": filtered_results,
-            "agent_logs": agent_logs, # Full list for final state
+            "agent_logs": agent_logs,
             "reasoning": reasoning,
             "search_query": search_query,
             "session_id": session_id
         }
 
         # 5. Answer Synthesis Log
-        log_synthesis = {
+        agent_logs.append({
             "step": "Answer Synthesis",
             "description": f"Generating grounded response using {len(filtered_results)} retrieved segments.",
             "timestamp": datetime.utcnow().isoformat()
-        }
-        agent_logs.append(log_synthesis)
-        yield {"type": "log", "log": log_synthesis}
-        # --- STREAMING THINKING PROCESS END ---
+        })
 
         # Setup LLM Generation
         base_system_prompt = bot_config.get("system_prompt", "You are a helpful assistant.")
