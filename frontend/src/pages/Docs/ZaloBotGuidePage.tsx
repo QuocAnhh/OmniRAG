@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { LogoIcon } from '../../components/ui/LogoIcon';
 
 export default function ZaloBotGuidePage() {
     const [activeSection, setActiveSection] = useState('intro');
@@ -41,7 +42,7 @@ export default function ZaloBotGuidePage() {
                     <div className="flex items-center gap-3">
                         <Link to="/" className="flex items-center gap-2">
                             <div className="size-8 rounded-lg overflow-hidden border border-border bg-card flex items-center justify-center shadow-lg shadow-primary/10">
-                                <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
+                                <LogoIcon className="w-full h-full" />
                             </div>
                             <span className="text-lg font-bold tracking-tight text-foreground">OmniRAG Docs</span>
                         </Link>

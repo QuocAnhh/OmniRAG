@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { STORAGE_KEYS } from '../utils/constants';
+import { LogoIcon } from '../components/ui/LogoIcon';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -81,7 +82,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md p-8 m-4 bg-card border border-border/50 rounded-3xl shadow-xl shadow-primary/5 relative z-10">
         <div className="text-center mb-8">
           <div className="size-16 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/10">
-            <img src="/logo.png" alt="OmniRAG Logo" className="w-full h-full object-cover" />
+            <LogoIcon className="w-full h-full" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
             {isLogin ? 'Welcome back' : 'Join our garden'}

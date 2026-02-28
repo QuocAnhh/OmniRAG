@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useSecurity } from './hooks/useSecurity';
 import { Toaster } from 'react-hot-toast';
+import { LogoIcon } from './components/ui/LogoIcon';
 
 // Lazy load all route components for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -22,8 +23,8 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen ops-root flex items-center justify-center">
       <div className="text-center">
-        <div className="size-20 mx-auto mb-6 rounded-xl overflow-hidden border border-[var(--color-ops-border)] bg-[var(--color-ops-panel)]">
-          <img src="/logo.png" alt="Loading OmniRAG" className="w-full h-full object-cover" />
+        <div className="size-20 mx-auto mb-6 rounded-xl overflow-hidden border border-[var(--color-ops-border)] bg-[var(--color-ops-panel)] p-3">
+          <LogoIcon className="w-full h-full" />
         </div>
         <div className="flex justify-center gap-2 mb-4">
           {[...Array(3)].map((_, i) => (

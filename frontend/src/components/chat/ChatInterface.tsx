@@ -31,11 +31,11 @@ export const ChatMessage = React.memo(function ChatMessage({ message, onFeedback
     return (
         <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'} group animate-in fade-in slide-in-from-bottom-2 duration-300`}>
             <div className={`flex max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
-                <div className={`flex-shrink-0 size-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-transform active:scale-90 ${isUser ? 'bg-primary text-primary-foreground' : 'bg-accent/10 text-accent-600 border border-accent/20'}`}>
+                <div className={`flex-shrink-0 size-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-transform active:scale-90 ${isUser ? 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.4)] border border-primary/50' : 'bg-background/40 backdrop-blur-md text-primary border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]'}`}>
                     {isUser ? <span className="material-symbols-outlined text-[16px]">person</span> : <span className="material-symbols-outlined text-[16px]">smart_toy</span>}
                 </div>
                 <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                    <div className={`relative px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed shadow-sm transition-all ${isUser ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border border-border text-foreground rounded-bl-none hover:border-primary/30'}`}>
+                    <div className={`relative px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed transition-all ${isUser ? 'bg-primary/80 backdrop-blur-md text-primary-foreground rounded-br-none shadow-[0_0_15px_rgba(var(--primary),0.2)] border border-primary/30' : 'bg-background/40 backdrop-blur-xl border border-white/10 text-foreground rounded-bl-none hover:border-primary/50 shadow-lg'}`}>
                         <div className="markdown-content">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
@@ -99,7 +99,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full bg-card p-2 rounded-2xl border border-border shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full bg-background/40 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-lg focus-within:border-primary/50 focus-within:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all">
             <button
                 type="button"
                 className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
@@ -132,12 +132,12 @@ export function TypingIndicator() {
     return (
         <div className="flex w-full mb-4 justify-start group animate-in fade-in duration-300">
             <div className="flex max-w-[80%] flex-row items-end gap-2">
-                <div className="flex-shrink-0 size-8 rounded-full flex items-center justify-center bg-accent/10 text-accent-600 border border-accent/20">
+                <div className="flex-shrink-0 size-8 rounded-full flex items-center justify-center bg-background/40 backdrop-blur-md text-primary border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">
                     <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                 </div>
-                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-card border border-border shadow-sm flex items-center gap-3 min-h-[44px] relative overflow-hidden">
+                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-background/40 backdrop-blur-xl border border-white/10 shadow-lg flex items-center gap-3 min-h-[44px] relative overflow-hidden">
                     {/* Background glow effect */}
-                    <div className="absolute inset-0 bg-primary/5 animate-pulse rounded-2xl"></div>
+                    <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-2xl"></div>
 
                     {/* Animated SVG */}
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-8 h-8 z-10" style={{ filter: 'drop-shadow(0 0 2px rgba(99, 102, 241, 0.4))' }}>

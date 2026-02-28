@@ -199,11 +199,14 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
 
         {/* Top Header Card */}
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-6 py-5 border-b border-border/50 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-2xl">settings</span>
+        <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative">
+          {/* Subtle background glow */}
+          <div className="absolute top-0 right-1/4 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-8 py-6 border-b border-white/5 gap-4 relative z-10">
+            <div className="flex items-center gap-5">
+              <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.2)] border border-primary/20">
+                <span className="material-symbols-outlined text-3xl">settings</span>
               </div>
               <div>
                 <div className="flex items-center gap-3">
@@ -223,7 +226,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
             {!embedded && (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => navigate(`/bots/${id}`)}
+                  onClick={() => navigate(`/bots/${id}/chat`)}
                   className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
@@ -242,15 +245,15 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
 
           {/* Connected Tabs */}
-          <div className="px-2 bg-muted/20">
-            <nav className="flex gap-2 overflow-x-auto scrollbar-hide p-2">
+          <div className="px-4 py-2 bg-black/20 relative z-10 backdrop-blur-md border-t border-white/5">
+            <nav className="flex gap-2 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${activeTab === tab.id
-                    ? 'bg-card text-primary shadow-sm ring-1 ring-border'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all duration-300 font-medium text-sm relative overflow-hidden ${activeTab === tab.id
+                    ? 'text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.15)] bg-primary/10 border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
                     }`}
                 >
                   <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
@@ -278,9 +281,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
               <div className="grid md:grid-cols-3 gap-6">
                 {/* Identity Column */}
-                <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-6 md:col-span-1 h-fit">
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary">badge</span>
+                <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 space-y-6 md:col-span-1 h-fit relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] pointer-events-none"></div>
+                  <h3 className="text-xl font-bold text-foreground flex items-center gap-3 relative z-10">
+                    <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                      <span className="material-symbols-outlined text-primary text-xl">badge</span>
+                    </div>
                     Identity
                   </h3>
 
@@ -309,9 +315,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 </div>
 
                 {/* Behavior Column */}
-                <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-6 md:col-span-2">
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                    <span className="material-symbols-outlined text-accent-600">psychology</span>
+                <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 space-y-6 md:col-span-2 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-accent-600/5 rounded-full blur-[60px] pointer-events-none"></div>
+                  <h3 className="text-xl font-bold text-foreground flex items-center gap-3 relative z-10">
+                    <div className="p-2 rounded-lg bg-accent-600/10 border border-accent-600/20">
+                      <span className="material-symbols-outlined text-accent-600 text-xl">psychology</span>
+                    </div>
                     Behavior Engine
                   </h3>
 
@@ -416,7 +425,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
-                    <div className="p-4 bg-muted/20 rounded-xl border border-border/50 grid sm:grid-cols-2 gap-6 mt-2">
+                    <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <label className="text-sm font-semibold text-foreground">Temperature</label>
@@ -446,7 +455,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           step="100"
                           value={formData.max_tokens}
                           onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
+                          className="w-full px-4 py-2.5 rounded-xl bg-background border border-white/10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
                         />
                       </div>
                     </div>
@@ -458,7 +467,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 border border-primary/50"
                 >
                   {loading ? 'Saving...' : 'Save Configuration'}
                 </button>
@@ -469,12 +478,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           {/* Knowledge Base Tab */}
           {activeTab === 'knowledge' && id && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">Knowledge Base Registry</h3>
-                  <p className="text-sm text-muted-foreground">Manage the documents this agent uses for context.</p>
+                  <h3 className="text-xl font-bold text-foreground">Knowledge Base Registry</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Manage the documents this agent uses for context.</p>
                 </div>
-                <div className="text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg border border-border">
+                <div className="text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 shadow-[inset_0_0_15px_rgba(var(--primary),0.1)]">
                   Supported: PDF, DOCX, TXT • Max: 25MB
                 </div>
               </div>
@@ -585,10 +594,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </label>
 
               {/* Documents Table */}
-              <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-border bg-muted/20 flex justify-between items-center">
-                  <h4 className="text-sm font-bold text-foreground">Indexed Documents</h4>
-                  <span className="bg-background text-xs font-semibold px-2 py-0.5 rounded border border-border">{documents.length} files</span>
+              <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="px-8 py-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                  <h4 className="text-base font-bold text-foreground">Indexed Documents</h4>
+                  <span className="bg-background/50 backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-lg border border-white/10 shadow-inner">{documents.length} files</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">

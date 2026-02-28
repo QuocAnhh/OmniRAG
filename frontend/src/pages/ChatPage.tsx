@@ -259,8 +259,8 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
 
     if (loading) {
         return (
-            <div className="h-screen w-full flex items-center justify-center bg-background">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="h-screen w-full flex items-center justify-center bg-transparent">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]"></div>
             </div>
         );
     }
@@ -279,8 +279,8 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             rightPanel={
                 selectedEvidence ? (
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <div className="flex items-center gap-2 mb-4 p-3 bg-background/20 backdrop-blur-md rounded-xl border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]">
+                            <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]">
                                 <span className="material-symbols-outlined text-[20px]">find_in_page</span>
                             </div>
                             <span className="text-xs font-bold uppercase tracking-wider text-primary">Retrieved Segments</span>
@@ -288,7 +288,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
 
                         {/* Reasoning Summary if available */}
                         {messages[messages.length - 1]?.reasoning && selectedEvidence === messages[messages.length - 1]?.retrieved_chunks && (
-                            <div className="p-4 bg-muted/20 border border-dashed border-border rounded-2xl mb-6">
+                            <div className="p-4 bg-background/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6 shadow-lg shadow-black/20">
                                 <div className="flex items-center gap-2 mb-2 text-primary">
                                     <span className="material-symbols-outlined text-[18px]">psychology</span>
                                     <span className="text-[10px] font-bold uppercase tracking-widest">Reasoning Summary</span>
@@ -300,7 +300,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                         )}
 
                         {selectedEvidence.map((chunk: any, idx: number) => (
-                            <div key={idx} className="group p-4 bg-card border border-border rounded-2xl hover:border-primary/50 transition-all shadow-sm">
+                            <div key={idx} className="group p-4 bg-background/30 backdrop-blur-xl border border-white/10 rounded-2xl hover:border-primary/50 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(var(--primary),0.15)]">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <div className="size-5 rounded-md bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-[10px]">
@@ -352,7 +352,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                     <div ref={messagesEndRef} className="h-4" />
                 </div>
                 {/* Input Area */}
-                <div className="p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="p-4 bg-transparent mt-auto relative z-20">
                     <ChatInput onSend={handleSendMessage} disabled={isTyping} placeholder={`Message ${bot?.name || 'Agent'}...`} />
                     <div className="text-center mt-2">
                         <p className="text-[10px] text-muted-foreground">

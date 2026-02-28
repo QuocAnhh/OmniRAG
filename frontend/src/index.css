@@ -8,17 +8,17 @@
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
-    --color-primary-50: var(--color-primary-50);
-    --color-primary-100: var(--color-primary-100);
-    --color-primary-200: var(--color-primary-200);
-    --color-primary-300: var(--color-primary-300);
-    --color-primary-400: var(--color-primary-400);
-    --color-primary-500: var(--color-primary-500);
-    --color-primary-600: var(--color-primary-600);
-    --color-primary-700: var(--color-primary-700);
-    --color-primary-800: var(--color-primary-800);
-    --color-primary-900: var(--color-primary-900);
-    --color-primary-950: var(--color-primary-950);
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    --color-primary-950: #172554;
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
 
@@ -30,7 +30,6 @@
 
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
-    --color-accent-500: var(--color-accent-500);
 
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
@@ -41,18 +40,6 @@
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
 
-    /* Semantic - Earthen Theme */
-    --color-success-50: #f0fdfa;
-    --color-success-600: #0d9488;
-    --color-success-900: #134e4a;
-    --color-success-400: #2dd4bf;
-    --color-success-500: #14b8a6;
-    --color-error-50: #fef2f2;
-    --color-error-600: #dc2626;
-    --color-error-900: #7f1d1d;
-    --color-error-400: #f87171;
-    --color-error-500: #ef4444;
-
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
@@ -61,33 +48,11 @@
     --animate-accordion-up: accordion-up 0.2s ease-out;
     --animate-float: float 3s ease-in-out infinite;
 
-    @keyframes accordion-down {
-        from {
-            height: 0
-        }
-
-        to {
-            height: var(--radix-accordion-content-height)
-        }
-    }
-
-    @keyframes accordion-up {
-        from {
-            height: var(--radix-accordion-content-height)
-        }
-
-        to {
-            height: 0
-        }
-    }
-
     @keyframes float {
-
         0%,
         100% {
             transform: translateY(0)
         }
-
         50% {
             transform: translateY(-5px)
         }
@@ -102,116 +67,36 @@
 
 @layer base {
     :root {
-        /* 
-      Theme: Earthen Elegance / Organic Serenity
-      Keywords: Harmonious, Gentle, Unique, Not "AI"
-      Primary: Deep Eucalyptus Green
-      Accent: Warm Sand/Clay
-      Background: Warm White / Charcoal
-    */
+        /* Premium Tech / Enterprise AI - Dark Mode Native */
+        --background: #020205;       /* Deep space black */
+        --foreground: #f8fafc;       /* Slate 50 */
 
-        /* Primary - Deep Eucalyptus */
-        --color-primary-50: #f2f9f5;
-        --color-primary-100: #e2f2e8;
-        --color-primary-200: #c5e4d4;
-        --color-primary-300: #9bccba;
-        --color-primary-400: #6cae99;
-        --color-primary-500: #499178;
-        /* Main */
-        --color-primary-600: #387360;
-        --color-primary-700: #2f5c4d;
-        --color-primary-800: #284a3f;
-        --color-primary-900: #213d35;
-        --color-primary-950: #11221e;
+        --card: #0A0A0F;             /* Slightly lighter dark */
+        --card-foreground: #f8fafc;
 
-        /* Accent - Warm Sand/Clay */
-        --color-accent-50: #fdf8f3;
-        --color-accent-100: #faefe5;
-        --color-accent-200: #f4dec5;
-        --color-accent-300: #eec59a;
-        --color-accent-400: #e6a769;
-        --color-accent-500: #d4a373;
-        /* Main */
-        --color-accent-600: #b08d55;
-        --color-accent-700: #8c6e43;
-        --color-accent-800: #735a39;
-        --color-accent-900: #5e4a31;
-        --color-accent-950: #35281a;
+        --popover: #06060A;
+        --popover-foreground: #f8fafc;
 
-        /* Neutrals - Warm Stone */
-        --color-gray-50: #fafaf9;
-        --color-gray-100: #f5f5f4;
-        --color-gray-200: #e7e5e4;
-        --color-gray-300: #d6d3d1;
-        --color-gray-400: #a8a29e;
-        --color-gray-500: #78716c;
-        --color-gray-600: #57534e;
-        --color-gray-700: #44403c;
-        --color-gray-800: #292524;
-        --color-gray-900: #1c1917;
-        --color-gray-950: #0c0a09;
-
-        /* Semantic */
-        --background: #fafaf9;
-        --foreground: #1c1917;
-
-        --card: #ffffff;
-        --card-foreground: #1c1917;
-
-        --popover: #ffffff;
-        --popover-foreground: #1c1917;
-
-        --primary: #499178;
+        --primary: #3b82f6;          /* Blue 500 */
         --primary-foreground: #ffffff;
 
-        --secondary: #f5f5f4;
-        --secondary-foreground: #1c1917;
+        --secondary: #1e293b;        /* Slate 800 */
+        --secondary-foreground: #f8fafc;
 
-        --muted: #f5f5f4;
-        --muted-foreground: #78716c;
+        --muted: #0f172a;            /* Slate 900 */
+        --muted-foreground: #94a3b8; /* Slate 400 */
 
-        --accent: #f5f5f4;
-        --accent-foreground: #1c1917;
+        --accent: #1e293b;           /* Slate 800 */
+        --accent-foreground: #f8fafc;
 
-        --destructive: #ef4444;
+        --destructive: #e11d48;      /* Rose 600 */
         --destructive-foreground: #ffffff;
 
-        --border: #e7e5e4;
-        --input: #e7e5e4;
-        --ring: #499178;
+        --border: rgba(255, 255, 255, 0.05); /* Extremely subtle white border */
+        --input: rgba(255, 255, 255, 0.05);
+        --ring: rgba(59, 130, 246, 0.5);   /* Blue 500 w/ opacity */
 
         --radius: 0.75rem;
-    }
-
-    .dark {
-        /* Dark Mode - Warm Charcoal */
-        --background: #1c1917;
-        --foreground: #fafaf9;
-
-        --card: #292524;
-        --card-foreground: #fafaf9;
-
-        --popover: #292524;
-        --popover-foreground: #fafaf9;
-
-        --primary: #499178;
-        --primary-foreground: #ffffff;
-
-        --secondary: #292524;
-        --secondary-foreground: #fafaf9;
-
-        --muted: #292524;
-        --muted-foreground: #a8a29e;
-
-        --accent: #292524;
-        --accent-foreground: #fafaf9;
-
-        --destructive: #7f1d1d;
-        --destructive-foreground: #fafaf9;
-
-        --border: #292524;
-        --input: #292524;
-        --ring: #387360;
     }
 }
 
@@ -224,10 +109,12 @@
         background-color: var(--background);
         color: var(--foreground);
         font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        background-image: radial-gradient(circle at top center, rgba(30, 58, 138, 0.05), transparent 80%);
+        background-attachment: fixed;
     }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Sleek Dark */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -238,18 +125,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: var(--color-gray-300);
+    background-color: rgba(255, 255, 255, 0.1);
     border-radius: 9999px;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-    background-color: var(--color-gray-700);
-}
-
 ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-gray-400);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-gray-600);
+    background-color: rgba(255, 255, 255, 0.2);
 }
