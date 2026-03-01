@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatLayout from '../components/Layout/ChatLayout';
 import { ChatInput, ChatMessage, TypingIndicator } from '../components/chat/ChatInterface';
+import KnowledgeGraphPanel from '../components/chat/KnowledgeGraphPanel';
 import { chatApi } from '../api/chat';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
@@ -92,13 +93,18 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
     }, [id]);
 
     // Handle Session history loading
+    // This ref tracks whether we should skip fetching (e.g., we just created this session locally)
+    const skipNextHistoryFetch = useRef(false);
+
     useEffect(() => {
         const loadHistory = async () => {
             if (!id || !sessionId) return;
 
-            // If we have messages, we probably just started this session locally
-            // or we're already viewing it. Only fetch if we have no messages.
-            if (messages.length > 1) return;
+            // Skip fetch if we just created this session (optimistic add)
+            if (skipNextHistoryFetch.current) {
+                skipNextHistoryFetch.current = false;
+                return;
+            }
 
             try {
                 const history = await chatApi.getHistory(id, sessionId);
@@ -109,6 +115,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                     if (lastAiMsg) {
                         setSelectedEvidence(lastAiMsg.retrieved_chunks);
                     }
+                } else {
+                    // Session exists but no history yet (edge case)
+                    setMessages(bot?.config?.welcome_message ? [{
+                        id: 'welcome',
+                        role: 'assistant',
+                        content: bot.config.welcome_message,
+                        timestamp: new Date().toISOString()
+                    }] : []);
                 }
             } catch (error) {
                 console.error('Failed to load session history:', error);
@@ -197,7 +211,18 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             activeSessionId = typeof crypto.randomUUID === 'function'
                 ? crypto.randomUUID()
                 : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            
+            // Mark to skip the next history fetch since we're creating this session now
+            skipNextHistoryFetch.current = true;
             setSessionId(activeSessionId);
+            
+            // Optimistically add the new session to the sidebar immediately
+            setSessions(prev => [{
+                id: activeSessionId,
+                title: text.length > 50 ? text.substring(0, 50) + '...' : text,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }, ...prev]);
         }
 
         setMessages(prev => [...prev, userMsg, initialAiMsg]);
@@ -214,14 +239,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 session_id: activeSessionId,
                 history: historyForStream
             }, (chunk) => {
+                if (chunk.type === 'metadata' && chunk.retrieved_chunks && chunk.retrieved_chunks.length > 0) {
+                    setSelectedEvidence(chunk.retrieved_chunks);
+                }
+                
                 setMessages(prev => prev.map(msg => {
                     if (msg.id !== aiMsgId) return msg;
 
                     if (chunk.type === 'metadata') {
-                        // Update sources, chunks, and logs from metadata
-                        if (chunk.retrieved_chunks && chunk.retrieved_chunks.length > 0) {
-                            setSelectedEvidence(chunk.retrieved_chunks);
-                        }
                         return {
                             ...msg,
                             sources: chunk.sources,
@@ -253,6 +278,12 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             // Refresh sessions list after message (to show new session title)
             if (id) {
                 chatApi.getSessions(id).then(setSessions).catch(console.error);
+                
+                // Also refresh again after a delay to pick up LLM-generated title
+                // (backend generates a better title asynchronously via _summarize_session_title)
+                setTimeout(() => {
+                    chatApi.getSessions(id).then(setSessions).catch(console.error);
+                }, 3000);
             }
         }
     };
@@ -278,50 +309,8 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             botModel={bot?.config?.llm_model || bot?.config?.model}
             rightPanel={
                 selectedEvidence ? (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-4 p-3 bg-background/20 backdrop-blur-md rounded-xl border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]">
-                            <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]">
-                                <span className="material-symbols-outlined text-[20px]">find_in_page</span>
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wider text-primary">Retrieved Segments</span>
-                        </div>
-
-                        {/* Reasoning Summary if available */}
-                        {messages[messages.length - 1]?.reasoning && selectedEvidence === messages[messages.length - 1]?.retrieved_chunks && (
-                            <div className="p-4 bg-background/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6 shadow-lg shadow-black/20">
-                                <div className="flex items-center gap-2 mb-2 text-primary">
-                                    <span className="material-symbols-outlined text-[18px]">psychology</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Reasoning Summary</span>
-                                </div>
-                                <p className="text-[11px] leading-relaxed text-muted-foreground italic">
-                                    "{messages[messages.length - 1].reasoning}"
-                                </p>
-                            </div>
-                        )}
-
-                        {selectedEvidence.map((chunk: any, idx: number) => (
-                            <div key={idx} className="group p-4 bg-background/30 backdrop-blur-xl border border-white/10 rounded-2xl hover:border-primary/50 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(var(--primary),0.15)]">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <div className="size-5 rounded-md bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-[10px]">
-                                            {idx + 1}
-                                        </div>
-                                        <span className="text-[11px] font-bold truncate text-foreground">{chunk.source}</span>
-                                    </div>
-                                    <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground whitespace-nowrap">
-                                        {(chunk.hybrid_score || chunk.score || 0).toFixed(3)}
-                                    </span>
-                                </div>
-                                <div className="text-[12px] leading-relaxed text-muted-foreground line-clamp-4 group-hover:line-clamp-none transition-all cursor-default border-l-2 border-primary/20 pl-3">
-                                    <HighlightedText text={chunk.text} highlights={chunk.highlights} />
-                                </div>
-                                <div className="mt-4 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-                                        Open PDF <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
+                        <KnowledgeGraphPanel chunks={selectedEvidence} />
                     </div>
                 ) : null
             }

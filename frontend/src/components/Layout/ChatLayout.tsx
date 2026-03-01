@@ -238,18 +238,27 @@ export default function ChatLayout({
                                     onResize={setRightSize}
                                     className="bg-background/40 backdrop-blur-2xl border-l border-white/5"
                                 >
-                                    <div className="h-full flex flex-col">
-                                        <div className="h-14 border-b border-white/5 flex items-center px-4 bg-background/30 backdrop-blur-md">
-                                            <span className="font-semibold text-sm">Evidence & Context</span>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                            {rightPanel || (
-                                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-60">
-                                                    <Search className="h-12 w-12 mb-2 stroke-1" />
-                                                    <p className="text-sm">Select a citation to view source</p>
+                                    <div className="h-full flex flex-col relative overflow-hidden bg-background/30">
+                                        {rightPanel ? (
+                                            <div className="absolute inset-0 z-0 flex flex-col">
+                                                {rightPanel}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="h-14 border-b border-white/5 flex items-center px-4 bg-background/30 backdrop-blur-md relative z-10">
+                                                    <span className="font-semibold text-sm text-primary uppercase tracking-widest text-[11px]">Knowledge Graph</span>
                                                 </div>
-                                            )}
-                                        </div>
+                                                <div className="flex-1 bg-grid-white/[0.02] flex items-center justify-center p-4 relative z-10">
+                                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 text-center">
+                                                        <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                                                            <Search className="h-8 w-8 text-primary" strokeWidth={1.5} />
+                                                        </div>
+                                                        <p className="font-medium text-foreground tracking-wide">Analysis Engine Standby</p>
+                                                        <p className="text-xs max-w-[200px] mt-2 leading-relaxed">System will map documents when a query is processed.</p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </ResizablePanel>
                             </>

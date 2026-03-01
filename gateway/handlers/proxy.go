@@ -73,11 +73,18 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 	isStreamingEndpoint := strings.Contains(path, "/chat-stream") ||
 		strings.Contains(path, "stream")
 
+	// Dynamic endpoints that should NEVER be cached (they change with every request)
+	isDynamicEndpoint := strings.Contains(path, "/sessions") ||
+		strings.Contains(path, "/history") ||
+		strings.Contains(path, "/memory") ||
+		strings.Contains(path, "/analytics")
+
 	// Check if client requests cache bypass
 	bypassCache := c.GetHeader("Cache-Control") == "no-cache" || c.GetHeader("Pragma") == "no-cache" || strings.Contains(c.GetHeader("Cache-Control"), "no-cache")
 
 	// FIX #3: Cache only GET requests, and include Authorization to prevent user data leaks
-	if method == "GET" && !isStreamingEndpoint && !bypassCache {
+	// Also skip cache for dynamic endpoints that change frequently
+	if method == "GET" && !isStreamingEndpoint && !isDynamicEndpoint && !bypassCache {
 		// FIX #3: Include auth token in cache key so each user gets their own cache
 		authHeader := c.GetHeader("Authorization")
 		cacheKey := h.generateCacheKey(path, string(bodyBytes), authHeader)
@@ -144,8 +151,8 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 		return
 	}
 
-	// Cache only successful GET responses, with user-aware cache key
-	if resp.StatusCode == http.StatusOK && method == "GET" {
+	// Cache only successful GET responses (exclude dynamic/streaming endpoints)
+	if resp.StatusCode == http.StatusOK && method == "GET" && !isDynamicEndpoint {
 		var responseData interface{}
 		if err := json.Unmarshal(respBody, &responseData); err == nil {
 			authHeader := c.GetHeader("Authorization")

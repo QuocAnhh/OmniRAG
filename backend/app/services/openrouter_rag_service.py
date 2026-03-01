@@ -59,6 +59,7 @@ from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from app.core.config import settings
 from app.db.mongodb import get_mongodb
 from app.services.openrouter_service import get_openrouter_service
+from app.services.memory_service import memory_service
 import tempfile
 import shutil
 import hashlib
@@ -285,15 +286,16 @@ class OpenRouterRAGService:
         initial_limit = top_k * 5 if reranker else top_k * 2
         
         # 1. Vector search (Semantic retrieval)
-        vector_results = self.qdrant_client.search(
+        vector_response = self.qdrant_client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             query_filter=Filter(
                 must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
             ),
             limit=initial_limit,
             with_payload=True
         )
+        vector_results = vector_response.points
         
         candidates = []
         for result in vector_results:
@@ -686,7 +688,20 @@ Answer:"""
         agent_logs = prep["agent_logs"]
         context = prep["context"]
         sources = prep["sources"]
-        
+
+        # ── Memory: Retrieve user memories before generation ──────────────
+        user_id = bot_config.get("user_id")
+        enable_memory = bot_config.get("enable_memory", True)
+        user_memories: list = []
+        if enable_memory and user_id:
+            user_memories = await memory_service.search(
+                query=query,
+                user_id=user_id,
+                bot_id=bot_id,
+                top_k=getattr(settings, "MEM0_TOP_K", 5),
+            )
+        # ──────────────────────────────────────────────────────────────────
+
         try:
             # 7. LLM Generation
             agent_logs.append({
@@ -720,6 +735,12 @@ Answer:"""
                 # If no context is found, clear the placeholder from prompt
                 effective_system_prompt = base_system_prompt.replace("{{context}}", "")
                 user_content = query
+
+            # ── Memory: Prepend user memory block to the system prompt ────────
+            memory_block = memory_service.build_memory_prompt_block(user_memories)
+            if memory_block:
+                effective_system_prompt = memory_block + effective_system_prompt
+            # ─────────────────────────────────────────────────────────────────
 
             messages = [
                 {"role": "system", "content": effective_system_prompt},
@@ -762,9 +783,23 @@ Answer:"""
                 "from_cache": False,
                 "message_id": str(uuid.uuid4()),
                 "search_query": search_query,
-                "system_prompt": effective_system_prompt
+                "system_prompt": effective_system_prompt,
+                "memories_used": user_memories,
             }
             
+            # ── Memory: Save this conversation turn (non-blocking) ────────
+            if enable_memory and user_id:
+                asyncio.create_task(memory_service.add(
+                    messages=[
+                        {"role": "user", "content": query},
+                        {"role": "assistant", "content": response_text},
+                    ],
+                    user_id=user_id,
+                    bot_id=bot_id,
+                    session_id=session_id,
+                ))
+            # ─────────────────────────────────────────────────────────────
+
             # 9. Cache response
             if use_cache and self.redis_client:
                 try:
@@ -954,6 +989,19 @@ Answer:"""
         sources = prep["sources"]
         reasoning = prep["reasoning"]
 
+        # ── Memory: Retrieve user memories before generation ──────────────
+        user_id = bot_config.get("user_id")
+        enable_memory = bot_config.get("enable_memory", True)
+        user_memories: list = []
+        if enable_memory and user_id:
+            user_memories = await memory_service.search(
+                query=query,
+                user_id=user_id,
+                bot_id=bot_id,
+                top_k=getattr(settings, "MEM0_TOP_K", 5),
+            )
+        # ─────────────────────────────────────────────────────────────────
+
         # Yield metadata (FINAL context results)
         yield {
             "type": "metadata",
@@ -993,6 +1041,12 @@ Answer:"""
             effective_system_prompt = base_system_prompt
             user_content = query
 
+        # ── Memory: Prepend user memory block to the system prompt ────────
+        memory_block = memory_service.build_memory_prompt_block(user_memories)
+        if memory_block:
+            effective_system_prompt = memory_block + effective_system_prompt
+        # ─────────────────────────────────────────────────────────────
+
         messages = [
             {"role": "system", "content": effective_system_prompt},
             {"role": "user", "content": user_content}
@@ -1003,41 +1057,89 @@ Answer:"""
         # Streaming from OpenRouter
         full_response = ""
         try:
-            # We use asyncio.to_thread for the sync generator from OpenAI SDK
-            stream = await asyncio.to_thread(
-                self.openrouter.chat_completion,
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True
-            )
+            import queue
+            q = queue.Queue()
             
-            for chunk in stream:
-                if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        full_response += content
-                        yield {"type": "content", "content": content}
+            def stream_worker():
+                try:
+                    stream_obj = self.openrouter.chat_completion(
+                        messages=messages,
+                        model=model,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        stream=True
+                    )
+                    
+                    for chk in stream_obj:
+                        q.put(("chunk", chk))
+                    q.put(("done", None))
+                except Exception as e:
+                    logger.error(f"Stream worker error: {e}")
+                    q.put(("error", e))
+
+            # Start worker thread
+            worker_thread = asyncio.get_event_loop().run_in_executor(None, stream_worker)
             
-            # Log final conversation
-            # Log the final state correctly using local variables
-            await self._log_conversation(
-                bot_id=bot_id,
-                session_id=session_id or "default",
-                user_id=bot_config.get("user_id"),
-                user_message=query,
-                response=full_response,
-                sources=sources,
-                response_time=time.time() - start_time,
-                model=model,
-                usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-                retrieved_chunks=filtered_results,
-                reasoning=reasoning,
-                search_query=search_query,
-                agent_logs=agent_logs
-            )
-            
+            chunk_count = 0
+            while True:
+                # Poll queue safely
+                try:
+                    item_type, item_data = await asyncio.to_thread(q.get)
+                except Exception as e:
+                    break
+                    
+                if item_type == "done":
+                    break
+                elif item_type == "error":
+                    break
+                elif item_type == "chunk":
+                    chunk_count += 1
+                    if getattr(item_data, "choices", None) and len(item_data.choices) > 0:
+                        delta = getattr(item_data.choices[0], "delta", None)
+                        if delta and getattr(delta, "content", None):
+                            content = delta.content
+                            full_response += content
+                            yield {"type": "content", "content": content}
+                            
+            logger.info(f"Finished streaming {chunk_count} chunks. Full response length: {len(full_response)}")
+            if len(full_response) == 0:
+                logger.warning("Warning: Generated response is empty!")
+
+            # Log conversation BEFORE yielding "done" — this is critical!
+            # The generator may be closed by StreamingResponse after the last yield,
+            # so we must do all post-processing BEFORE that final yield.
+            try:
+                logger.info(f"[STREAM] Logging conversation for session={session_id}")
+                await self._log_conversation(
+                    bot_id=bot_id,
+                    session_id=session_id or "default",
+                    user_id=bot_config.get("user_id"),
+                    user_message=query,
+                    response=full_response,
+                    sources=sources,
+                    response_time=time.time() - start_time,
+                    model=model,
+                    usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    retrieved_chunks=filtered_results,
+                    reasoning=reasoning,
+                    search_query=search_query,
+                    agent_logs=agent_logs
+                )
+                logger.info(f"[STREAM] Successfully logged conversation for session={session_id}")
+            except Exception as log_err:
+                logger.error(f"[STREAM] Failed to log conversation: {log_err}", exc_info=True)
+
+            # Memory saving (non-blocking)
+            if enable_memory and user_id and full_response:
+                asyncio.create_task(memory_service.add(
+                    messages=[
+                        {"role": "user", "content": query},
+                        {"role": "assistant", "content": full_response},
+                    ],
+                    user_id=user_id,
+                    bot_id=bot_id,
+                ))
+
             yield {"type": "done"}
             
         except Exception as e:
@@ -1089,33 +1191,28 @@ Answer:"""
             
             await conversations_collection.insert_one(conversation_doc)
             
-            # 2. Update or Create session
-            # We want to create the session record if it doesn't exist
-            # And potentially update the title if it's the first message
-            session = await sessions_collection.find_one({"session_id": session_id})
+            # 2. Upsert session (atomic operation to prevent duplicate sessions)
+            title = user_message[:50] + ("..." if len(user_message) > 50 else "")
             
-            if not session:
-                # First message in this session!
-                title = user_message[:50] + ("..." if len(user_message) > 50 else "")
-                
-                await sessions_collection.insert_one({
-                    "session_id": session_id,
-                    "bot_id": bot_id,
-                    "user_id": user_id,
-                    "title": title,
-                    "created_at": now,
-                    "updated_at": now
-                })
+            result = await sessions_collection.update_one(
+                {"session_id": session_id, "bot_id": bot_id},
+                {
+                    "$set": {"updated_at": now},
+                    "$setOnInsert": {
+                        "session_id": session_id,
+                        "bot_id": bot_id,
+                        "user_id": user_id,
+                        "title": title,
+                        "created_at": now,
+                    }
+                },
+                upsert=True
+            )
+            
+            if result.upserted_id:
+                # This was a new session — generate a better title
                 logger.info(f"Created new session: {session_id} with title: {title}")
-                
-                # Async: Try to generate a better title using LLM
                 asyncio.create_task(self._summarize_session_title(session_id, user_message))
-            else:
-                # Existing session, just update last activity
-                await sessions_collection.update_one(
-                    {"session_id": session_id},
-                    {"$set": {"updated_at": now}}
-                )
             
             logger.debug(f"Conversation logged: session_id={session_id}")
             
@@ -1123,10 +1220,10 @@ Answer:"""
             logger.error(f"Error logging conversation: {e}")
 
     async def _summarize_session_title(self, session_id: str, first_message: str):
-        """Generate a short (3-5 words) title from the first message."""
+        """Generate a short (3-5 words) title from the first message in Vietnamese."""
         try:
             prompt = [
-                {"role": "system", "content": "You are a helpful assistant. Create a very short title (max 5 words) for a chat conversation starting with the user message below. Output ONLY the title, no quotes or prefix. Language should match the user message."},
+                {"role": "system", "content": "You are a helpful assistant. Create a very short title (max 5 words) for a chat conversation starting with the user message below. Output ONLY the title, no quotes or prefix. The title MUST be in Vietnamese (Tiếng Việt)."},
                 {"role": "user", "content": first_message}
             ]
             response = await asyncio.to_thread(

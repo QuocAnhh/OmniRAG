@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatLayout from '../components/Layout/ChatLayout';
 import { ChatInput, ChatMessage, TypingIndicator } from '../components/chat/ChatInterface';
+import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import { chatApi } from '../api/chat';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
@@ -277,50 +278,8 @@ export default function ChatPage() {
             botModel={bot?.config?.llm_model || bot?.config?.model}
             rightPanel={
                 selectedEvidence ? (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                <span className="material-symbols-outlined text-[20px]">find_in_page</span>
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wider text-primary">Retrieved Segments</span>
-                        </div>
-
-                        {/* Reasoning Summary if available */}
-                        {messages[messages.length - 1]?.reasoning && selectedEvidence === messages[messages.length - 1]?.retrieved_chunks && (
-                            <div className="p-4 bg-muted/20 border border-dashed border-border rounded-2xl mb-6">
-                                <div className="flex items-center gap-2 mb-2 text-primary">
-                                    <span className="material-symbols-outlined text-[18px]">psychology</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Reasoning Summary</span>
-                                </div>
-                                <p className="text-[11px] leading-relaxed text-muted-foreground italic">
-                                    "{messages[messages.length - 1].reasoning}"
-                                </p>
-                            </div>
-                        )}
-
-                        {selectedEvidence.map((chunk: any, idx: number) => (
-                            <div key={idx} className="group p-4 bg-card border border-border rounded-2xl hover:border-primary/50 transition-all shadow-sm">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <div className="size-5 rounded-md bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-[10px]">
-                                            {idx + 1}
-                                        </div>
-                                        <span className="text-[11px] font-bold truncate text-foreground">{chunk.source}</span>
-                                    </div>
-                                    <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground whitespace-nowrap">
-                                        {(chunk.hybrid_score || chunk.score || 0).toFixed(3)}
-                                    </span>
-                                </div>
-                                <div className="text-[12px] leading-relaxed text-muted-foreground line-clamp-4 group-hover:line-clamp-none transition-all cursor-default border-l-2 border-primary/20 pl-3">
-                                    <HighlightedText text={chunk.text} highlights={chunk.highlights} />
-                                </div>
-                                <div className="mt-4 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-                                        Open PDF <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex-1 w-full h-full min-h-[500px] border-l border-border/50 bg-background/50 backdrop-blur-3xl relative overflow-hidden rounded-r-3xl flex flex-col pt-safe">
+                        <KnowledgeGraphPanel chunks={selectedEvidence} />
                     </div>
                 ) : null
             }

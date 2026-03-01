@@ -146,7 +146,11 @@ class ZaloBotService:
             result = await self.rag_service.chat(
                 bot_id=str(bot.id),
                 query=text,
-                bot_config=bot.config or {},
+                bot_config={
+                    **(bot.config or {}),
+                    "user_id": f"zalo_{chat_id}",    # Stable per-user memory key
+                    "enable_memory": True,
+                },
                 session_id=f"zalo_bot_{chat_id}"
             )
 

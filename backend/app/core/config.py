@@ -114,6 +114,14 @@ class Settings(BaseSettings):
     FUNC_API_URL: str = ""  # The URL to call Func.vn API (Reply Zalo Message)
     FUNC_API_TOKEN: str = "" # The Token provided by Func.vn for authentication
 
+    # ============================================================
+    # Mem0 Memory Configuration
+    # ============================================================
+    MEM0_ENABLED: bool = True
+    MEM0_COLLECTION_NAME: str = "omnirag_memories"
+    MEM0_MEMORY_MODEL: str = "openai/gpt-4o-mini"     # LLM for fact extraction
+    MEM0_TOP_K: int = 5                                # Memories retrieved per query
+
     class Config:
         case_sensitive = True
         env_file = ".env"

@@ -18,6 +18,7 @@ from app.schemas.bot import Bot, BotCreate, BotUpdate
 from app.schemas.document import Document
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.openrouter_rag_service import get_openrouter_rag_service
+from app.services.memory_service import memory_service
 from app.services.storage_service import storage_service
 from app.tasks.document_tasks import process_document_task
 
@@ -329,10 +330,11 @@ async def chat_with_bot(
     return ChatResponse(
         message_id=str(uuid.uuid4()),
         response=result["response"],
-        sources=list(set(result.get("sources", []))), # deduplicate sources
+        sources=list(set(result.get("sources", []))),
         retrieved_chunks=result.get("retrieved_chunks", []),
         session_id=session_id,
-        system_prompt=result.get("system_prompt")
+        system_prompt=result.get("system_prompt"),
+        memories_used=result.get("memories_used", []),
     )
 
 @router.post("/{bot_id}/chat-stream")
@@ -498,6 +500,67 @@ class PromptGenerationRequest(BaseModel):
     name: str
     description: str
     bot_id: Optional[str] = None
+
+
+# ─── Memory Management Endpoints ────────────────────────────────────────────
+
+@router.get("/{bot_id}/memory", response_model=Dict[str, Any])
+async def get_user_memories(
+    bot_id: str,
+    user_id: str = Query(..., description="User identifier to retrieve memories for"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Get all stored Mem0 memories for a specific user+bot pair (admin/debug view)."""
+    try:
+        bot_uuid = UUID(bot_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid bot ID format")
+
+    bot = db.query(BotModel).filter(
+        BotModel.id == bot_uuid,
+        BotModel.tenant_id == current_user.tenant_id
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    memories = await memory_service.get_all(user_id=user_id, bot_id=bot_id)
+    return {
+        "user_id": user_id,
+        "bot_id": bot_id,
+        "count": len(memories),
+        "memories": memories,
+        "memory_enabled": memory_service.is_enabled,
+    }
+
+
+@router.delete("/{bot_id}/memory", response_model=Dict[str, Any])
+async def delete_user_memories(
+    bot_id: str,
+    user_id: str = Query(..., description="User identifier whose memories to delete"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Delete ALL stored memories for a user+bot pair (GDPR compliance)."""
+    try:
+        bot_uuid = UUID(bot_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid bot ID format")
+
+    bot = db.query(BotModel).filter(
+        BotModel.id == bot_uuid,
+        BotModel.tenant_id == current_user.tenant_id
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    deleted_count = await memory_service.delete_all(user_id=user_id, bot_id=bot_id)
+    return {
+        "status": "deleted",
+        "user_id": user_id,
+        "bot_id": bot_id,
+        "deleted_count": deleted_count,
+    }
 
 @router.post("/generate-prompt", response_model=Dict[str, str])
 async def generate_bot_prompt(

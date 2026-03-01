@@ -135,46 +135,16 @@ export function TypingIndicator() {
                 <div className="flex-shrink-0 size-8 rounded-full flex items-center justify-center bg-background/40 backdrop-blur-md text-primary border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">
                     <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                 </div>
-                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-background/40 backdrop-blur-xl border border-white/10 shadow-lg flex items-center gap-3 min-h-[44px] relative overflow-hidden">
+                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-background/40 backdrop-blur-xl border border-white/10 shadow-lg flex items-center gap-2 min-h-[44px] relative overflow-hidden">
                     {/* Background glow effect */}
                     <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-2xl"></div>
 
-                    {/* Animated SVG */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-8 h-8 z-10" style={{ filter: 'drop-shadow(0 0 2px rgba(99, 102, 241, 0.4))' }}>
-                        <defs>
-                            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                        </defs>
-
-                        {/* Outer rotating ring */}
-                        <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="2.5"
-                            strokeDasharray="30 15 10 15" className="text-primary/60" filter="url(#glow)">
-                            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2.5s" repeatCount="indefinite" />
-                        </circle>
-
-                        {/* Inner breathing core */}
-                        <circle cx="50" cy="50" r="12" className="fill-primary" filter="url(#glow)">
-                            <animate attributeName="r" values="10; 15; 10" dur="1.5s" repeatCount="indefinite" />
-                            <animate attributeName="opacity" values="0.6; 1; 0.6" dur="1.5s" repeatCount="indefinite" />
-                        </circle>
-
-                        {/* Orbiting particles */}
-                        <g>
-                            <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="3s" repeatCount="indefinite" />
-                            <circle cx="16" cy="50" r="3" className="fill-accent-500" filter="url(#glow)" />
-                            <circle cx="84" cy="50" r="2.5" className="fill-primary" filter="url(#glow)" />
-                            <circle cx="50" cy="16" r="3.5" className="fill-blue-400" filter="url(#glow)" />
-                        </g>
-                    </svg>
-
-                    <span className="text-[13px] font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-600 animate-pulse z-10 tracking-wide">
-                        AI is thinking...
-                    </span>
+                    {/* Bouncing dots */}
+                    <div className="flex space-x-1.5 z-10 py-1 px-1">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -148,11 +148,7 @@ function App() {
               <SettingsPage />
             </ProtectedRoute>
           } />
-          <Route path="/bots/:id/chat" element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          } />
+          
           <Route path="/linear-showcase" element={
             <ProtectedRoute>
               <LinearShowcasePage />

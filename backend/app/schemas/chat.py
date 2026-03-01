@@ -26,6 +26,7 @@ class ChatResponse(BaseModel):
     session_id: Optional[str] = None
     model: Optional[str] = None
     system_prompt: Optional[str] = None
+    memories_used: Optional[List[str]] = []   # Memories retrieved from Mem0 for this response
 
 class FeedbackCreate(BaseModel):
     score: int  # 1 for upvote, -1 for downvote

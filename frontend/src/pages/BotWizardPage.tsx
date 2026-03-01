@@ -175,7 +175,7 @@ export default function BotWizardPage() {
             window.dispatchEvent(new CustomEvent('bot-created'));
 
             if (newBot && newBot.id) {
-                navigate(`/bots/${newBot.id}`);
+                navigate(`/bots/${newBot.id}/chat`);
             } else {
                 navigate('/bots');
             }

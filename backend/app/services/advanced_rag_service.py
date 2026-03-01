@@ -478,9 +478,9 @@ class AdvancedRAGService:
         # Semantic search
         query_embedding = self.embeddings.embed_query(query)
 
-        semantic_results = self.qdrant_client.search(
+        semantic_response = self.qdrant_client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             query_filter=Filter(
                 must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
             ),
@@ -488,6 +488,7 @@ class AdvancedRAGService:
             with_payload=True,
             with_vectors=False,
         )
+        semantic_results = semantic_response.points
 
         # Convert to documents
         documents = []
