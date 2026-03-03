@@ -42,4 +42,9 @@ export const botsApi = {
     const response = await apiClient.post<{ system_prompt: string }>('/api/v1/bots/generate-prompt', { name, description, bot_id: botId });
     return response.data.system_prompt;
   },
+
+  getKnowledgeGraph: async (botId: string): Promise<{nodes: any[], links: any[]}> => {
+    const response = await apiClient.get<{nodes: any[], links: any[]}>(`/api/v1/bots/${botId}/knowledge-graph`);
+    return response.data;
+  },
 };

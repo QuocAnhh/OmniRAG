@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ChatLayout from '../components/Layout/ChatLayout';
 import { ChatInput, ChatMessage, TypingIndicator } from '../components/chat/ChatInterface';
 import KnowledgeGraphPanel from '../components/chat/KnowledgeGraphPanel';
@@ -35,11 +35,13 @@ function HighlightedText({ text, highlights }: { text: string; highlights?: stri
 
 export default function ChatPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [bot, setBot] = useState<Bot | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [loading, setLoading] = useState(true);
     const [selectedEvidence, setSelectedEvidence] = useState<any[] | null>(null);
+    const [activeEntities,    setActiveEntities]    = useState<string[]>([]);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [sessions, setSessions] = useState<any[]>([]);
 
@@ -62,6 +64,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
         setSessionId(null);
         setMessages([]);
         setSelectedEvidence(null);
+        setActiveEntities([]);
 
         const loadBotAndSessions = async () => {
             if (!id) return;
@@ -141,12 +144,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             timestamp: new Date().toISOString()
         }] : []);
         setSelectedEvidence(null);
+        setActiveEntities([]);
     };
 
     const handleSelectSession = (sid: string) => {
         setMessages([]); // Clear messages immediately to trigger fresh load
         setSessionId(sid);
         setSelectedEvidence(null);
+        setActiveEntities([]);
     };
 
     const handleDeleteSession = async (sid: string) => {
@@ -242,6 +247,9 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 if (chunk.type === 'metadata' && chunk.retrieved_chunks && chunk.retrieved_chunks.length > 0) {
                     setSelectedEvidence(chunk.retrieved_chunks);
                 }
+                if (chunk.type === 'metadata' && chunk.lightrag_entities?.length) {
+                    setActiveEntities(chunk.lightrag_entities);
+                }
                 
                 setMessages(prev => prev.map(msg => {
                     if (msg.id !== aiMsgId) return msg;
@@ -308,11 +316,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             botName={bot?.name}
             botModel={bot?.config?.llm_model || bot?.config?.model}
             rightPanel={
-                selectedEvidence ? (
-                    <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
-                        <KnowledgeGraphPanel chunks={selectedEvidence} />
-                    </div>
-                ) : null
+                <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
+                    <KnowledgeGraphPanel
+                        botId={id}
+                        chunks={selectedEvidence ?? undefined}
+                        activeEntities={activeEntities}
+                        onExpandClick={() => navigate(`/bots/${id}/graph`)}
+                    />
+                </div>
             }
         >
             <div className="flex flex-col h-full max-w-3xl mx-auto w-full">

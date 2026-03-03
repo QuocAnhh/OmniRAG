@@ -16,6 +16,7 @@ const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
+const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ZaloBotGuidePage = lazy(() => import('./pages/Docs/ZaloBotGuidePage'));
 
 // Premium loading component
@@ -130,6 +131,11 @@ function App() {
           <Route path="/bots/:id/chat" element={
             <ProtectedRoute>
               <ChatPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/bots/:id/graph" element={
+            <ProtectedRoute>
+              <KnowledgeGraphPage />
             </ProtectedRoute>
           } />
           {/* Generic :id route comes LAST so it doesn't swallow the above */}
