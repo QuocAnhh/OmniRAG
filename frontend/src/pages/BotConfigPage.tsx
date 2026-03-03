@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { Skeleton } from '../components/ui/Skeleton';
 import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
@@ -97,6 +98,19 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   }, [id]);
 
+  // Polling for document processing status
+  useEffect(() => {
+    if (!id || documents.length === 0) return;
+    const isProcessing = documents.some(doc => doc.status === 'processing' || doc.status === 'pending');
+    if (isProcessing) {
+      const interval = setInterval(() => {
+        // Silent load to update background state without triggering skeleton
+        documentsApi.list(id).then(docs => setDocuments(docs)).catch(console.error);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [id, documents]);
+
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
     if (tab && ['playground', 'basic', 'knowledge', 'channels', 'advanced'].includes(tab)) {
@@ -166,13 +180,26 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!confirm('Delete this document?') || !id) return;
-    try {
-      await documentsApi.delete(id, docId);
-      setDocuments(documents.filter(doc => doc.id !== docId));
-      toast.success('Document deleted');
-    } catch (error) {
-      toast.error('Failed to delete document');
+    if (!id) return;
+    
+    const result = await Swal.fire({
+      title: 'Delete Document?',
+      text: 'You cannot undo this action.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3b82f6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await documentsApi.delete(id, docId);
+        setDocuments(documents.filter(doc => doc.id !== docId));
+        toast.success('Document deleted');
+      } catch (error) {
+        toast.error('Failed to delete document');
+      }
     }
   };
 

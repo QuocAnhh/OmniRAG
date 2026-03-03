@@ -5,6 +5,7 @@ import { botsApi } from '../api/bots';
 import type { Document } from '../types/api';
 import type { Bot } from '../types/api';
 import { Button } from '../components/ui/Button';
+import Swal from 'sweetalert2';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -23,6 +24,19 @@ export default function DocumentsPage() {
       loadDocuments(selectedBotId);
     }
   }, [selectedBotId]);
+
+  // Polling for document processing status
+  useEffect(() => {
+    if (!selectedBotId || documents.length === 0) return;
+    const isProcessing = documents.some(doc => doc.status === 'processing' || doc.status === 'pending');
+    if (isProcessing) {
+      const interval = setInterval(() => {
+        // Silent load to update background state without triggering skeleton
+        documentsApi.list(selectedBotId).then(docs => setDocuments(docs)).catch(console.error);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedBotId, documents]);
 
   const loadBots = async () => {
     try {
@@ -82,13 +96,25 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this document?')) return;
     if (!selectedBotId) return;
-    try {
-      await documentsApi.delete(selectedBotId, id);
-      setDocuments(documents.filter(doc => doc.id !== id));
-    } catch (error) {
-      alert('Delete failed');
+
+    const result = await Swal.fire({
+      title: 'Delete Document?',
+      text: 'You cannot undo this action.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3b82f6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await documentsApi.delete(selectedBotId, id);
+        setDocuments(documents.filter(doc => doc.id !== id));
+      } catch (error) {
+        alert('Delete failed');
+      }
     }
   };
 

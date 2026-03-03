@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
+import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { Bot as BotIcon, Plus, Play, Settings, Trash2, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -27,13 +28,23 @@ export default function BotsPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
-    if (!confirm('Are you sure you want to delete this agent?')) return;
+    const result = await Swal.fire({
+      title: 'Delete Agent?',
+      text: 'You cannot undo this action.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3b82f6',
+      confirmButtonText: 'Yes, delete it!'
+    });
 
-    try {
-      await botsApi.delete(id);
-      setBots(bots.filter(bot => bot.id !== id));
-    } catch (error) {
-      alert('Failed to delete bot');
+    if (result.isConfirmed) {
+      try {
+        await botsApi.delete(id);
+        setBots(bots.filter(bot => bot.id !== id));
+      } catch (error) {
+        alert('Failed to delete bot');
+      }
     }
   };
 
