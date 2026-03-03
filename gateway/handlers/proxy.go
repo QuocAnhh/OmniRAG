@@ -77,7 +77,9 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 	isDynamicEndpoint := strings.Contains(path, "/sessions") ||
 		strings.Contains(path, "/history") ||
 		strings.Contains(path, "/memory") ||
-		strings.Contains(path, "/analytics")
+		strings.Contains(path, "/analytics") ||
+		strings.Contains(path, "/knowledge-graph") ||
+		strings.Contains(path, "/documents")
 
 	// Check if client requests cache bypass
 	bypassCache := c.GetHeader("Cache-Control") == "no-cache" || c.GetHeader("Pragma") == "no-cache" || strings.Contains(c.GetHeader("Cache-Control"), "no-cache")

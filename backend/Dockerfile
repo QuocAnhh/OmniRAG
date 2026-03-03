@@ -3,21 +3,26 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv - pip replacement, 10-100x faster dependency resolution
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
 # Install dependencies to a virtual environment
-RUN python -m venv /opt/venv
+RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV=/opt/venv
 
 # Install CPU-only torch first to avoid massive CUDA downloads
-RUN pip install --no-cache-dir --timeout=1000 --retries=5 torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN uv pip install --no-cache torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --timeout=1000 --retries=5 -r requirements.txt
+RUN uv pip install --no-cache -r requirements.txt
 
 # Final stage
 FROM python:3.11-slim
