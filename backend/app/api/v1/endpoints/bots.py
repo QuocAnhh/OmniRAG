@@ -290,6 +290,36 @@ def delete_document(
     
     return None
 
+@router.get("/{bot_id}/knowledge-graph")
+async def get_bot_knowledge_graph(
+    bot_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Get knowledge graph data for a specific bot for the 3D UI"""
+    try:
+        bot_uuid = UUID(bot_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid bot ID format")
+    
+    bot = db.query(BotModel).filter(
+        BotModel.id == bot_uuid,
+        BotModel.tenant_id == current_user.tenant_id
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+        
+    from app.services.lightrag_service import get_lightrag_service
+    try:
+        lightrag_service = get_lightrag_service(bot_id=bot_id)
+        # Call synchronous method in asyncio to avoid blocking
+        import asyncio
+        graph_data = await asyncio.to_thread(lightrag_service.get_graph_data_for_ui)
+        return graph_data
+    except Exception as e:
+        logger.error(f"Failed to load knowledge graph: {e}")
+        return {"nodes": [], "links": []}
+
 @router.post("/{bot_id}/chat", response_model=ChatResponse)
 async def chat_with_bot(
     bot_id: str,

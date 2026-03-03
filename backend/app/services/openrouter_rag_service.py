@@ -71,6 +71,80 @@ import re
 logger = logging.getLogger(__name__)
 
 
+def _extract_lightrag_entity_names(lightrag_raw: str) -> list:
+    """
+    Parse entity names from LightRAG's only_need_context=True output.
+
+    Actual format produced by LightRAG:
+
+        Knowledge Graph Data (Entity):
+
+        ```json
+        {"entity": "Prompt Engineering", "type": "concept", "description": "..."}
+        {"entity": "Generative AI", "type": "concept", "description": "..."}
+        ```
+
+        Knowledge Graph Data (Relationship):
+        ...
+
+    Each entity line is a standalone JSON object (not an array).
+    """
+    entities = []
+    try:
+        in_entity_block = False
+        in_code_block = False
+        for line in lightrag_raw.splitlines():
+            stripped = line.strip()
+
+            # Detect section headers
+            if "Knowledge Graph Data (Entity)" in stripped:
+                in_entity_block = True
+                in_code_block = False
+                continue
+            if in_entity_block and "Knowledge Graph Data (Relationship)" in stripped:
+                break  # done with entities section
+
+            if not in_entity_block:
+                continue
+
+            # Track ```json ... ``` fences
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                continue
+
+            if not in_code_block or not stripped.startswith("{"):
+                continue
+
+            # Parse JSON line
+            try:
+                obj = json.loads(stripped)
+                name = obj.get("entity", "").strip()
+                # Skip noise: empty, pure numbers, single chars, type tags, "UNKNOWN"
+                if name and len(name) > 1 and name.upper() != "UNKNOWN" and len(name.split()) <= 5:
+                    entities.append(name)
+            except (json.JSONDecodeError, ValueError):
+                # Try extracting "entity" value with a targeted regex as fallback
+                m = re.search(r'"entity"\s*:\s*"([^"]+)"', stripped)
+                if m:
+                    name = m.group(1).strip()
+                    if name and len(name) > 1 and name.upper() != "UNKNOWN" and len(name.split()) <= 5:
+                        entities.append(name)
+
+    except Exception:
+        pass
+
+    # Deduplicate, preserve order
+    seen: set = set()
+    result = []
+    for e in entities:
+        key = e.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(e)
+
+    return result[:20]  # cap at 20 — enough for meaningful highlighting
+
+
 class OpenRouterAPIError(Exception):
     """Custom exception for OpenRouter API errors"""
     pass
@@ -918,10 +992,32 @@ Answer:"""
             source_name = result.get("source", "Unknown")
             if source_name not in sources:
                 sources.append(source_name)
+                
+        # --- LightRAG Query (raw graph context, no LLM synthesis) ---
+        lightrag_context = ""
+        lightrag_entities: list = []
+        try:
+            from app.services.lightrag_service import get_lightrag_service
+            lightrag_service = get_lightrag_service(bot_id=bot_id)
+            # only_need_context=True in lightrag_service.query → Ollama NOT called here
+            # Raw entity/relationship context is returned and fed to OpenRouter below
+            lightrag_raw = await lightrag_service.query(search_query, mode="hybrid")
+            if lightrag_raw and not lightrag_raw.startswith("Error") and "Sorry, I'm not able to provide an answer" not in lightrag_raw:
+                lightrag_context = f"\n\n--- CONTEXT TỪ KNOWLEDGE GRAPH (ENTITIES & RELATIONSHIPS) ---\n{lightrag_raw}\n(Dùng context trên để bổ sung vào câu trả lời, không trích dẫn nguyên văn)\n\n"
+                # Extract entity names so frontend can highlight them in the knowledge graph
+                lightrag_entities = _extract_lightrag_entity_names(lightrag_raw)
+                agent_logs.append({
+                    "step": "Knowledge Graph Retrieval",
+                    "description": f"Successfully traversed the entity-relationship graph. Found {len(lightrag_entities)} relevant entities.",
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+        except Exception as e:
+            logger.warning(f"LightRAG query failed: {e}")
+        # ----------------------
         
         context = "\n---\n".join(context_docs)
-        
-        # Reasoning Summary
+        if lightrag_context:
+            context += lightrag_context
         reasoning = f"I've analyzed {len(filtered_results)} segments from {len(sources)} documents. "
         if filtered_results:
             top_score = filtered_results[0].get('hybrid_score', 0)
@@ -933,7 +1029,8 @@ Answer:"""
             "agent_logs": agent_logs,
             "context": context,
             "sources": sources,
-            "reasoning": reasoning
+            "reasoning": reasoning,
+            "lightrag_entities": lightrag_entities,
         }
 
     def _extract_smart_highlights(self, query: str, text: str) -> List[str]:
@@ -988,6 +1085,7 @@ Answer:"""
         context = prep["context"]
         sources = prep["sources"]
         reasoning = prep["reasoning"]
+        lightrag_entities = prep.get("lightrag_entities", [])
 
         # ── Memory: Retrieve user memories before generation ──────────────
         user_id = bot_config.get("user_id")
@@ -1010,7 +1108,8 @@ Answer:"""
             "agent_logs": agent_logs,
             "reasoning": reasoning,
             "search_query": search_query,
-            "session_id": session_id
+            "session_id": session_id,
+            "lightrag_entities": lightrag_entities,
         }
 
         # 5. Answer Synthesis Log

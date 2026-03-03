@@ -15,6 +15,8 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_track_started=True,
-    task_time_limit=30 * 60,  # 30 minutes
-    task_soft_time_limit=25 * 60,  # 25 minutes
+    task_acks_late=True,             # Ensure task isn't lost if worker restarts
+    worker_prefetch_multiplier=1,    # Only take one task at a time
+    task_time_limit=30 * 60,         # 30 minutes
+    task_soft_time_limit=25 * 60,    # 25 minutes
 )
