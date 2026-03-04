@@ -52,6 +52,8 @@ export interface Document {
   doc_metadata?: {
     num_chunks?: number;
     chunking_strategy?: string;
+    enable_knowledge_graph?: boolean;
+    kg_status?: 'processing' | 'completed' | 'failed';
   };
   created_at: string;
 }

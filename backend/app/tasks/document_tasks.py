@@ -87,7 +87,7 @@ def process_document_task(
                     documents = rag_service._load_document(tmp_file_path, filename)
                     full_text = "\n\n".join([doc.page_content for doc in documents])
                     if full_text.strip():
-                        build_knowledge_graph_task.delay(bot_id=bot_id, full_text=full_text, filename=filename)
+                        build_knowledge_graph_task.delay(bot_id=bot_id, full_text=full_text, filename=filename, document_id=document_id)
                         logger.info(f"Queued LightRAG knowledge graph task for bot={bot_id}, file={filename}")
                 except Exception as e:
                     logger.error(f"Failed to queue LightRAG task for {filename}: {e}")
@@ -122,16 +122,21 @@ def process_document_task(
 
 
 @celery_app.task(bind=True, name="build_knowledge_graph")
-def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str):
+def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str, document_id: str = ""):
     """
     Separate background Celery task for LightRAG entity/relationship extraction.
     Fires AFTER document is already 'completed' and chat is available.
+    Updates doc_metadata.kg_status at each stage so the frontend can poll progress.
     """
     logger.info(f"--- [START] LightRAG extraction task: bot={bot_id}, file={filename} ---")
+
+    if document_id:
+        _update_kg_status(document_id, "processing")
+
     try:
         from app.services.lightrag_service import get_lightrag_service
         import asyncio
-        
+
         # Ensure we have a clean event loop if we are in a worker environment
         try:
             loop = asyncio.get_event_loop()
@@ -140,17 +145,21 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str)
             asyncio.set_event_loop(loop)
 
         lightrag_service = get_lightrag_service(bot_id=bot_id)
-        
+
         # Running the insert operation
         logger.info(f"[LightRAG] Calling insert_text for {filename}...")
         asyncio.run(lightrag_service.insert_text(full_text))
-        
+
+        if document_id:
+            _update_kg_status(document_id, "completed")
+
         logger.info(f"--- [SUCCESS] Knowledge graph completed: bot={bot_id}, file={filename} ---")
     except Exception as e:
         import traceback
         error_stack = traceback.format_exc()
         logger.error(f"[LightRAG] Graph extraction CRITICAL ERROR for {filename}: {e}\n{error_stack}")
-        # Task remains in queue if task_acks_late is True elsewhere
+        if document_id:
+            _update_kg_status(document_id, "failed")
 
 
 def _update_document_status(
@@ -172,5 +181,22 @@ def _update_document_status(
             doc.error_message = error_message
         db.add(doc)
         db.commit()
+    finally:
+        db.close()
+
+
+def _update_kg_status(document_id: str, kg_status: str):
+    """Update only the kg_status field inside doc_metadata without touching the main status."""
+    db = SessionLocal()
+    try:
+        doc_uuid = UUID(document_id)
+        doc = db.query(DocumentModel).filter(DocumentModel.id == doc_uuid).first()
+        if not doc:
+            return
+        doc.doc_metadata = {**(doc.doc_metadata or {}), "kg_status": kg_status}
+        db.add(doc)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to update kg_status for {document_id}: {e}")
     finally:
         db.close()

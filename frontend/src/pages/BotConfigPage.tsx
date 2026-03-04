@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -11,6 +11,33 @@ import type { Bot, Document } from '../types/api';
 
 
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
+
+type UploadPhase = 'uploading' | 'done' | 'kg_processing' | 'kg_done' | 'failed' | 'cancelled';
+interface UploadStatusState {
+  phase: UploadPhase;
+  filename: string;
+  elapsedSeconds: number;
+  kgElapsedSeconds: number;
+  docId?: string;
+  errorMsg?: string;
+}
+
+const KG_STEPS = [
+  'Extracting entities and relationships from document',
+  'Building graph structure',
+  'Saving and indexing graph',
+];
+const getKgActiveStep = (elapsed: number) => {
+  if (elapsed < 45) return 0;
+  if (elapsed < 150) return 1;
+  return 2;
+};
+const formatElapsed = (secs: number) => {
+  if (secs < 60) return `${secs}s`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}m ${s.toString().padStart(2, '0')}s`;
+};
 
 
 export default function BotConfigPage({ embedded = false }: { embedded?: boolean } = {}) {
@@ -25,6 +52,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [tableLoading, setTableLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [enableKnowledgeGraph, setEnableKnowledgeGraph] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatusState | null>(null);
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
+  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const kgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const kgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const kgDocIdRef = useRef<string>('');
   const [error, setError] = useState('');
 
   // Zalo Bot connect state
@@ -119,6 +152,15 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   }, [searchParams]);
 
+  // Cleanup all upload timers/pollers on unmount
+  useEffect(() => {
+    return () => {
+      if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+      if (kgTimerRef.current) clearInterval(kgTimerRef.current);
+      if (kgPollRef.current) clearInterval(kgPollRef.current);
+    };
+  }, []);
+
   const handleSaveBasicSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
@@ -155,27 +197,90 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   };
 
+  const clearUploadTimers = () => {
+    if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
+    if (kgTimerRef.current) { clearInterval(kgTimerRef.current); kgTimerRef.current = null; }
+    if (kgPollRef.current) { clearInterval(kgPollRef.current); kgPollRef.current = null; }
+  };
+
+  const handleCancelUpload = () => {
+    uploadAbortControllerRef.current?.abort();
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id) return;
 
+    const abortController = new AbortController();
+    uploadAbortControllerRef.current = abortController;
+    clearUploadTimers();
+
+    const uploadStart = Date.now();
     setUploading(true);
-    const uploadToast = toast.loading('Uploading document...');
+    setUploadStatus({ phase: 'uploading', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0 });
+
+    elapsedTimerRef.current = setInterval(() => {
+      setUploadStatus(prev => prev ? { ...prev, elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000) } : prev);
+    }, 1000);
+
     try {
-      // Artificial delay (2.5s) to guarantee the vectorization animation shows properly
-      // while the file actually uploads to the backend.
-      const uploadPromise = documentsApi.upload(id, file, 'recursive', enableKnowledgeGraph);
+      const uploadPromise = documentsApi.upload(id, file, 'recursive', enableKnowledgeGraph, abortController.signal);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
+      const [doc] = await Promise.all([uploadPromise, delayPromise]);
 
-      await Promise.all([uploadPromise, delayPromise]);
+      clearUploadTimers();
 
-      await loadDocuments(id);
-      toast.success('Document uploaded', { id: uploadToast });
-    } catch (error) {
-      toast.error('Upload failed', { id: uploadToast });
-    } finally {
+      if (!enableKnowledgeGraph) {
+        setUploading(false);
+        setUploadStatus({
+          phase: 'done',
+          filename: file.name,
+          elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
+          kgElapsedSeconds: 0,
+        });
+        await loadDocuments(id);
+      } else {
+        // HTTP upload done → chat available. Now wait for KG to finish.
+        kgDocIdRef.current = doc.id;
+        const kgStart = Date.now();
+        setUploading(false);
+        setUploadStatus(prev => prev ? {
+          ...prev,
+          phase: 'kg_processing',
+          docId: doc.id,
+          kgElapsedSeconds: 0,
+        } : prev);
+
+        kgTimerRef.current = setInterval(() => {
+          setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+        }, 1000);
+
+        kgPollRef.current = setInterval(async () => {
+          try {
+            const docs = await documentsApi.list(id);
+            const updated = docs.find(d => d.id === kgDocIdRef.current);
+            const kgStatus = updated?.doc_metadata?.kg_status;
+            if (kgStatus === 'completed') {
+              clearUploadTimers();
+              setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+              await loadDocuments(id);
+            } else if (kgStatus === 'failed') {
+              clearUploadTimers();
+              setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
+            }
+          } catch { /* ignore poll errors */ }
+        }, 4000);
+      }
+    } catch (err: any) {
+      clearUploadTimers();
       setUploading(false);
-      // Reset input
+      if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') {
+        setUploadStatus({ phase: 'cancelled', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0 });
+      } else {
+        setUploadStatus({ phase: 'failed', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0, errorMsg: `Upload failed: "${file.name}"` });
+      }
+      uploadAbortControllerRef.current = null;
+    } finally {
       e.target.value = '';
     }
   };
@@ -635,6 +740,108 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   </div>
                 </div>
               </label>
+
+              {/* Inline Upload Status Panel */}
+              {uploadStatus && (
+                <div className="rounded-2xl border border-white/10 bg-background/40 backdrop-blur-xl px-6 py-4 space-y-3 text-sm">
+
+                  {/* --- UPLOADING --- */}
+                  {uploadStatus.phase === 'uploading' && (
+                    <>
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-foreground">Uploading "{uploadStatus.filename}"...</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Elapsed: {formatElapsed(uploadStatus.elapsedSeconds)}</p>
+                        </div>
+                        <button type="button" onClick={handleCancelUpload}
+                          className="flex-shrink-0 text-xs font-semibold text-destructive border border-destructive/40 bg-destructive/10 hover:bg-destructive/20 px-3 py-1.5 rounded-full transition-colors">
+                          Huy upload
+                        </button>
+                      </div>
+                      <div className="w-full h-1 bg-muted/30 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full animate-pulse w-3/5" />
+                      </div>
+                    </>
+                  )}
+
+                  {/* --- KG PROCESSING --- */}
+                  {uploadStatus.phase === 'kg_processing' && (
+                    <>
+                      <p className="font-medium text-primary">Document vectorized — ban co the chat ngay bay gio.</p>
+                      <div className="border-t border-white/5 pt-3 space-y-2.5">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-foreground">Building Knowledge Graph</span>
+                          <span className="text-xs text-muted-foreground font-mono">Elapsed: {formatElapsed(uploadStatus.kgElapsedSeconds)}</span>
+                        </div>
+                        {KG_STEPS.map((step, i) => {
+                          const active = getKgActiveStep(uploadStatus.kgElapsedSeconds);
+                          const isDone = i < active;
+                          const isActive = i === active;
+                          return (
+                            <div key={i} className={`flex items-center gap-2.5 text-xs ${isActive ? 'text-foreground' : isDone ? 'text-muted-foreground/60' : 'text-muted-foreground/30'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-primary animate-pulse' : isDone ? 'bg-primary/40' : 'bg-muted/30'}`} />
+                              <span>{step}</span>
+                              {isActive && <span className="text-primary/70 ml-1">running...</span>}
+                              {isDone && <span className="text-muted-foreground/50 ml-1">done</span>}
+                            </div>
+                          );
+                        })}
+                        <p className="text-xs text-muted-foreground pt-1">Estimated total: 2 to 5 minutes</p>
+                      </div>
+                    </>
+                  )}
+
+                  {/* --- DONE (no KG) --- */}
+                  {uploadStatus.phase === 'done' && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed and ready for chat.</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.elapsedSeconds)}</p>
+                      </div>
+                      <button type="button" onClick={() => setUploadStatus(null)}
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        Dong
+                      </button>
+                    </div>
+                  )}
+
+                  {/* --- KG DONE --- */}
+                  {uploadStatus.phase === 'kg_done' && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed and knowledge graph built.</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.kgElapsedSeconds)}</p>
+                      </div>
+                      <button type="button" onClick={() => setUploadStatus(null)}
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        Dong
+                      </button>
+                    </div>
+                  )}
+
+                  {/* --- CANCELLED --- */}
+                  {uploadStatus.phase === 'cancelled' && (
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-muted-foreground">Upload da bi huy.</p>
+                      <button type="button" onClick={() => setUploadStatus(null)}
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        Dong
+                      </button>
+                    </div>
+                  )}
+
+                  {/* --- FAILED --- */}
+                  {uploadStatus.phase === 'failed' && (
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-destructive">{uploadStatus.errorMsg || 'Upload that bai.'}</p>
+                      <button type="button" onClick={() => setUploadStatus(null)}
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        Dong
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Documents Table */}
               <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">

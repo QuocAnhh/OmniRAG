@@ -15,7 +15,8 @@ export const documentsApi = {
     botId: string,
     file: File,
     chunkingStrategy: 'recursive' | 'semantic' = 'recursive',
-    enableKnowledgeGraph: boolean = false
+    enableKnowledgeGraph: boolean = false,
+    signal?: AbortSignal
   ): Promise<Document> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -27,6 +28,7 @@ export const documentsApi = {
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
+        signal,
       }
     );
     return response.data;
