@@ -1,403 +1,284 @@
-# 🚀 OmniRAG Quick Start Guide
+# Startup Guide — OmniRAG
 
-## Prerequisites
-- Docker & Docker Compose
-- Python 3.10+
-- Node.js 18+
-- OpenAI API Key
+Hướng dẫn chi tiết để setup và chạy OmniRAG ở môi trường local/production.
 
 ---
 
-## 🔧 Setup Instructions
+## Prerequisites
 
-### 1. Environment Configuration
+- Docker 24+ & Docker Compose v2
+- OpenRouter API Key (bắt buộc) — đăng ký tại openrouter.ai
+- macOS/Linux (Windows: dùng WSL2)
 
-Create `.env` file in `backend/` directory:
+---
+
+## 1. Environment Configuration
+
+Tạo file `backend/.env` từ template:
 
 ```bash
-# Database
-POSTGRES_SERVER=localhost
+cd backend
+cp .env.example .env
+```
+
+### Biến bắt buộc
+
+```env
+# AI Provider — đây là key chính, thay thế OpenAI
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxx
+
+# JWT secret — generate với: openssl rand -hex 32
+SECRET_KEY=your_64_char_hex_string_here
+
+# Môi trường
+ENVIRONMENT=development
+```
+
+### Biến tuỳ chọn (có default)
+
+```env
+# Models (có thể override per-bot trong config)
+OPENROUTER_CHAT_MODEL=openai/gpt-4o-mini
+OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
+
+# Knowledge Graph — LLM dùng để extract entities
+LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
+
+# Mem0 — persistent memory
+MEM0_ENABLED=true
+MEM0_MEMORY_MODEL=openai/gpt-4o-mini
+MEM0_TOP_K=5
+
+# Local embeddings (thay thế OpenRouter cho embeddings, tốn RAM hơn)
+USE_LOCAL_EMBEDDINGS=false
+LOCAL_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Database — default phù hợp với docker-compose
+POSTGRES_SERVER=db
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 POSTGRES_DB=omnirag
 
-# MongoDB
-MONGODB_URL=mongodb://admin:password@localhost:27017
+MONGODB_URL=mongodb://admin:password@mongodb:27017
+REDIS_URL=redis://redis:6379/0
 
-# Redis
-REDIS_URL=redis://localhost:6380/0
-
-# MinIO
-MINIO_ENDPOINT=localhost:9000
+MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 
-# Qdrant
-QDRANT_HOST=localhost
+QDRANT_HOST=qdrant
 QDRANT_PORT=6333
 
-# OpenAI
-OPENAI_API_KEY=your-openai-api-key-here
-
-# Security
-SECRET_KEY=your-secret-key-here-generate-with-openssl-rand-hex-32
+# Zalo Integration (chỉ cần nếu dùng Zalo bot)
+PUBLIC_URL=https://your-domain.com
+FUNC_API_URL=https://func.vn/api/...
+FUNC_API_TOKEN=your_func_token
 ```
 
-### 2. Start Infrastructure Services
+> **Production:** Bắt buộc đổi `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY`, `SECRET_KEY`. Set `ENVIRONMENT=production`.
+
+---
+
+## 2. Chạy với Docker Compose (Recommended)
+
+### Development
 
 ```bash
-docker-compose up -d db mongodb redis minio qdrant
+# Từ root project
+docker compose up -d --build
+
+# Xem logs
+docker compose logs -f backend
+docker compose logs -f gateway
+docker compose logs -f celery_worker
 ```
 
-This starts:
-- PostgreSQL (port 5432)
-- MongoDB (port 27017)
-- Redis (port 6380)
-- MinIO (port 9000, 9001)
-- Qdrant (port 6333)
+### Chỉ build lại backend (khi sửa requirements)
 
-### 3. Backend Setup
+```bash
+docker compose build backend celery_worker
+docker compose up -d backend celery_worker
+```
+
+### Production
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+---
+
+## 3. Chạy local (không Docker)
+
+### Backend
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Run database migrations
+# Chạy migrations
 alembic upgrade head
 
-# Start backend server
-uvicorn app.main:app --reload --port 8000
+# Start API server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Start Celery worker (terminal riêng)
+celery -A app.worker worker --loglevel=info
 ```
 
-Backend will be available at: http://localhost:8000
-API Documentation: http://localhost:8000/docs
-
-### 4. Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev
+npm run dev        # Dev server tại :5173
+npm run build      # Production build → dist/
+npm run lint       # ESLint check
 ```
 
-Frontend will be available at: http://localhost:5173
-
----
-
-## 🐳 Docker Compose (Full Stack)
-
-To run everything in Docker:
+### Gateway
 
 ```bash
-docker-compose up --build
-```
-
-Access:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- MinIO Console: http://localhost:9001
-
----
-
-## 📝 First Steps After Setup
-
-### 1. Register a User
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@example.com",
-    "password": "secure_password",
-    "full_name": "Admin User",
-    "tenant_name": "My Company"
-  }'
-```
-
-Or use the frontend at http://localhost:5173/auth
-
-### 2. Login
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@example.com&password=secure_password"
-```
-
-Save the `access_token` from the response.
-
-### 3. Create a Bot
-
-```bash
-curl -X POST http://localhost:8000/api/v1/bots \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Support Bot",
-    "description": "Customer support assistant",
-    "config": {
-      "llm_model": "gpt-3.5-turbo",
-      "temperature": 0.7,
-      "system_prompt": "You are a helpful customer support assistant."
-    }
-  }'
-```
-
-### 4. Upload a Document
-
-```bash
-curl -X POST http://localhost:8000/api/v1/bots/BOT_ID/documents \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -F "file=@/path/to/document.pdf" \
-  -F "chunking_strategy=recursive"
-```
-
-### 5. Chat with Your Bot
-
-```bash
-curl -X POST http://localhost:8000/api/v1/bots/BOT_ID/chat \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "What is this document about?",
-    "history": []
-  }'
+cd gateway
+go mod download
+go run main.go
+# Hoặc build binary
+go build -o gateway && ./gateway
 ```
 
 ---
 
-## 🔍 Verify Integration
+## 4. Port Map
 
-### Check Dashboard Stats
-```bash
-curl http://localhost:8000/api/v1/dashboard/stats \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
+| Service | External Port | Internal Port | Notes |
+|---------|--------------|--------------|-------|
+| Frontend | 5173 | 5173 | Vite dev server |
+| Gateway | 8080 | 8080 | Điểm vào chính cho client |
+| Backend | 8000 | 8000 | FastAPI |
+| PostgreSQL | **5433** | 5432 | Dùng 5433 để tránh conflict |
+| MongoDB | 27017 | 27017 | |
+| Redis | **6380** | 6379 | Dùng 6380 để tránh conflict |
+| Qdrant | 6333 | 6333 | Vector DB UI tại /dashboard |
+| MinIO API | 9000 | 9000 | S3-compatible endpoint |
+| MinIO UI | 9001 | 9001 | Web console |
 
-Should return real-time statistics:
-```json
-{
-  "total_bots": 1,
-  "active_sessions": 0,
-  "messages_today": 0,
-  "avg_response_time": "0.0s"
-}
-```
-
-### Check Analytics
-```bash
-curl http://localhost:8000/api/v1/analytics/stats \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-### View Recent Conversations
-```bash
-curl http://localhost:8000/api/v1/analytics/conversations?limit=10 \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
+> Client (frontend/postman) cần gọi qua **Gateway (:8080)**. Backend (:8000) là internal.
 
 ---
 
-## 🛠️ Troubleshooting
+## 5. Database Migrations
 
-### Backend Issues
-
-**ImportError: No module named 'fastapi'**
 ```bash
 cd backend
-pip install -r requirements.txt
-```
+source venv/bin/activate
 
-**Database connection error**
-```bash
-# Check if services are running
-docker-compose ps
-
-# Restart services
-docker-compose restart db mongodb redis
-```
-
-**Alembic migration errors**
-```bash
-# Reset database (WARNING: deletes all data)
-alembic downgrade base
+# Apply all pending migrations
 alembic upgrade head
-```
 
-### Frontend Issues
+# Rollback 1 migration
+alembic downgrade -1
 
-**Module not found errors**
-```bash
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
-```
+# Tạo migration mới (sau khi sửa models)
+alembic revision --autogenerate -m "add_new_field_to_bots"
 
-**API connection issues**
-- Check if backend is running on port 8000
-- Verify CORS settings in `backend/app/core/config.py`
-- Check browser console for CORS errors
-
-**Vite proxy not working**
-```bash
-# Make sure vite.config.ts has proxy configuration
-# Restart dev server
-npm run dev
-```
-
-### Docker Issues
-
-**Port already in use**
-```bash
-# Change ports in docker-compose.yml
-# Or stop conflicting services
-lsof -ti:8000 | xargs kill
-```
-
-**Build fails**
-```bash
-# Clean rebuild
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up
+# Xem lịch sử
+alembic history
 ```
 
 ---
 
-## 📊 Monitoring & Logs
-
-### Backend Logs
-```bash
-# Local development
-tail -f backend/logs/app.log
-
-# Docker
-docker-compose logs -f backend
-```
-
-### MongoDB Queries
-```bash
-# Connect to MongoDB
-docker exec -it omnirag-mongodb-1 mongosh -u admin -p password
-
-# View conversations
-use omnirag
-db.conversations.find().limit(5)
-```
-
-### Redis Cache
-```bash
-# Connect to Redis
-docker exec -it omnirag-redis-1 redis-cli
-
-# View cached keys
-KEYS dashboard:stats:*
-GET dashboard:stats:YOUR_TENANT_ID
-```
-
-### Qdrant Collections
-```bash
-# View collections
-curl http://localhost:6333/collections
-
-# View collection info
-curl http://localhost:6333/collections/omnirag_advanced
-```
-
----
-
-## 🧪 Testing
-
-### Run Backend Tests
-```bash
-cd backend
-pytest tests/ -v
-```
-
-### Run Frontend Tests
-```bash
-cd frontend
-npm test
-```
-
-### Test API Endpoints
-Use the interactive API documentation at http://localhost:8000/docs
-
----
-
-## 📚 Additional Resources
-
-- [Backend README](backend/README.md)
-- [Frontend README](frontend/README.md)
-- [Integration Documentation](INTEGRATION_COMPLETE.md)
-- [API Documentation](http://localhost:8000/docs)
-
----
-
-## 🎯 Quick Commands Cheat Sheet
+## 6. Health Checks
 
 ```bash
-# Start all services
-docker-compose up -d
+# Gateway (kiểm tra cả Redis + Backend)
+curl http://localhost:8080/health
 
-# Stop all services
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
-# Restart backend
-docker-compose restart backend
-
-# Rebuild and restart
-docker-compose up --build -d
-
-# Clean everything (WARNING: deletes data)
-docker-compose down -v
-docker system prune -a
-```
-
----
-
-## ✅ Health Checks
-
-All services healthy when:
-
-```bash
-# Backend
+# Backend trực tiếp
 curl http://localhost:8000/api/v1/health
-# Expected: {"status": "healthy"}
 
 # PostgreSQL
-docker exec omnirag-db-1 pg_isready
-# Expected: accepting connections
-
-# MongoDB
-docker exec omnirag-mongodb-1 mongosh --eval "db.adminCommand('ping')"
-# Expected: { ok: 1 }
+docker exec omnirag-db-1 pg_isready -U postgres -d omnirag
 
 # Redis
 docker exec omnirag-redis-1 redis-cli ping
-# Expected: PONG
 
 # Qdrant
 curl http://localhost:6333/collections
-# Expected: {"collections": [...]}
+```
+
+Expected khi mọi thứ healthy:
+```json
+{
+  "status": "healthy",
+  "redis": "healthy",
+  "backend": "healthy",
+  "service": "omnirag-gateway"
+}
 ```
 
 ---
 
-## 🚀 You're Ready!
+## 7. Ollama (Local LLM — Optional)
 
-Your OmniRAG instance is now fully integrated and ready to use. Visit http://localhost:5173 to start building your RAG applications!
+Dự án có hỗ trợ Ollama cho môi trường không có internet hoặc muốn chạy model local.
+
+**macOS (M1/M2/M3 — Recommended, Metal GPU):**
+```bash
+brew install ollama
+ollama serve
+ollama pull qwen2.5:14b  # Hoặc model khác
+```
+
+**Linux (Docker):** Uncomment block `ollama` trong `docker-compose.yml`.
+
+Sau đó set env:
+```env
+LIGHTRAG_LLM_MODEL=qwen2.5:14b
+```
+Và cấu hình backend trỏ về `http://localhost:11434`.
+
+---
+
+## 8. Logs & Debugging
+
+```bash
+# Tất cả services
+docker compose logs -f
+
+# Chỉ backend
+docker compose logs -f backend
+
+# Celery worker (document processing)
+docker compose logs -f celery_worker
+
+# Filter lỗi
+docker compose logs backend 2>&1 | grep -i "error\|exception"
+
+# LightRAG knowledge graph
+docker compose logs backend 2>&1 | grep -i "lightrag\|graph"
+```
+
+---
+
+## 9. Reset & Clean
+
+```bash
+# Restart một service
+docker compose restart backend
+
+# Rebuild + restart
+docker compose up -d --build backend
+
+# Xoá toàn bộ (WARNING: mất dữ liệu)
+docker compose down -v
+docker system prune -a --volumes
+
+# Xoá chỉ knowledge graph data
+rm -rf backend/rag_storage/
+```
+
+---
+
+Gặp lỗi? Xem [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

@@ -1,273 +1,216 @@
-# Quick Start Guide - OmniRAG
+# Quick Start Guide — OmniRAG
 
-Hướng dẫn nhanh để bắt đầu sử dụng OmniRAG trong 5 phút.
+5 phút để chạy OmniRAG từ đầu.
 
-## 🚀 Bước 1: Setup môi trường (2 phút)
-
-### 1.1. Clone và setup
+## Bước 1: Cấu hình môi trường
 
 ```bash
-cd OmniRAG
+cd backend
+cp .env.example .env
 ```
 
-### 1.2. Tạo file `.env`
-
-Tạo file `backend/.env` với nội dung:
+Sửa `backend/.env`, tối thiểu cần 2 biến:
 
 ```env
-OPENAI_API_KEY=sk-your-openai-api-key-here
-SECRET_KEY=your-secret-key-minimum-32-characters-long
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxx   # Lấy tại openrouter.ai
+SECRET_KEY=<output của: openssl rand -hex 32>
 ```
 
-**Generate SECRET_KEY**:
-```bash
-openssl rand -hex 32
-```
-
-### 1.3. Start services
+## Bước 2: Start services
 
 ```bash
-# Build và start
-docker compose build backend
-docker compose up -d
+cd ..
+docker compose up -d --build
 
-# Check status
+# Kiểm tra trạng thái
 docker compose ps
 ```
 
-Đợi ~30 giây để các services khởi động.
+Đợi ~30 giây. Các services sẽ start theo thứ tự: DB → Redis → Qdrant → MinIO → Backend → Gateway → Frontend.
 
-## 🧪 Bước 2: Test API (3 phút)
+## Bước 3: Verify
 
-### 2.1. Import Postman Collection
+```bash
+# Gateway health
+curl http://localhost:8080/health
 
-1. Mở Postman
-2. Click **Import**
-3. Chọn file `POSTMAN_COLLECTION.json`
-4. Collection "OmniRAG API" sẽ xuất hiện
-
-### 2.2. Workflow test cơ bản
-
-**A. Register** → **B. Login** → **C. Create Bot** → **D. Upload Document** → **E. Chat**
-
-#### A. Register (tạo tài khoản)
-
-```
-POST http://localhost:8000/api/v1/auth/register
+# Expected:
+# {"status":"healthy","redis":"healthy","backend":"healthy"}
 ```
 
-Body (JSON):
-```json
-{
-  "email": "test@example.com",
-  "password": "Test123456!",
-  "full_name": "Test User",
-  "tenant_name": "Test Company"
-}
+Truy cập:
+- **UI**: http://localhost:5173
+- **Swagger**: http://localhost:8000/docs
+- **MinIO**: http://localhost:9001 (minioadmin / minioadmin)
+- **Qdrant**: http://localhost:6333/dashboard
+
+---
+
+## Workflow cơ bản qua API
+
+### A. Đăng ký tài khoản
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "demo@example.com",
+    "password": "Demo123456!",
+    "full_name": "Demo User",
+    "tenant_name": "Demo Corp"
+  }'
 ```
 
-✅ Response → Copy `id` (user_id)
+### B. Đăng nhập — lấy token
 
-#### B. Login (lấy token)
-
-```
-POST http://localhost:8000/api/v1/auth/login
-```
-
-Body (x-www-form-urlencoded):
-```
-username=test@example.com
-password=Test123456!
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=demo@example.com&password=Demo123456!"
 ```
 
-✅ Response → **Copy `access_token`** (dùng cho tất cả request sau)
-
-**⚠️ Quan trọng**: Thêm vào tất cả request sau:
+Lưu `access_token` từ response. Tất cả request sau cần header:
 ```
-Header: Authorization: Bearer <access_token>
+Authorization: Bearer <access_token>
 ```
 
-#### C. Create Bot
+### C. Tạo bot
 
-```
-POST http://localhost:8000/api/v1/bots
-Header: Authorization: Bearer <token>
-```
-
-Body (JSON):
-```json
-{
-  "name": "My First Bot",
-  "description": "Test bot",
-  "config": {
-    "llm_model": "gpt-3.5-turbo",
-    "temperature": 0.7
-  }
-}
-```
-
-✅ Response → **Copy `id`** (bot_id) và `api_key`
-
-#### D. Upload Document
-
-```
-POST http://localhost:8000/api/v1/bots/<bot_id>/documents
-Header: Authorization: Bearer <token>
+```bash
+curl -X POST http://localhost:8080/api/v1/bots \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My First Bot",
+    "description": "Demo bot",
+    "config": {
+      "llm_model": "openai/gpt-4o-mini",
+      "temperature": 0.7,
+      "enable_knowledge_graph": true,
+      "enable_memory": true
+    }
+  }'
 ```
 
-Body (form-data):
-```
-file: [Chọn file PDF/DOCX/TXT]
-chunking_strategy: recursive
-```
+Lưu `id` (bot_id) từ response.
 
-✅ Response → Kiểm tra `status: "completed"`
+### D. Upload tài liệu
 
-#### E. Chat với Bot
-
-```
-POST http://localhost:8000/api/v1/bots/<bot_id>/chat
-Header: Authorization: Bearer <token>
+```bash
+curl -X POST http://localhost:8080/api/v1/bots/$BOT_ID/documents \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@/path/to/document.pdf" \
+  -F "chunking_strategy=recursive"
 ```
 
-Body (JSON):
-```json
-{
-  "message": "Summarize the document for me",
-  "history": []
-}
+Chờ `status: "completed"` — Celery sẽ xử lý async (thường 10–60 giây tuỳ file size).
+
+Kiểm tra trạng thái:
+```bash
+curl http://localhost:8080/api/v1/bots/$BOT_ID/documents \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-✅ Response → Nhận câu trả lời từ RAG system!
+### E. Chat với bot
 
-## 🎯 Test Advanced Features
-
-### Test 1: Caching (response nhanh hơn)
-
-Gửi **exact same query** 2 lần:
-- Lần 1: ~2-3 giây (query + LLM)
-- Lần 2: <500ms (từ cache) ⚡
-
-### Test 2: Conversation History
-
-```json
-{
-  "message": "What are the pricing options?",
-  "history": [
-    {"role": "user", "content": "Tell me about features"},
-    {"role": "assistant", "content": "Features include..."}
-  ]
-}
+```bash
+curl -X POST http://localhost:8080/api/v1/bots/$BOT_ID/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Tóm tắt nội dung tài liệu cho tôi",
+    "history": []
+  }'
 ```
 
-Bot sẽ hiểu context từ history.
+---
 
-### Test 3: Semantic vs Recursive Chunking
+## Test nhanh qua UI
 
-Upload cùng 1 file với 2 strategies khác nhau:
+1. Mở http://localhost:5173
+2. Đăng ký / Đăng nhập
+3. Tạo bot ở trang **Bots**
+4. Upload tài liệu ở tab **Documents** trong bot config
+5. Chat tại trang **Chat**
+6. Xem Knowledge Graph tại **Knowledge Graph** (nếu `enable_knowledge_graph: true`)
 
-**Recursive** (default):
+---
+
+## Test advanced features
+
+### Caching (request nhanh hơn lần 2)
+
+```bash
+# Lần 1 — ~1-3 giây, header X-Cache: MISS
+# Lần 2 (cùng query) — <50ms, header X-Cache: HIT
+curl -v -X POST http://localhost:8080/api/v1/bots/$BOT_ID/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is this document about?", "history": []}'
 ```
-chunking_strategy=recursive
+
+### Knowledge Graph
+
+```bash
+# Xem entities/relationships đã extract
+curl http://localhost:8080/api/v1/bots/$BOT_ID/knowledge-graph \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-**Semantic** (tối ưu cho docs có cấu trúc):
+Hoặc mở http://localhost:5173/bots/$BOT_ID/knowledge-graph để xem đồ thị tương tác.
+
+### Conversation Memory (Mem0)
+
+Gửi nhiều tin nhắn — bot sẽ nhớ context qua các session nhờ Mem0:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/bots/$BOT_ID/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Các điểm chính của chương 2 là gì?",
+    "history": [
+      {"role":"user","content":"Tài liệu này nói về gì?"},
+      {"role":"assistant","content":"Tài liệu này nói về ..."}
+    ],
+    "session_id": "user-abc-session-1"
+  }'
 ```
-chunking_strategy=semantic
-```
 
-So sánh độ chính xác của câu trả lời.
+---
 
-## 📊 Monitor & Debug
-
-### View logs realtime
+## Monitor & Debug
 
 ```bash
 # Backend logs
 docker compose logs -f backend
 
-# Check for "Cache hit" messages
-docker compose logs backend | grep "Cache"
-```
+# Xem cache hit
+docker compose logs backend | grep -i "cache"
 
-### Check services health
+# Celery worker (document processing)
+docker compose logs -f celery_worker
 
-```bash
-# API docs
-open http://localhost:8000/docs
-
-# Qdrant dashboard
-open http://localhost:6333/dashboard
-
-# MinIO console
-open http://localhost:9001
-# Login: minioadmin / minioadmin
-```
-
-### Database inspection
-
-```bash
-# PostgreSQL - check bots
-docker exec -it omnirag-db-1 psql -U postgres -d omnirag -c "SELECT id, name, api_key FROM bots;"
-
-# Redis - check cache keys
+# Redis cache keys
 docker exec -it omnirag-redis-1 redis-cli KEYS "rag_cache:*"
 
-# Qdrant - check collections
+# Qdrant collections
 curl http://localhost:6333/collections
+
+# PostgreSQL
+docker exec -it omnirag-db-1 psql -U postgres -d omnirag -c "SELECT name, id FROM bots;"
 ```
-
-## 🔥 Common Issues
-
-### Issue 1: "Invalid API key"
-
-**Fix**: Check `.env` file:
-```bash
-cat backend/.env | grep OPENAI_API_KEY
-```
-
-### Issue 2: Token expired (401)
-
-**Fix**: Login lại và lấy token mới (TTL = 30 phút).
-
-### Issue 3: Port conflict (Redis)
-
-**Fix**: Đã đổi sang port 6380. Nếu vẫn conflict:
-```bash
-# Edit docker-compose.yml
-redis:
-  ports:
-    - "6381:6379"  # Đổi sang 6381
-```
-
-### Issue 4: Backend không start
-
-**Fix**:
-```bash
-# Rebuild without cache
-docker compose build --no-cache backend
-docker compose up -d backend
-
-# Check logs
-docker compose logs backend
-```
-
-## 📚 Next Steps
-
-1. **Đọc full docs**: Xem `README.md` để hiểu rõ hơn về Architecture và Advanced Features
-2. **Try different configs**: Thử GPT-4, đổi temperature, system_prompt
-3. **Upload multiple documents**: Test RAG với knowledge base lớn hơn
-4. **Monitor performance**: Xem logs để optimize chunking strategy
-
-## 🎓 Tips
-
-✅ **Security**: Đổi passwords mặc định trong production
-✅ **Performance**: Enable caching bằng cách dùng exact same queries
-✅ **Cost**: Dùng GPT-3.5-turbo cho queries đơn giản, GPT-4 cho complex reasoning
-✅ **Accuracy**: Thử cả 2 chunking strategies và chọn cái tốt hơn cho use case của bạn
 
 ---
 
-**Ready to build?** 🚀
+## Tips
 
-Nếu có issues, check [Troubleshooting section trong README.md](README.md#troubleshooting)
+- Dùng `openai/gpt-4o-mini` cho queries thông thường (nhanh + rẻ)
+- Dùng `openai/gpt-4o` hoặc `anthropic/claude-3.5-sonnet` cho reasoning phức tạp
+- `chunking_strategy=semantic` tốt hơn cho tài liệu có cấu trúc (FAQ, manual)
+- `chunking_strategy=recursive` là default, tốt cho văn bản thông thường
+- Bật `enable_knowledge_graph=true` để extract entities — hữu ích cho tài liệu nhiều khái niệm
+
+---
+
+Gặp lỗi? Xem [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
