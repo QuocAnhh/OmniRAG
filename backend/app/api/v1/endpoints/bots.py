@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
@@ -135,7 +135,8 @@ def delete_bot(
 async def upload_document(
     bot_id: str,
     file: UploadFile = File(...),
-    chunking_strategy: str = "recursive",  # or "semantic"
+    chunking_strategy: str = Form("recursive"),  # or "semantic"
+    enable_knowledge_graph: bool = Form(False),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -175,7 +176,7 @@ async def upload_document(
         file_size=file_size,
         file_path=file_path,
         status="processing",
-        doc_metadata={"chunking_strategy": chunking_strategy}
+        doc_metadata={"chunking_strategy": chunking_strategy, "enable_knowledge_graph": enable_knowledge_graph}
     )
     db.add(doc)
     db.commit()
@@ -187,7 +188,8 @@ async def upload_document(
         str(bot_id),
         file_path,
         file.filename,
-        chunking_strategy
+        chunking_strategy,
+        enable_knowledge_graph
     )
     
     return doc

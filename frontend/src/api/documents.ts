@@ -14,11 +14,13 @@ export const documentsApi = {
   upload: async (
     botId: string,
     file: File,
-    chunkingStrategy: 'recursive' | 'semantic' = 'recursive'
+    chunkingStrategy: 'recursive' | 'semantic' = 'recursive',
+    enableKnowledgeGraph: boolean = false
   ): Promise<Document> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('chunking_strategy', chunkingStrategy);
+    formData.append('enable_knowledge_graph', String(enableKnowledgeGraph));
 
     const response = await apiClient.post<Document>(
       `/api/v1/bots/${botId}/documents`,

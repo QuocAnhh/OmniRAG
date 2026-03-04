@@ -14,6 +14,7 @@ export default function DocumentsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [selectedBotId, setSelectedBotId] = useState<string>('');
   const [loadingBots, setLoadingBots] = useState(true);
+  const [enableKnowledgeGraph, setEnableKnowledgeGraph] = useState(false);
 
   useEffect(() => {
     loadBots();
@@ -77,9 +78,9 @@ export default function DocumentsPage() {
 
     setUploading(true);
     try {
-      // Small artificial delay to show off the fancy SVG upload animation 
+      // Small artificial delay to show off the fancy SVG upload animation
       // and give Celery backend a moment to start the processing loop
-      const uploadPromise = documentsApi.upload(selectedBotId, file);
+      const uploadPromise = documentsApi.upload(selectedBotId, file, 'recursive', enableKnowledgeGraph);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
 
       await Promise.all([uploadPromise, delayPromise]);
@@ -161,6 +162,23 @@ export default function DocumentsPage() {
                 <input type="file" className="hidden" onChange={handleUpload} accept=".pdf,.txt" />
               </label>
             </div>
+          </div>
+
+          {/* Upload Options */}
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <button
+              type="button"
+              onClick={() => setEnableKnowledgeGraph(v => !v)}
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enableKnowledgeGraph ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+              role="switch"
+              aria-checked={enableKnowledgeGraph}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enableKnowledgeGraph ? 'translate-x-4' : 'translate-x-0'}`}
+              />
+            </button>
+            <span className="text-sm font-medium text-text-main dark:text-white">Build Knowledge Graph</span>
+            <span className="text-xs text-text-muted dark:text-gray-400">(dùng cho tài liệu phức tạp, dài — cần thêm thời gian xử lý)</span>
           </div>
 
           {/* Upload Zone */}

@@ -24,7 +24,8 @@ def process_document_task(
     bot_id: str,
     file_path: str,
     filename: str,
-    chunking_strategy: str = "recursive"
+    chunking_strategy: str = "recursive",
+    enable_knowledge_graph: bool = False
 ):
     """
     Background task to process document:
@@ -32,7 +33,7 @@ def process_document_task(
     2. Extract text and chunk
     3. Generate embeddings
     4. Store in Qdrant  <- document marked 'completed' here, chat is available immediately
-    5. Kick off LightRAG graph extraction as a separate background task (non-blocking)
+    5. Optionally kick off LightRAG graph extraction (only if enable_knowledge_graph=True)
     """
     try:
         # Update status to processing
@@ -79,16 +80,19 @@ def process_document_task(
             )
             
             # --- Fire-and-forget: LightRAG Knowledge Graph (separate task) ---
+            # Only runs if user explicitly opted in via enable_knowledge_graph=True.
             # Runs independently in the background. Does NOT block chatting.
-            # Only responsible for populating the Knowledge Graph visualization.
-            try:
-                documents = rag_service._load_document(tmp_file_path, filename)
-                full_text = "\n\n".join([doc.page_content for doc in documents])
-                if full_text.strip():
-                    build_knowledge_graph_task.delay(bot_id=bot_id, full_text=full_text, filename=filename)
-                    logger.info(f"Queued LightRAG knowledge graph task for bot={bot_id}, file={filename}")
-            except Exception as e:
-                logger.error(f"Failed to queue LightRAG task for {filename}: {e}")
+            if enable_knowledge_graph:
+                try:
+                    documents = rag_service._load_document(tmp_file_path, filename)
+                    full_text = "\n\n".join([doc.page_content for doc in documents])
+                    if full_text.strip():
+                        build_knowledge_graph_task.delay(bot_id=bot_id, full_text=full_text, filename=filename)
+                        logger.info(f"Queued LightRAG knowledge graph task for bot={bot_id}, file={filename}")
+                except Exception as e:
+                    logger.error(f"Failed to queue LightRAG task for {filename}: {e}")
+            else:
+                logger.info(f"Knowledge graph skipped for bot={bot_id}, file={filename} (not enabled)")
             # -----------------------------------------------------------------
 
             return {
