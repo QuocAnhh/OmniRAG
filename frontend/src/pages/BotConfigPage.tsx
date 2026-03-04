@@ -327,6 +327,9 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     );
   }
 
+  // Block new uploads while uploading OR while KG is still building in background
+  const isLocked = uploading || uploadStatus?.phase === 'kg_processing';
+
   return (
     <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: bot?.name || 'Config' }]}>
       <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
@@ -637,13 +640,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* Upload Zone */}
-              <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all cursor-pointer py-12 overflow-hidden ${uploading ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30'}`}>
+              <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all py-12 overflow-hidden ${isLocked ? (uploading ? 'border-primary/50 bg-primary/5 cursor-wait' : 'border-primary/20 bg-muted/5 opacity-50 cursor-not-allowed') : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30 cursor-pointer'}`}>
                 <input
                   type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   onChange={handleUpload}
                   accept=".pdf,.docx,.txt"
-                  disabled={uploading}
+                  disabled={isLocked}
                 />
 
                 {/* Background Grid Pattern */}
@@ -732,10 +735,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
                   <div className="flex flex-col gap-1.5 mt-2">
                     <p className={`text-base font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-600 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
-                      {uploading ? 'Vectorizing and Indexing...' : 'Drag & drop knowledge files'}
+                      {uploading ? 'Vectorizing and Indexing...' : isLocked ? 'Knowledge graph is building...' : 'Drag & drop knowledge files'}
                     </p>
                     <p className="text-xs font-medium text-muted-foreground">
-                      {uploading ? 'Please wait, do not close this window.' : 'or click to browse from your computer'}
+                      {uploading ? 'Please wait, do not close this window.' : isLocked ? 'Next upload available when graph is done.' : 'or click to browse from your computer'}
                     </p>
                   </div>
                 </div>
