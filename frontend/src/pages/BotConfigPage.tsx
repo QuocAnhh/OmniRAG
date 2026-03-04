@@ -7,6 +7,7 @@ import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import { documentsApi } from '../api/documents';
 import { apiClient } from '../api/client';
+import { useAuthStore } from '../store/authStore';
 import type { Bot, Document } from '../types/api';
 
 
@@ -44,10 +45,14 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'basic');
   const [bot, setBot] = useState<Bot | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [memories, setMemories] = useState<any[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -125,6 +130,41 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   };
 
+  const loadMemories = async (botId: string) => {
+    if (!user?.id) return;
+    setMemoriesLoading(true);
+    try {
+      const result = await botsApi.getMemories(botId, user.id);
+      setMemories(result.memories || []);
+      setMemoryEnabled(result.memory_enabled);
+    } catch (error) {
+      console.error('Failed to load memories:', error);
+    } finally {
+      setMemoriesLoading(false);
+    }
+  };
+
+  const handleClearMemories = async () => {
+    if (!id || !user?.id) return;
+    const result = await Swal.fire({
+      title: 'Clear all memories?',
+      text: 'Bot sẽ quên toàn bộ lịch sử nhớ về bạn. Không thể hoàn tác.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Xoá hết',
+      cancelButtonText: 'Huỷ',
+      confirmButtonColor: 'hsl(var(--destructive))',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await botsApi.clearMemories(id, user.id);
+      setMemories([]);
+      toast.success('Đã xoá toàn bộ memory.');
+    } catch {
+      toast.error('Xoá memory thất bại.');
+    }
+  };
+
   useEffect(() => {
     if (id) {
       loadBot(id);
@@ -151,6 +191,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // Auto-load memories when knowledge tab is active
+  useEffect(() => {
+    if (activeTab === 'knowledge' && id) {
+      loadMemories(id);
+    }
+  }, [activeTab, id]);
 
   // Cleanup all upload timers/pollers on unmount
   useEffect(() => {
@@ -922,6 +969,70 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   </table>
                 </div>
               </div>
+
+              {/* Conversation Memory Section */}
+              <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="px-8 py-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                  <div>
+                    <h4 className="text-base font-bold text-foreground">Conversation Memory</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">Những gì bot đã học và ghi nhớ về bạn qua các cuộc trò chuyện</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {!memoryEnabled && (
+                      <span className="text-xs text-muted-foreground bg-muted/20 px-3 py-1 rounded-lg border border-white/5">Memory disabled</span>
+                    )}
+                    <span className="bg-background/50 backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-lg border border-white/10 shadow-inner">
+                      {memories.length} memories
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => id && loadMemories(id)}
+                      disabled={memoriesLoading}
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {memoriesLoading ? 'Loading...' : 'Refresh'}
+                    </button>
+                    {memories.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearMemories}
+                        className="text-xs font-semibold text-destructive border border-destructive/30 bg-destructive/10 hover:bg-destructive/20 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {memoriesLoading ? (
+                    <div className="px-8 py-6 space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-4 bg-muted/20 rounded animate-pulse" style={{ width: `${60 + i * 10}%` }} />
+                      ))}
+                    </div>
+                  ) : memories.length === 0 ? (
+                    <div className="px-8 py-10 text-center">
+                      <p className="text-sm text-muted-foreground">Chưa có memory nào được lưu.</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Memory sẽ được tạo tự động sau các cuộc trò chuyện.</p>
+                    </div>
+                  ) : (
+                    memories.map((mem: any, i: number) => (
+                      <div key={mem.id || i} className="px-8 py-4 flex items-start gap-4 hover:bg-white/[0.02] transition-colors">
+                        <span className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground leading-relaxed">{mem.memory || mem.text || JSON.stringify(mem)}</p>
+                          {mem.created_at && (
+                            <p className="text-xs text-muted-foreground/50 mt-1">
+                              {new Date(mem.created_at).toLocaleString('vi-VN')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 

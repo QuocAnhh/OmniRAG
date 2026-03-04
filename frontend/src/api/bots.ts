@@ -47,4 +47,14 @@ export const botsApi = {
     const response = await apiClient.get<{nodes: any[], links: any[]}>(`/api/v1/bots/${botId}/knowledge-graph`);
     return response.data;
   },
+
+  getMemories: async (botId: string, userId: string): Promise<{ count: number; memories: any[]; memory_enabled: boolean }> => {
+    const response = await apiClient.get(`/api/v1/bots/${botId}/memory`, { params: { user_id: userId } });
+    return response.data;
+  },
+
+  clearMemories: async (botId: string, userId: string): Promise<{ deleted_count: number }> => {
+    const response = await apiClient.delete(`/api/v1/bots/${botId}/memory`, { params: { user_id: userId } });
+    return response.data;
+  },
 };
