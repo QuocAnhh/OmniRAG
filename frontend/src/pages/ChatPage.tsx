@@ -322,6 +322,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                         chunks={selectedEvidence ?? undefined}
                         activeEntities={activeEntities}
                         onExpandClick={() => navigate(`/bots/${id}/graph`)}
+                        onAskAboutEntity={handleSendMessage}
                     />
                 </div>
             }

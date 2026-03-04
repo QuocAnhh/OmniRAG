@@ -27,6 +27,7 @@ interface KnowledgeGraphPanelProps {
     activeEntities?: string[];
     onExpandClick?: () => void;
     defaultTopN?: number;
+    onAskAboutEntity?: (query: string) => void;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ const DEFAULT_HIDDEN_TYPES = new Set(['person', 'content', 'data', 'unknown', 'n
 
 const BORDER_DEFAULT  = '#EEEEEE';
 const BORDER_ACTIVE   = '#F57F17';
+const BORDER_SEARCH   = '#FFD700';
 const MIN_NODE_SIZE   = 4;
 const MAX_NODE_SIZE   = 20;
 
@@ -113,6 +115,7 @@ function buildGraphology(
             nodeType:    type,
             description: n.description ?? '',
             filePath:    n.file_path ?? '',
+            isActiveEntity: active,
             x: Math.random(),
             y: Math.random(),
         });
@@ -139,18 +142,38 @@ function buildGraphology(
 
 // ── Inner controller – inside SigmaContainer ─────────────────────────────────
 interface ControllerProps {
-    graph:       Graph;
-    hiddenTypes: Set<string>;
-    selectedId:  string | null;
-    onNodeClick: (id: string | null, attrs: Record<string, any> | null) => void;
-    onEdgeClick: (attrs: Record<string, any> | null) => void;
-    setHovered:  (label: string | null) => void;
+    graph:            Graph;
+    hiddenTypes:      Set<string>;
+    selectedId:       string | null;
+    focusedNodeId:    string | null;
+    searchHighlights: Set<string>;
+    onNodeClick:      (id: string | null, attrs: Record<string, any> | null) => void;
+    onEdgeClick:      (attrs: Record<string, any> | null) => void;
+    setHovered:       (label: string | null) => void;
+    onRegisterNavigate: (fn: (nodeId: string) => void) => void;
 }
 
-function GraphController({ graph, hiddenTypes, selectedId, onNodeClick, onEdgeClick, setHovered }: ControllerProps) {
+function GraphController({
+    graph, hiddenTypes, selectedId, focusedNodeId, searchHighlights,
+    onNodeClick, onEdgeClick, setHovered, onRegisterNavigate,
+}: ControllerProps) {
     const sigma          = useSigma();
     const loadGraph      = useLoadGraph();
     const registerEvents = useRegisterEvents();
+
+    // Register camera navigation function
+    useEffect(() => {
+        onRegisterNavigate((nodeId: string) => {
+            const g = sigma.getGraph();
+            if (!g.hasNode(nodeId)) return;
+            const x = g.getNodeAttribute(nodeId, 'x');
+            const y = g.getNodeAttribute(nodeId, 'y');
+            if (x != null && y != null) {
+                sigma.getCamera().animate({ x, y, ratio: 0.3 }, { duration: 500 });
+            }
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sigma]);
 
     // Load graph + ForceAtlas2 layout
     useEffect(() => {
@@ -179,31 +202,45 @@ function GraphController({ graph, hiddenTypes, selectedId, onNodeClick, onEdgeCl
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [graph, loadGraph]);
 
-    // Toggle hidden types
+    // Visibility: hidden types + ego-network focus mode
     useEffect(() => {
-        if (sigma.getGraph().order === 0) return;
-        sigma.getGraph().forEachNode((nodeId, attrs) => {
-            sigma.getGraph().setNodeAttribute(nodeId, 'hidden', hiddenTypes.has(attrs.nodeType ?? ''));
+        const g = sigma.getGraph();
+        if (g.order === 0) return;
+        let neighbors: Set<string> | null = null;
+        if (focusedNodeId && g.hasNode(focusedNodeId)) {
+            neighbors = new Set(g.neighbors(focusedNodeId));
+        }
+        g.forEachNode((nodeId, attrs) => {
+            let hidden = hiddenTypes.has(attrs.nodeType ?? '');
+            if (neighbors && nodeId !== focusedNodeId && !neighbors.has(nodeId)) {
+                hidden = true;
+            }
+            g.setNodeAttribute(nodeId, 'hidden', hidden);
         });
         sigma.refresh();
-    }, [hiddenTypes, sigma]);
+    }, [hiddenTypes, focusedNodeId, sigma]);
 
-    // Update selection border
+    // Unified border: selected > search > active-entity > default
     useEffect(() => {
-        if (sigma.getGraph().order === 0) return;
-        sigma.getGraph().forEachNode((nodeId, attrs) => {
-            const isActive   = attrs.borderColor === BORDER_ACTIVE && nodeId !== selectedId;
-            const isSelected = nodeId === selectedId;
-            if (isSelected) {
-                sigma.getGraph().setNodeAttribute(nodeId, 'borderColor', BORDER_ACTIVE);
-                sigma.getGraph().setNodeAttribute(nodeId, 'borderSize', 0.3);
-            } else if (!isActive) {
-                sigma.getGraph().setNodeAttribute(nodeId, 'borderColor', BORDER_DEFAULT);
-                sigma.getGraph().setNodeAttribute(nodeId, 'borderSize', 0.15);
+        const g = sigma.getGraph();
+        if (g.order === 0) return;
+        g.forEachNode((nodeId, attrs) => {
+            if (nodeId === selectedId) {
+                g.setNodeAttribute(nodeId, 'borderColor', BORDER_ACTIVE);
+                g.setNodeAttribute(nodeId, 'borderSize', 0.3);
+            } else if (searchHighlights.size > 0 && searchHighlights.has(nodeId)) {
+                g.setNodeAttribute(nodeId, 'borderColor', BORDER_SEARCH);
+                g.setNodeAttribute(nodeId, 'borderSize', 0.28);
+            } else if (attrs.isActiveEntity) {
+                g.setNodeAttribute(nodeId, 'borderColor', BORDER_ACTIVE);
+                g.setNodeAttribute(nodeId, 'borderSize', 0.25);
+            } else {
+                g.setNodeAttribute(nodeId, 'borderColor', BORDER_DEFAULT);
+                g.setNodeAttribute(nodeId, 'borderSize', 0.15);
             }
         });
         sigma.refresh();
-    }, [selectedId, sigma]);
+    }, [selectedId, searchHighlights, sigma]);
 
     // Events
     useEffect(() => {
@@ -246,7 +283,6 @@ const SIGMA_SETTINGS = {
     labelSize:          12,
     labelColor:         { color: '#ffffff' },
     edgeLabelSize:      8,
-    // Override Sigma's default white-background hover label
     defaultDrawNodeHover: (
         ctx:      CanvasRenderingContext2D,
         data:     Record<string, any>,
@@ -259,7 +295,6 @@ const SIGMA_SETTINGS = {
         const color  = (data.color as string) || '#6366f1';
         const fs     = (settings.labelSize as number) || 12;
 
-        // Glow ring
         ctx.save();
         ctx.beginPath();
         ctx.arc(x, y, size + 5, 0, Math.PI * 2);
@@ -267,7 +302,6 @@ const SIGMA_SETTINGS = {
         ctx.fill();
         ctx.restore();
 
-        // Dark pill label
         if (label) {
             ctx.save();
             ctx.font = `600 ${fs}px sans-serif`;
@@ -306,17 +340,23 @@ export default function KnowledgeGraphPanel({
     activeEntities = [],
     onExpandClick,
     defaultTopN,
+    onAskAboutEntity,
 }: KnowledgeGraphPanelProps) {
-    const [rawNodes,      setRawNodes]      = useState<RawNode[]>([]);
-    const [rawLinks,      setRawLinks]      = useState<RawLink[]>([]);
-    const [isLoading,     setIsLoading]     = useState(false);
-    const [topN,          setTopN]          = useState(defaultTopN ?? DEFAULT_TOP_N);
-    const [hiddenTypes,   setHiddenTypes]   = useState<Set<string>>(new Set(DEFAULT_HIDDEN_TYPES));
-    const [typeCounts,    setTypeCounts]    = useState<Record<string, number>>({});
-    const [selectedId,    setSelectedId]    = useState<string | null>(null);
-    const [selectedAttrs, setSelectedAttrs] = useState<Record<string, any> | null>(null);
-    const [selectedEdge,  setSelectedEdge]  = useState<Record<string, any> | null>(null);
-    const [hoveredLabel,  setHoveredLabel]  = useState<string | null>(null);
+    const [rawNodes,        setRawNodes]        = useState<RawNode[]>([]);
+    const [rawLinks,        setRawLinks]        = useState<RawLink[]>([]);
+    const [isLoading,       setIsLoading]       = useState(false);
+    const [topN,            setTopN]            = useState(defaultTopN ?? DEFAULT_TOP_N);
+    const [hiddenTypes,     setHiddenTypes]     = useState<Set<string>>(new Set(DEFAULT_HIDDEN_TYPES));
+    const [typeCounts,      setTypeCounts]      = useState<Record<string, number>>({});
+    const [selectedId,      setSelectedId]      = useState<string | null>(null);
+    const [selectedAttrs,   setSelectedAttrs]   = useState<Record<string, any> | null>(null);
+    const [selectedEdge,    setSelectedEdge]    = useState<Record<string, any> | null>(null);
+    const [hoveredLabel,    setHoveredLabel]    = useState<string | null>(null);
+    // New state
+    const [searchQuery,     setSearchQuery]     = useState('');
+    const [focusedNodeId,   setFocusedNodeId]   = useState<string | null>(null);
+    const [graphSummary,    setGraphSummary]    = useState<string>('');
+    const navigateCameraRef = useRef<((nodeId: string) => void) | null>(null);
 
     const maxSlider = Math.min(rawNodes.length || DEFAULT_TOP_N, MAX_STORED);
 
@@ -330,6 +370,32 @@ export default function KnowledgeGraphPanel({
             activeSet.has(n.name.toLowerCase()) || activeSet.has(n.id.toLowerCase())
         ).length;
     }, [activeSet, rawNodes]);
+
+    // Search: derive matching node IDs from the current graph
+    const graph = useMemo(
+        () => buildGraphology(rawNodes, rawLinks, topN, activeSet),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [rawNodes, rawLinks, topN],
+    );
+
+    const searchHighlights = useMemo<Set<string>>(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q || graph.order === 0) return new Set();
+        const hits = new Set<string>();
+        graph.forEachNode((nodeId, attrs) => {
+            const label = (attrs.label as string ?? '').toLowerCase();
+            if (label.includes(q)) hits.add(nodeId);
+        });
+        return hits;
+    }, [searchQuery, graph]);
+
+    // Navigate camera to first search result
+    useEffect(() => {
+        if (searchHighlights.size > 0 && navigateCameraRef.current) {
+            const firstHit = searchHighlights.values().next().value;
+            if (firstHit) navigateCameraRef.current(firstHit);
+        }
+    }, [searchHighlights]);
 
     // Fetch
     useEffect(() => {
@@ -348,24 +414,38 @@ export default function KnowledgeGraphPanel({
                         counts[t] = (counts[t] ?? 0) + 1;
                     }
                     setTypeCounts(counts);
+
+                    // Build graph summary
+                    if (nodes.length > 0) {
+                        const degMap: Record<string, number> = {};
+                        nodes.forEach(n => { degMap[n.id] = 0; });
+                        links.forEach(l => {
+                            if (degMap[l.source] !== undefined) degMap[l.source]++;
+                            if (degMap[l.target] !== undefined) degMap[l.target]++;
+                        });
+                        const topNames = nodes
+                            .slice()
+                            .sort((a, b) => (degMap[b.id] ?? 0) - (degMap[a.id] ?? 0))
+                            .slice(0, 3)
+                            .map(n => n.name);
+                        setGraphSummary(`${nodes.length} entities · ${links.length} connections · Key: ${topNames.join(', ')}`);
+                    }
                 })
                 .catch(err => console.error('graph fetch:', err))
                 .finally(() => setIsLoading(false));
         });
     }, [botId]);
 
-    const graph = useMemo(
-        () => buildGraphology(rawNodes, rawLinks, topN, activeSet),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [rawNodes, rawLinks, topN],
-    );
-
     const nodeClickRef = useRef<(id: string | null, attrs: Record<string, any> | null) => void>(null!);
     const edgeClickRef = useRef<(attrs: Record<string, any> | null) => void>(null!);
     const hoveredRef   = useRef(setHoveredLabel);
 
     const handleNodeClick = useCallback((id: string | null, attrs: Record<string, any> | null) => {
-        setSelectedId(id); setSelectedAttrs(attrs); setSelectedEdge(null);
+        setSelectedId(id);
+        setSelectedAttrs(attrs);
+        setSelectedEdge(null);
+        // Exit focus mode if clicking empty or a different node not in focus
+        if (id === null) setFocusedNodeId(null);
     }, []);
     const handleEdgeClick = useCallback((attrs: Record<string, any> | null) => {
         setSelectedEdge(attrs); setSelectedId(null); setSelectedAttrs(null);
@@ -378,6 +458,9 @@ export default function KnowledgeGraphPanel({
     const stableNodeClick  = useCallback((id: string | null, attrs: Record<string, any> | null) => nodeClickRef.current(id, attrs), []);
     const stableEdgeClick  = useCallback((attrs: Record<string, any> | null) => edgeClickRef.current(attrs), []);
     const stableSetHovered = useCallback((l: string | null) => hoveredRef.current(l), []);
+    const stableRegisterNavigate = useCallback((fn: (nodeId: string) => void) => {
+        navigateCameraRef.current = fn;
+    }, []);
 
     const toggleType = useCallback((type: string) => {
         setHiddenTypes(prev => {
@@ -387,6 +470,11 @@ export default function KnowledgeGraphPanel({
         });
     }, []);
 
+    const handleFocusNode = useCallback(() => {
+        if (!selectedId) return;
+        setFocusedNodeId(prev => prev === selectedId ? null : selectedId);
+    }, [selectedId]);
+
     const selType     = selectedAttrs?.nodeType ?? '';
     const selColor    = typeColor(selType);
     const selDesc     = (selectedAttrs?.description ?? '').split('\n')[0];
@@ -394,6 +482,8 @@ export default function KnowledgeGraphPanel({
     const selFileName = selFile && selFile !== 'unknown_source'
         ? selFile.split(/[\\/]/).pop()
         : null;
+    const selName     = selectedAttrs?.label ?? selectedId ?? '';
+    const isFocused   = focusedNodeId === selectedId && selectedId !== null;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0d0f14', color: '#e2e8f0', overflow: 'hidden' }}>
@@ -402,6 +492,17 @@ export default function KnowledgeGraphPanel({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', flex: 1 }}>Knowledge Graph</span>
+                {focusedNodeId && (
+                    <button onClick={() => setFocusedNodeId(null)} title="Exit focus mode" style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 700, color: '#f97316',
+                        background: '#f9731620', border: '1px solid #f9731640',
+                        borderRadius: 8, padding: '2px 8px', cursor: 'pointer',
+                    }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Exit focus
+                    </button>
+                )}
                 {activeHitCount > 0 && (
                     <span style={{ fontSize: 11, background: '#F57F17', color: '#000', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>
                         {activeHitCount} active
@@ -410,6 +511,31 @@ export default function KnowledgeGraphPanel({
                 {onExpandClick && (
                     <button onClick={onExpandClick} title="Full screen" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 2 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                )}
+            </div>
+
+            {/* Search bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                    type="text"
+                    placeholder="Search entities..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{
+                        flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                        fontSize: 11, color: '#e2e8f0', placeholder: '#4b5563',
+                    }}
+                />
+                {searchHighlights.size > 0 && (
+                    <span style={{ fontSize: 10, color: '#FFD700', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {searchHighlights.size} found
+                    </span>
+                )}
+                {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0, lineHeight: 1, fontSize: 12 }}>
+                        ✕
                     </button>
                 )}
             </div>
@@ -458,6 +584,16 @@ export default function KnowledgeGraphPanel({
                 </div>
             )}
 
+            {/* Graph summary */}
+            {graphSummary && !selectedAttrs && !selectedEdge && (
+                <div style={{
+                    padding: '5px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0,
+                    fontSize: 10, color: '#4b5563', lineHeight: 1.5,
+                }}>
+                    {graphSummary}
+                </div>
+            )}
+
             {/* Graph canvas */}
             <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
                 {isLoading && (
@@ -485,9 +621,12 @@ export default function KnowledgeGraphPanel({
                             graph={graph}
                             hiddenTypes={hiddenTypes}
                             selectedId={selectedId}
+                            focusedNodeId={focusedNodeId}
+                            searchHighlights={searchHighlights}
                             onNodeClick={stableNodeClick}
                             onEdgeClick={stableEdgeClick}
                             setHovered={stableSetHovered}
+                            onRegisterNavigate={stableRegisterNavigate}
                         />
                     </SigmaContainer>
                 )}
@@ -495,11 +634,11 @@ export default function KnowledgeGraphPanel({
 
             {/* Selected node panel */}
             {selectedAttrs && (
-                <div style={{ borderTop: '1px solid #1e2330', padding: '10px 12px', flexShrink: 0, maxHeight: 160, overflowY: 'auto', background: '#0a0c10' }}>
+                <div style={{ borderTop: '1px solid #1e2330', padding: '10px 12px', flexShrink: 0, maxHeight: 200, overflowY: 'auto', background: '#0a0c10' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                         <span style={{ width: 10, height: 10, borderRadius: '50%', background: selColor, flexShrink: 0 }} />
                         <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {selectedAttrs.label ?? selectedId}
+                            {selName}
                         </span>
                         <span style={{ fontSize: 10, background: `${selColor}22`, color: selColor, borderRadius: 8, padding: '1px 6px' }}>
                             {typeLabel(selType)}
@@ -508,8 +647,47 @@ export default function KnowledgeGraphPanel({
                             ✕
                         </button>
                     </div>
-                    {selDesc && <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 4px', lineHeight: 1.5 }}>{selDesc}</p>}
-                    {selFileName && <p style={{ fontSize: 10, color: '#4b5563', margin: 0 }}>Src: {selFileName}</p>}
+                    {selDesc && <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px', lineHeight: 1.5 }}>{selDesc}</p>}
+                    {selFileName && <p style={{ fontSize: 10, color: '#4b5563', margin: '0 0 8px' }}>Src: {selFileName}</p>}
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {/* Focus neighborhood */}
+                        <button onClick={handleFocusNode} style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, fontWeight: 600,
+                            color: isFocused ? '#f97316' : '#94a3b8',
+                            background: isFocused ? '#f9731620' : '#1e2330',
+                            border: isFocused ? '1px solid #f9731640' : '1px solid #2d3748',
+                            borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
+                            transition: 'all 0.15s',
+                        }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" strokeDasharray="4 2"/></svg>
+                            {isFocused ? 'Unfocus' : 'Focus neighborhood'}
+                        </button>
+
+                        {/* Ask AI */}
+                        {onAskAboutEntity && (
+                            <button
+                                onClick={() => {
+                                    onAskAboutEntity(`Tell me more about "${selName}"`);
+                                    handleNodeClick(null, null);
+                                }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 4,
+                                    fontSize: 10, fontWeight: 600,
+                                    color: '#a5b4fc',
+                                    background: '#6366f120',
+                                    border: '1px solid #6366f140',
+                                    borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Ask AI about this
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 
