@@ -54,7 +54,7 @@ from langchain.schema import Document as LangChainDocument
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, MatchText
 
 from app.core.config import settings
 from app.db.mongodb import get_mongodb
@@ -64,11 +64,15 @@ import tempfile
 import shutil
 import hashlib
 import json
-
-import json
 import re
 
 logger = logging.getLogger(__name__)
+
+
+def _sigmoid(x):
+    """Sigmoid normalization: maps logit scores to 0..1 probability range."""
+    import numpy as np
+    return 1 / (1 + np.exp(-x))
 
 
 def _extract_lightrag_entity_names(lightrag_raw: str) -> list:
@@ -190,9 +194,7 @@ class OpenRouterRAGService:
         self.reranker = None
         self._reranker_attempted = False
 
-        logger.info("OpenRouterRAGService initialized (Reranker will be loaded on demand)")
-
-        logger.info("OpenRouterRAGService initialized successfully")
+        logger.info("OpenRouterRAGService initialized successfully (reranker loads on demand)")
     
     def _ensure_collection(self):
         """Ensure Qdrant collection exists with proper configuration (Quantization + Indexing)."""
@@ -353,88 +355,113 @@ class OpenRouterRAGService:
         top_k: int = 5
     ) -> List[Dict]:
         """
-        Hybrid retrieval with Re-ranking (Cross-Encoder).
+        True Hybrid retrieval: Vector (semantic) + Full-Text Search (Qdrant BM25-style)
+        merged via RRF (Reciprocal Rank Fusion), then re-ranked with Cross-Encoder.
         """
-        # Fetch more candidates if reranker is active
         reranker = self._get_reranker()
-        initial_limit = top_k * 5 if reranker else top_k * 2
+        initial_limit = top_k * 5 if reranker else top_k * 3
         
-        # 1. Vector search (Semantic retrieval)
+        bot_filter = Filter(
+            must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
+        )
+
+        # 1. Vector search (Semantic)
         vector_response = self.qdrant_client.query_points(
             collection_name=self.collection_name,
             query=query_embedding,
-            query_filter=Filter(
-                must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
-            ),
+            query_filter=bot_filter,
             limit=initial_limit,
             with_payload=True
         )
         vector_results = vector_response.points
-        
+
+        # 2. Full-Text Search (uses the text index created during collection setup)
+        fts_results = []
+        if query.strip():
+            try:
+                fts_scroll, _ = self.qdrant_client.scroll(
+                    collection_name=self.collection_name,
+                    scroll_filter=Filter(
+                        must=[
+                            FieldCondition(key="bot_id", match=MatchValue(value=bot_id)),
+                            FieldCondition(key="text", match=MatchText(text=query))
+                        ]
+                    ),
+                    limit=initial_limit,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                fts_results = fts_scroll
+                logger.debug(f"FTS found {len(fts_results)} results for query: {query[:50]}")
+            except Exception as e:
+                logger.warning(f"FTS search failed, using vector-only: {e}")
+
+        # 3. Merge via Reciprocal Rank Fusion (RRF)
+        rrf_k = 60  # standard RRF constant
+        scores: Dict[str, float] = {}
+        payloads: Dict[str, dict] = {}
+
+        for rank, point in enumerate(vector_results):
+            key = point.payload.get("text", "")[:200]  # content fingerprint
+            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
+            payloads[key] = {
+                "text": point.payload["text"],
+                "source": point.payload.get("source", "unknown"),
+                "initial_score": point.score,
+                "metadata": point.payload.get("metadata", {})
+            }
+
+        for rank, point in enumerate(fts_results):
+            key = point.payload.get("text", "")[:200]
+            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
+            if key not in payloads:
+                payloads[key] = {
+                    "text": point.payload["text"],
+                    "source": point.payload.get("source", "unknown"),
+                    "initial_score": 0.5,  # FTS hit, no cosine score
+                    "metadata": point.payload.get("metadata", {})
+                }
+
         candidates = []
-        for result in vector_results:
-             candidates.append({
-                "text": result.payload["text"],
-                "source": result.payload.get("source", "unknown"),
-                "initial_score": result.score,
-                "metadata": result.payload.get("metadata", {})
-            })
-            
+        for key, rrf_score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+            c = payloads[key].copy()
+            c["rrf_score"] = rrf_score
+            candidates.append(c)
+
         if not candidates:
             return []
 
-        # 2. Re-ranking (if available)
+        # 4. Re-ranking (Cross-Encoder) if available
+        import numpy as np
         reranker = self._get_reranker()
         if reranker:
             try:
-                import numpy as np
                 pairs = [[query, c["text"]] for c in candidates]
-                
-                # Predict scores (logits)
-                rerank_scores = reranker.predict(pairs) 
-                
-                # Ensure it's a list even if 1 item
+                rerank_scores = reranker.predict(pairs)
+
                 if isinstance(rerank_scores, float):
                     rerank_scores = [rerank_scores]
-                
-                # Sigmoid Normalization: 1 / (1 + exp(-x))
-                # MiniLM logits -> 0..1 probability
-                def sigmoid(x):
-                    return 1 / (1 + np.exp(-x))
-                
-                norm_scores = sigmoid(np.array(rerank_scores))
-                
+
+                norm_scores = _sigmoid(np.array(rerank_scores))
+
                 for i, c in enumerate(candidates):
                     c["hybrid_score"] = float(norm_scores[i])
                     c["rerank_raw"] = float(rerank_scores[i])
-                    
-                # Sort by rerank score
+
                 candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
-                
-                top_score = candidates[0]["hybrid_score"]
-                logger.info(f"Reranked {len(candidates)} items. Top Score: {top_score:.4f}")
-                
+                logger.info(f"Hybrid reranked {len(candidates)} items (vec+fts+ce). Top: {candidates[0]['hybrid_score']:.4f}")
+
             except Exception as e:
-                logger.warning(f"Reranking failed: {e}. Falling back to simple scoring.")
-                # Fallback logic below
+                logger.warning(f"Reranking failed: {e}. Falling back to RRF order.")
                 for c in candidates:
-                    c["hybrid_score"] = c["initial_score"]
-                candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
+                    c["hybrid_score"] = c["rrf_score"]
         else:
-            # Fallback to previous Keyword+Vector mix logic
-            query_terms = set(query.lower().split())
             for c in candidates:
-                text = c["text"].lower()
-                text_terms = set(text.split())
-                keyword_overlap = len(query_terms & text_terms) / max(len(query_terms), 1)
-                
-                # Combine scores (70% semantic, 30% keyword)
-                c["hybrid_score"] = (0.7 * c["initial_score"]) + (0.3 * keyword_overlap)
-            
+                c["hybrid_score"] = c["rrf_score"]
             candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
-        
+
         return candidates[:top_k]
-    
+
     async def _generate_hyde_query(self, query: str) -> str:
         """
         Generate hypothetical document using HyDE technique.
@@ -455,7 +482,7 @@ Question: {query}
 Answer:"""
             }
         ]
-        
+
         try:
             response = self._chat_with_retry(
                 messages=hyde_prompt,
@@ -742,7 +769,7 @@ Answer:"""
         
         # 1. Check Redis cache
         if use_cache and self.redis_client:
-            cache_key = f"chat:{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
+            cache_key = f"rag:chat:{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
             try:
                 cached_str = await asyncio.to_thread(self.redis_client.get, cache_key)
                 if cached_str:
@@ -859,8 +886,9 @@ Answer:"""
                 "search_query": search_query,
                 "system_prompt": effective_system_prompt,
                 "memories_used": user_memories,
+                "lightrag_entities": prep.get("lightrag_entities", []),
             }
-            
+
             # ── Memory: Save this conversation turn (non-blocking) ────────
             if enable_memory and user_id:
                 asyncio.create_task(memory_service.add(
@@ -977,8 +1005,6 @@ Answer:"""
         if not filtered_results and search_results:
             filtered_results = search_results
 
-        context_docs = []
-        sources = []
         context_docs = []
         sources = []
         
@@ -1177,7 +1203,7 @@ Answer:"""
                     q.put(("error", e))
 
             # Start worker thread
-            worker_thread = asyncio.get_event_loop().run_in_executor(None, stream_worker)
+            worker_thread = asyncio.get_running_loop().run_in_executor(None, stream_worker)
             
             chunk_count = 0
             while True:

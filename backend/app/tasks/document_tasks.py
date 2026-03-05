@@ -137,13 +137,6 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str,
         from app.services.lightrag_service import get_lightrag_service
         import asyncio
 
-        # Ensure we have a clean event loop if we are in a worker environment
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
         lightrag_service = get_lightrag_service(bot_id=bot_id)
 
         # Running the insert operation

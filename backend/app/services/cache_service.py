@@ -42,7 +42,7 @@ class CacheService:
 
     async def clear_prefix(self, prefix: str):
         """Clear all keys with specific prefix (Scan & Delete)."""
-        redis = await self.get_redis()
+        redis = self.redis
         pattern = f"{prefix}:*"
         keys = []
         async for key in redis.scan_iter(match=pattern):

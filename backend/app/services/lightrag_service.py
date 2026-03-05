@@ -119,14 +119,14 @@ class LightRAGService:
         """
         Extract Entities and Relationships from a raw text and insert to Graph.
         """
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
         logger.info("Starting LightRAG ingestion (Entity & Relationship Extraction)...")
         
         try:
             await self.rag.initialize_storages()
             await self.rag.ainsert(text)
             
-            elapsed = asyncio.get_event_loop().time() - start_time
+            elapsed = asyncio.get_running_loop().time() - start_time
             logger.info(f"LightRAG ingestion complete in {elapsed:.2f}s.")
             return {
                 "status": "success",
