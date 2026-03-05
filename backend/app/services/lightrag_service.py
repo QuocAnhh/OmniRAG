@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 #   google/gemini-2.0-flash-001          → fastest, very cheap
 #   openai/gpt-4o-mini                   → reliable, cheap
 #   meta-llama/llama-3.1-8b-instruct     → free tier available
-LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "openai/gpt-4.1-mini")
+LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "minimax/minimax-m2.5")
 LIGHTRAG_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 async def _global_embedding_func(texts: list[str]) -> np.ndarray:
