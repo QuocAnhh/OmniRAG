@@ -82,6 +82,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - QDRANT_HOST=qdrant
+      - QDRANT_URL=http://qdrant:6333
       - HF_HOME=/app/.cache/huggingface
       - LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
     depends_on:
@@ -98,7 +99,7 @@ services:
 
   celery_worker:
     build: ./backend
-    command: celery -A app.worker worker --loglevel=info
+    command: celery -A app.worker worker --loglevel=info --concurrency=4
     volumes:
       - ./backend:/app
       - huggingface_cache:/app/.cache/huggingface
@@ -113,6 +114,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - QDRANT_HOST=qdrant
+      - QDRANT_URL=http://qdrant:6333
       - HF_HOME=/app/.cache/huggingface
       - LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
     depends_on:
@@ -130,11 +132,8 @@ services:
       - qdrant_data:/qdrant/storage
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Ollama (dành cho Linux server / CI)
-  # Trên macOS M1/M2/M3: chạy Ollama native để dùng Metal GPU (nhanh hơn 8x)
   #   brew install ollama && ollama serve
   #   ollama pull qwen2.5:14b
-  # Sau đó bỏ comment block này nếu muốn chạy trong container trên Linux:
   # ─────────────────────────────────────────────────────────────────────────
   # ollama:
   #   image: ollama/ollama:latest

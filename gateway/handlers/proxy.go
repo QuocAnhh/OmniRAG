@@ -20,8 +20,11 @@ import (
 )
 
 const (
-	// FIX #2: Limit request body to 10MB to prevent OOM attacks
+	// Default body size limit for normal API requests
 	maxBodySize = 10 * 1024 * 1024 // 10 MB
+
+	// Higher limit for document upload endpoints (POST /documents)
+	maxUploadBodySize = 20 * 1024 * 1024 // 20 MB
 
 	// Max duration for a single SSE stream (prevents goroutine exhaustion)
 	maxStreamDuration = 30 * time.Minute
@@ -50,8 +53,15 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 	path := c.Request.URL.Path
 	method := c.Request.Method
 
-	// FIX #2: Limit body size to prevent memory exhaustion (OOM) attacks
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBodySize)
+	// Apply a higher body size limit for document upload endpoints
+	bodyLimit := int64(maxBodySize)
+	limitErrMsg := "Request body exceeds 10MB limit"
+	if method == "POST" && strings.Contains(path, "/documents") {
+		bodyLimit = int64(maxUploadBodySize)
+		limitErrMsg = "Request body exceeds 20MB limit"
+	}
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, bodyLimit)
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		if strings.Contains(err.Error(), "http: request body too large") {
@@ -60,7 +70,7 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 				zap.String("ip", c.ClientIP()),
 			)
 			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
-				"error": "Request body exceeds 10MB limit",
+				"error": limitErrMsg,
 			})
 			return
 		}
@@ -161,6 +171,17 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 			cacheKey := h.generateCacheKey(path, string(bodyBytes), authHeader)
 			h.saveToCache(cacheKey, responseData)
 		}
+	}
+
+	// Invalidate GET cache after successful write operations on the same path.
+	// Prevents stale data (e.g. bot config showing old model after PUT /bots/{id}).
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 &&
+		(method == "PUT" || method == "PATCH" || method == "DELETE") &&
+		!isDynamicEndpoint {
+		authHeader := c.GetHeader("Authorization")
+		// GET requests have no body, so body part of the key is ""
+		getCacheKey := h.generateCacheKey(path, "", authHeader)
+		h.deleteFromCache(getCacheKey)
 	}
 
 	// Copy response headers to client
@@ -295,5 +316,15 @@ func (h *ProxyHandler) saveToCache(key string, data interface{}) {
 	ttl := time.Duration(h.config.CacheTTL) * time.Second
 	if err := h.redis.Set(ctx, key, jsonData, ttl).Err(); err != nil {
 		h.logger.Error("Failed to save to cache", zap.Error(err))
+	}
+}
+
+// deleteFromCache removes a cached entry from Redis (used for cache invalidation on writes)
+func (h *ProxyHandler) deleteFromCache(key string) {
+	ctx := context.Background()
+	if err := h.redis.Del(ctx, key).Err(); err != nil {
+		h.logger.Debug("Cache invalidation: key not found or delete failed", zap.String("key", key), zap.Error(err))
+	} else {
+		h.logger.Info("Cache invalidated", zap.String("key", key))
 	}
 }

@@ -23,20 +23,17 @@ LIGHTRAG_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 async def _global_embedding_func(texts: list[str]) -> np.ndarray:
     """
-    Embedding function for LightRAG → OpenRouter.
-    Regardless of how many texts LightRAG passes (even texts=1 per entity),
-    we always send them as a single batched request to OpenRouter.
+    Embedding function for LightRAG → OpenRouter (async).
+    Gọi thẳng embed_batch_async() thay vì wrap qua asyncio.to_thread,
+    vì đang chạy trong async context của LightRAG's event loop.
     """
     from app.services.openrouter_service import get_openrouter_service
     openrouter = get_openrouter_service()
     if not texts:
         return np.array([])
-    logger.debug(f"LightRAG Embedding: {len(texts)} texts → 1 batched API call")
+    logger.info(f"[LightRAG Embed] {len(texts)} texts → OpenRouter (async)")
     try:
-        embeddings = await asyncio.to_thread(
-            openrouter.embed_batch,
-            texts=texts          # OpenRouter handles up to 2048 texts per call
-        )
+        embeddings = await openrouter.embed_batch_async(texts)
         return np.array(embeddings)
     except Exception as e:
         logger.error(f"LightRAG Embedding error: {e}")
@@ -84,6 +81,15 @@ class LightRAGService:
 
         self.rag = LightRAG(
             working_dir=self.working_dir,
+            workspace=bot_id,  # per-bot isolation trong Qdrant collection
+
+            # ── Vector storage: Qdrant thay vì JSON files ──────────────────
+            # Loại bỏ vdb_entities.json (34MB) + vdb_relationships.json (29MB)
+            # mỗi lần insert phải rewrite toàn bộ → "Saving and indexing" chậm
+            vector_storage="QdrantVectorDBStorage",
+            vector_db_storage_cls_kwargs={
+                "cosine_better_than_threshold": 0.2,
+            },
 
             # ── LLM: OpenRouter (entity extraction) ──────────────────────────
             llm_model_name=LIGHTRAG_LLM_MODEL,
@@ -121,21 +127,17 @@ class LightRAGService:
         """
         start_time = asyncio.get_running_loop().time()
         logger.info("Starting LightRAG ingestion (Entity & Relationship Extraction)...")
-        
-        try:
-            await self.rag.initialize_storages()
-            await self.rag.ainsert(text)
-            
-            elapsed = asyncio.get_running_loop().time() - start_time
-            logger.info(f"LightRAG ingestion complete in {elapsed:.2f}s.")
-            return {
-                "status": "success",
-                "message": "Graph extracted successfully",
-                "time_taken": round(elapsed, 2)
-            }
-        except Exception as e:
-            logger.error(f"LightRAG Insert error: {e}")
-            return {"status": "error", "message": str(e)}
+
+        await self.rag.initialize_storages()
+        await self.rag.ainsert(text)
+
+        elapsed = asyncio.get_running_loop().time() - start_time
+        logger.info(f"LightRAG ingestion complete in {elapsed:.2f}s.")
+        return {
+            "status": "success",
+            "message": "Graph extracted successfully",
+            "time_taken": round(elapsed, 2)
+        }
 
     async def query(self, query_text: str, mode: str = "hybrid") -> str:
         """
@@ -163,11 +165,15 @@ class LightRAGService:
 
     def get_graph_data_for_ui(self) -> Dict[str, Any]:
         """
-        Reads the local graph storage (NetworkX format) and returns standardized JSON nodes/links 
+        Reads the local graph storage (NetworkX format) and returns standardized JSON nodes/links
         for the React 3D/2D Force Graph.
         """
         import networkx as nx
-        graph_file = os.path.join(self.working_dir, "graph_chunk_entity_relation.graphml")
+        # LightRAG saves under {working_dir}/{workspace}/graph_chunk_entity_relation.graphml
+        # when workspace= is set. Fall back to flat path for older data.
+        workspace_path = os.path.join(self.working_dir, self.bot_id, "graph_chunk_entity_relation.graphml")
+        flat_path = os.path.join(self.working_dir, "graph_chunk_entity_relation.graphml")
+        graph_file = workspace_path if os.path.exists(workspace_path) else flat_path
         
         if not os.path.exists(graph_file):
             return {"nodes": [], "links": []}
@@ -222,8 +228,25 @@ class LightRAGService:
 _lightrag_instances: Dict[str, LightRAGService] = {}
 
 def get_lightrag_service(bot_id: str) -> LightRAGService:
-    """Get or create a cached LightRAGService instance per bot_id."""
+    """Get or create a LightRAGService instance per bot_id.
+
+    Cache strategy:
+    - Async context (FastAPI, inside `await`): safe to reuse the cached instance
+      because asyncio.Lock objects stay on the same event loop.
+    - Sync context (Celery task, before asyncio.run()): always return a FRESH
+      instance so that initialize_storages() creates Lock objects on the NEW event
+      loop that asyncio.run() is about to spawn. Reusing a stale instance here
+      causes "Lock is bound to a different event loop" errors.
+    """
     global _lightrag_instances
-    if bot_id not in _lightrag_instances:
-        _lightrag_instances[bot_id] = LightRAGService(bot_id=bot_id)
-    return _lightrag_instances[bot_id]
+    try:
+        asyncio.get_running_loop()
+        # Running inside an existing event loop (FastAPI) — cache is safe
+        if bot_id not in _lightrag_instances:
+            _lightrag_instances[bot_id] = LightRAGService(bot_id=bot_id)
+        return _lightrag_instances[bot_id]
+    except RuntimeError:
+        # No running event loop — called from a sync context (Celery worker).
+        # Always return a fresh instance; its storages will be initialised inside
+        # the new loop that asyncio.run() creates, so no lock/loop mismatch.
+        return LightRAGService(bot_id=bot_id)

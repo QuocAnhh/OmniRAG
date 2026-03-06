@@ -208,6 +208,43 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     };
   }, []);
 
+  // Resume KG polling if user navigated away while a KG build was still in progress
+  useEffect(() => {
+    if (!id || uploadStatus !== null || documents.length === 0) return;
+    const kgProcessingDoc = documents.find(doc => doc.doc_metadata?.kg_status === 'processing');
+    if (!kgProcessingDoc || kgPollRef.current) return;
+
+    kgDocIdRef.current = kgProcessingDoc.id;
+    const kgStart = Date.now();
+    setUploadStatus({
+      phase: 'kg_processing',
+      filename: kgProcessingDoc.filename,
+      elapsedSeconds: 0,
+      kgElapsedSeconds: 0,
+      docId: kgProcessingDoc.id,
+    });
+
+    kgTimerRef.current = setInterval(() => {
+      setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+    }, 1000);
+
+    kgPollRef.current = setInterval(async () => {
+      try {
+        const docs = await documentsApi.list(id);
+        setDocuments(docs);
+        const updated = docs.find(d => d.id === kgDocIdRef.current);
+        const kgStatus = updated?.doc_metadata?.kg_status;
+        if (kgStatus === 'completed') {
+          clearUploadTimers();
+          setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+        } else if (kgStatus === 'failed') {
+          clearUploadTimers();
+          setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
+        }
+      } catch { /* ignore poll errors */ }
+    }, 4000);
+  }, [id, documents, uploadStatus]);
+
   const handleSaveBasicSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
@@ -374,8 +411,9 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     );
   }
 
-  // Block new uploads while uploading OR while KG is still building in background
-  const isLocked = uploading || uploadStatus?.phase === 'kg_processing';
+  // Block new uploads only during active file transfer.
+  // KG processing runs in background after document is already 'completed' — no need to block.
+  const isLocked = uploading;
 
   return (
     <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: bot?.name || 'Config' }]}>
@@ -687,7 +725,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* Upload Zone */}
-              <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all py-12 overflow-hidden ${isLocked ? (uploading ? 'border-primary/50 bg-primary/5 cursor-wait' : 'border-primary/20 bg-muted/5 opacity-50 cursor-not-allowed') : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30 cursor-pointer'}`}>
+              <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all py-12 overflow-hidden ${isLocked ? 'border-primary/50 bg-primary/5 cursor-wait' : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30 cursor-pointer'}`}>
                 <input
                   type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
@@ -782,10 +820,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
                   <div className="flex flex-col gap-1.5 mt-2">
                     <p className={`text-base font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-600 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
-                      {uploading ? 'Vectorizing and Indexing...' : isLocked ? 'Knowledge graph is building...' : 'Drag & drop knowledge files'}
+                      {uploading ? 'Vectorizing and Indexing...' : 'Drag & drop knowledge files'}
                     </p>
                     <p className="text-xs font-medium text-muted-foreground">
-                      {uploading ? 'Please wait, do not close this window.' : isLocked ? 'Next upload available when graph is done.' : 'or click to browse from your computer'}
+                      {uploading ? 'Please wait, do not close this window.' : 'or click to browse from your computer'}
                     </p>
                   </div>
                 </div>

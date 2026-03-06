@@ -649,9 +649,9 @@ Answer:"""
             chunk.metadata["source"] = filename
             chunk.metadata["ingested_at"] = datetime.utcnow().isoformat()
 
-        logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter")
+        logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter (async)")
         texts = [chunk.page_content for chunk in chunks]
-        embeddings = self.openrouter.embed_batch(texts, batch_size=100)
+        embeddings = asyncio.run(self.openrouter.embed_batch_async(texts, batch_size=100))
 
         if embeddings:
             detected_dim = len(embeddings[0])
@@ -667,7 +667,6 @@ Answer:"""
                     pass
                 self._ensure_collection()
 
-        logger.info(f"Inserting {len(chunks)} vectors into Qdrant")
         points = []
         for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
             point_id = hashlib.md5(
@@ -687,10 +686,13 @@ Answer:"""
                 )
             )
 
-        self.qdrant_client.upsert(
-            collection_name=self.collection_name,
-            points=points
-        )
+        UPSERT_BATCH_SIZE = 200
+        logger.info(f"Inserting {len(points)} vectors into Qdrant (batches of {UPSERT_BATCH_SIZE})")
+        for i in range(0, len(points), UPSERT_BATCH_SIZE):
+            self.qdrant_client.upsert(
+                collection_name=self.collection_name,
+                points=points[i:i + UPSERT_BATCH_SIZE]
+            )
 
         elapsed_time = time.time() - start_time
 
@@ -974,20 +976,43 @@ Answer:"""
         })
         query_embedding = self._embed_with_retry(search_query)
         
-        # 4. Search & Rerank
+        # 4. Search & Rerank + LightRAG — run concurrently since they are independent
         agent_logs.append({
             "step": "Knowledge Retrieval",
-            "description": "Searching knowledge base for relevant context.",
+            "description": "Searching knowledge base and querying knowledge graph in parallel.",
             "timestamp": datetime.utcnow().isoformat()
         })
-        search_results = await asyncio.to_thread(
-            self._hybrid_search,
-            bot_id=bot_id,
-            query=search_query,
-            query_embedding=query_embedding,
-            top_k=top_k
+
+        async def _run_lightrag(bid: str, q: str) -> str:
+            try:
+                from app.services.lightrag_service import get_lightrag_service
+                svc = get_lightrag_service(bot_id=bid)
+                result = await svc.query(q, mode="hybrid")
+                return result or ""
+            except Exception as exc:
+                logger.warning(f"LightRAG query failed: {exc}")
+                return ""
+
+        search_results, lightrag_raw = await asyncio.gather(
+            asyncio.to_thread(
+                self._hybrid_search,
+                bot_id=bot_id,
+                query=search_query,
+                query_embedding=query_embedding,
+                top_k=top_k
+            ),
+            _run_lightrag(bot_id, search_query),
+            return_exceptions=True,
         )
-        
+
+        # Handle exceptions from gather
+        if isinstance(search_results, BaseException):
+            logger.warning(f"Hybrid search failed: {search_results}")
+            search_results = []
+        if isinstance(lightrag_raw, BaseException):
+            logger.warning(f"LightRAG gather error: {lightrag_raw}")
+            lightrag_raw = ""
+
         if self.reranker:
             agent_logs.append({
                 "step": "Cross-Encoder Reranking",
@@ -998,48 +1023,39 @@ Answer:"""
 
         similarity_threshold = bot_config.get("similarity_threshold", 0.15)
         filtered_results = [
-            r for r in search_results 
+            r for r in search_results
             if r.get("hybrid_score", 0) >= similarity_threshold
         ]
-        
+
         if not filtered_results and search_results:
             filtered_results = search_results
 
         context_docs = []
         sources = []
-        
+
         # Smart highlights from Backend
         for idx, result in enumerate(filtered_results):
             doc_id = idx + 1
             # Add highlights to each result chunk
             result["highlights"] = self._extract_smart_highlights(search_query, result.get("text", ""))
-            
+
             context_docs.append(f"[[{doc_id}]] Source: {result.get('source', 'Unknown')}\n{result['text']}")
             source_name = result.get("source", "Unknown")
             if source_name not in sources:
                 sources.append(source_name)
-                
-        # --- LightRAG Query (raw graph context, no LLM synthesis) ---
+
+        # --- LightRAG context post-processing ---
         lightrag_context = ""
         lightrag_entities: list = []
-        try:
-            from app.services.lightrag_service import get_lightrag_service
-            lightrag_service = get_lightrag_service(bot_id=bot_id)
-            # only_need_context=True in lightrag_service.query → Ollama NOT called here
-            # Raw entity/relationship context is returned and fed to OpenRouter below
-            lightrag_raw = await lightrag_service.query(search_query, mode="hybrid")
-            if lightrag_raw and not lightrag_raw.startswith("Error") and "Sorry, I'm not able to provide an answer" not in lightrag_raw:
-                lightrag_context = f"\n\n--- CONTEXT TỪ KNOWLEDGE GRAPH (ENTITIES & RELATIONSHIPS) ---\n{lightrag_raw}\n(Dùng context trên để bổ sung vào câu trả lời, không trích dẫn nguyên văn)\n\n"
-                # Extract entity names so frontend can highlight them in the knowledge graph
-                lightrag_entities = _extract_lightrag_entity_names(lightrag_raw)
-                agent_logs.append({
-                    "step": "Knowledge Graph Retrieval",
-                    "description": f"Successfully traversed the entity-relationship graph. Found {len(lightrag_entities)} relevant entities.",
-                    "timestamp": datetime.utcnow().isoformat()
-                })
-        except Exception as e:
-            logger.warning(f"LightRAG query failed: {e}")
-        # ----------------------
+        if lightrag_raw and not lightrag_raw.startswith("Error") and "Sorry, I'm not able to provide an answer" not in lightrag_raw:
+            lightrag_context = f"\n\n--- CONTEXT TỪ KNOWLEDGE GRAPH (ENTITIES & RELATIONSHIPS) ---\n{lightrag_raw}\n(Dùng context trên để bổ sung vào câu trả lời, không trích dẫn nguyên văn)\n\n"
+            # Extract entity names so frontend can highlight them in the knowledge graph
+            lightrag_entities = _extract_lightrag_entity_names(lightrag_raw)
+            agent_logs.append({
+                "step": "Knowledge Graph Retrieval",
+                "description": f"Successfully traversed the entity-relationship graph. Found {len(lightrag_entities)} relevant entities.",
+                "timestamp": datetime.utcnow().isoformat()
+            })
         
         context = "\n---\n".join(context_docs)
         if lightrag_context:

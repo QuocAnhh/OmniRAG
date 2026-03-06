@@ -8,10 +8,12 @@ Supports:
 - Caching and error handling
 """
 
+import asyncio
 import logging
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Union
-from openai import OpenAI, OpenAIError
+from openai import AsyncOpenAI, OpenAI, OpenAIError
 from app.core.config import settings
 import time
 import json
@@ -56,12 +58,15 @@ class OpenRouterService:
             headers["HTTP-Referer"] = site_url
         if site_name:
             headers["X-Title"] = site_name
-        
+
+        # Stored for AsyncOpenAI client reconstruction inside embed_batch_async
+        self._default_headers = headers if len(headers) > 1 else None
+
         # Initialize OpenAI client with OpenRouter base URL
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=self.api_key,
-            default_headers=headers if len(headers) > 1 else None
+            default_headers=self._default_headers
         )
         
         logger.info(
@@ -253,38 +258,115 @@ class OpenRouterService:
         """
         return self.generate_embeddings(text, model=model)
     
+    def _embed_single_batch_with_retry(
+        self,
+        batch: List[str],
+        model: Optional[str],
+        max_retries: int = 3
+    ) -> List[List[float]]:
+        """Wrap generate_embeddings with exponential backoff on RateLimitError (429)."""
+        from openai import RateLimitError
+        for attempt in range(max_retries):
+            try:
+                return self.generate_embeddings(batch, model=model)
+            except RateLimitError:
+                if attempt == max_retries - 1:
+                    raise
+                wait = 2 ** attempt  # 1s, 2s, 4s
+                logger.warning(f"OpenRouter rate limit hit, retrying in {wait}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait)
+
     def embed_batch(
         self,
         texts: List[str],
         model: Optional[str] = None,
-        batch_size: int = 100
+        batch_size: int = 100,
+        max_workers: int = 3
     ) -> List[List[float]]:
         """
-        Generate embeddings for large batches with automatic chunking.
-        
-        Args:
-            texts: List of texts to embed
-            model: Embedding model to use
-            batch_size: Number of texts to process per API call
-            
-        Returns:
-            List of embedding vectors
+        Generate embeddings for large batches with parallel API calls.
+        Uses ThreadPoolExecutor because generate_embeddings is I/O-bound (HTTP),
+        so the GIL is released during network wait — threads run truly in parallel.
+        max_workers=3 by default to avoid hitting OpenRouter rate limits when
+        multiple Celery workers run simultaneously (4 workers × 3 threads = 12 calls).
         """
-        all_embeddings = []
-        
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            embeddings = self.generate_embeddings(batch, model=model)
-            all_embeddings.extend(embeddings)
-            
-            logger.debug(f"Processed batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
-        
-        return all_embeddings
-    
+        batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
+        all_embeddings: List[List[float]] = [None] * len(batches)
+
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(batches))) as executor:
+            futures = {
+                executor.submit(self._embed_single_batch_with_retry, batch, model): idx
+                for idx, batch in enumerate(batches)
+            }
+            for future in as_completed(futures):
+                idx = futures[future]
+                all_embeddings[idx] = future.result()
+                logger.debug(f"Embedding batch {idx + 1}/{len(batches)} completed")
+
+        return [emb for batch_result in all_embeddings for emb in batch_result]
+
+    async def embed_batch_async(
+        self,
+        texts: List[str],
+        model: Optional[str] = None,
+        batch_size: int = 100,
+        concurrency: int = 3,
+        max_retries: int = 3
+    ) -> List[List[float]]:
+        """
+        Async version of embed_batch using asyncio.gather() + Semaphore.
+
+        Tất cả batches được fired gần như cùng lúc. Semaphore giới hạn số batch
+        đang active → thời gian tổng ≈ thời gian của batch chậm nhất (+ overhead nhỏ).
+
+        NOTE: AsyncOpenAI client được tạo bên trong function (không phải __init__)
+        vì mỗi asyncio.run() tạo event loop mới — client phải cùng loop với caller.
+        """
+        from openai import RateLimitError as AsyncRateLimitError
+
+        batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
+        all_embeddings: List[Optional[List[List[float]]]] = [None] * len(batches)
+        sem = asyncio.Semaphore(concurrency)
+        embed_model = model or self.embedding_model
+
+        async def _fetch_one(idx: int, batch: List[str], client: AsyncOpenAI) -> None:
+            async with sem:
+                for attempt in range(max_retries):
+                    try:
+                        response = await client.embeddings.create(
+                            model=embed_model,
+                            input=batch
+                        )
+                        all_embeddings[idx] = [item.embedding for item in response.data]
+                        logger.debug(f"Async embedding batch {idx + 1}/{len(batches)} done")
+                        return
+                    except AsyncRateLimitError:
+                        if attempt == max_retries - 1:
+                            raise
+                        wait = 2 ** attempt  # 1s, 2s, 4s
+                        logger.warning(
+                            f"Rate limit hit on batch {idx + 1}, retry in {wait}s "
+                            f"(attempt {attempt + 1}/{max_retries})"
+                        )
+                        await asyncio.sleep(wait)
+
+        # AsyncOpenAI tạo ở đây — cùng event loop với asyncio.gather()
+        async with AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=self.api_key,
+            default_headers=self._default_headers
+        ) as async_client:
+            await asyncio.gather(*[
+                _fetch_one(idx, batch, async_client)
+                for idx, batch in enumerate(batches)
+            ])
+
+        return [emb for batch_result in all_embeddings for emb in batch_result]
+
     def test_connection(self) -> bool:
         """
         Test if OpenRouter API is accessible with current credentials.
-        
+
         Returns:
             True if connection successful, False otherwise
         """
