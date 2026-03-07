@@ -188,6 +188,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
         }
     };
 
+    const handleFeedback = async (messageId: string, score: number) => {
+        if (!id) return;
+        try {
+            await chatApi.sendFeedback(id, messageId, score);
+        } catch {
+            toast.error('Could not save feedback. Please try again.');
+        }
+    };
 
     const handleSendMessage = async (text: string) => {
         if (!id) return;
@@ -257,6 +265,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                     if (chunk.type === 'metadata') {
                         return {
                             ...msg,
+                            message_id: chunk.message_id,
                             sources: chunk.sources,
                             retrieved_chunks: chunk.retrieved_chunks,
                             agent_logs: chunk.agent_logs,
@@ -346,7 +355,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                             }}
                             className={cn("space-y-2", msg.retrieved_chunks ? "cursor-pointer" : "")}
                         >
-                            {(msg.role === 'user' || msg.content !== '') && <ChatMessage message={msg} />}
+                            {(msg.role === 'user' || msg.content !== '') && <ChatMessage message={msg} onFeedback={msg.role !== 'user' ? handleFeedback : undefined} />}
                         </div>
                     ))}
                     {isTyping && (!messages[messages.length - 1]?.content) && <TypingIndicator />}

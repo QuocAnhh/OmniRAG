@@ -8,6 +8,7 @@ import secrets
 from pathlib import Path
 import logging
 import json
+from datetime import datetime, timezone
 
 from pydantic import BaseModel
 from app.api import deps
@@ -649,4 +650,87 @@ async def generate_bot_prompt(
     except Exception as e:
         logger.error(f"Failed to generate prompt: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate prompt")
+
+
+class FeedbackRequest(BaseModel):
+    score: int  # 1 = thumbs up, -1 = thumbs down
+
+
+class RetrieveRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+
+@router.post("/{bot_id}/retrieve")
+async def test_retrieval(
+    bot_id: str,
+    request: RetrieveRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Debug: run hybrid search and return scored chunks for a query."""
+    try:
+        bot_uuid = UUID(bot_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid bot ID format")
+
+    bot = db.query(BotModel).filter(
+        BotModel.id == bot_uuid,
+        BotModel.tenant_id == current_user.tenant_id
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    try:
+        import asyncio
+        query_embedding = await asyncio.to_thread(rag_service._embed_with_retry, request.query)
+        candidates = await asyncio.to_thread(
+            rag_service._hybrid_search,
+            bot_id, request.query, query_embedding, request.top_k
+        )
+        results = [
+            {
+                "text": c["text"],
+                "source": c.get("source", "unknown"),
+                "score": round(c.get("hybrid_score", c.get("rrf_score", 0.0)), 6),
+                "metadata": c.get("metadata", {}),
+            }
+            for c in candidates
+        ]
+        return {"results": results, "hyde_document": None}
+    except Exception as e:
+        logger.error(f"Retrieval test failed: {e}")
+        raise HTTPException(status_code=500, detail="Retrieval failed. Please try again.")
+
+
+@router.post("/{bot_id}/chat/{message_id}/feedback", status_code=200)
+async def submit_message_feedback(
+    bot_id: str,
+    message_id: str,
+    feedback_in: FeedbackRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Store thumbs-up / thumbs-down feedback for a specific AI message."""
+    try:
+        from app.db.mongodb import get_mongodb
+        mongo_db = await get_mongodb()
+        await mongo_db.message_feedback.update_one(
+            {"message_id": message_id},
+            {
+                "$set": {
+                    "message_id": message_id,
+                    "bot_id": bot_id,
+                    "user_id": str(current_user.id),
+                    "tenant_id": str(current_user.tenant_id),
+                    "score": feedback_in.score,
+                    "updated_at": datetime.now(timezone.utc),
+                },
+                "$setOnInsert": {"created_at": datetime.now(timezone.utc)},
+            },
+            upsert=True,
+        )
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Failed to store feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save feedback. Please try again.")
 

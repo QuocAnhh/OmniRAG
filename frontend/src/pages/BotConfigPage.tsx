@@ -9,6 +9,7 @@ import { documentsApi } from '../api/documents';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import type { Bot, Document } from '../types/api';
+import RetrievalTester from '../components/retrieval/RetrievalTester';
 
 
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
@@ -1528,6 +1529,24 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   </div>
                 </div>
               </div>
+
+              {/* Retrieval Tester */}
+              {id && (
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="size-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-600">
+                      <span className="material-symbols-outlined">find_in_page</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">Test Retrieval</h3>
+                      <p className="text-sm text-muted-foreground">See exactly which chunks get retrieved for any query — before your users ask.</p>
+                    </div>
+                  </div>
+                  <div className="h-[480px]">
+                    <RetrievalTester botId={id} />
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end pt-4">
                 <button
