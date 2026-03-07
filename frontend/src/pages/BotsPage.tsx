@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { Bot as BotIcon, Plus, Play, Settings, Trash2, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 export default function BotsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -21,6 +22,7 @@ export default function BotsPage() {
       setBots(data);
     } catch (error) {
       console.error('Failed to load bots:', error);
+      toast.error('Could not load your agents. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,7 @@ export default function BotsPage() {
         await botsApi.delete(id);
         setBots(bots.filter(bot => bot.id !== id));
       } catch (error) {
-        alert('Failed to delete bot');
+        toast.error('Failed to delete agent. Please try again.');
       }
     }
   };

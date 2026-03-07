@@ -59,7 +59,7 @@ async def test_openrouter_connection():
             
     except Exception as e:
         logger.error(f"OpenRouter test failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to connect to AI service. Please try again.")
 
 
 @router.post("/chat")
@@ -83,7 +83,7 @@ async def chat_completion(request: ChatRequest):
         
     except Exception as e:
         logger.error(f"Chat completion error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to generate a response. Please try again.")
 
 
 @router.post("/embeddings")
@@ -108,7 +108,7 @@ async def generate_embeddings(request: EmbeddingRequest):
         
     except Exception as e:
         logger.error(f"Embeddings generation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to process text embeddings. Please try again.")
 
 
 @router.post("/rag/ingest")
@@ -136,7 +136,7 @@ async def ingest_document(
         
     except Exception as e:
         logger.error(f"Document ingestion error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to process document. Please try again.")
 
 
 @router.post("/rag/chat")
@@ -161,7 +161,7 @@ async def rag_chat(request: RAGChatRequest):
         
     except Exception as e:
         logger.error(f"RAG chat error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to generate a response. Please try again.")
 
 
 @router.get("/models/chat")

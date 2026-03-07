@@ -888,7 +888,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                       <button type="button" onClick={() => setUploadStatus(null)}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dong
+                        Dismiss
                       </button>
                     </div>
                   )}
@@ -902,7 +902,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                       <button type="button" onClick={() => setUploadStatus(null)}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dong
+                        Dismiss
                       </button>
                     </div>
                   )}
@@ -910,10 +910,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {/* --- CANCELLED --- */}
                   {uploadStatus.phase === 'cancelled' && (
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-muted-foreground">Upload da bi huy.</p>
+                      <p className="text-muted-foreground">Upload cancelled.</p>
                       <button type="button" onClick={() => setUploadStatus(null)}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dong
+                        Dismiss
                       </button>
                     </div>
                   )}
@@ -921,10 +921,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {/* --- FAILED --- */}
                   {uploadStatus.phase === 'failed' && (
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-destructive">{uploadStatus.errorMsg || 'Upload that bai.'}</p>
+                      <p className="text-destructive">{uploadStatus.errorMsg || 'Upload failed.'}</p>
                       <button type="button" onClick={() => setUploadStatus(null)}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dong
+                        Dismiss
                       </button>
                     </div>
                   )}
@@ -1013,7 +1013,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 <div className="px-8 py-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
                   <div>
                     <h4 className="text-base font-bold text-foreground">Conversation Memory</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">Những gì bot đã học và ghi nhớ về bạn qua các cuộc trò chuyện</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">What the bot has learned and remembered from your conversations</p>
                   </div>
                   <div className="flex items-center gap-3">
                     {!memoryEnabled && (
@@ -1050,8 +1050,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   ) : memories.length === 0 ? (
                     <div className="px-8 py-10 text-center">
-                      <p className="text-sm text-muted-foreground">Chưa có memory nào được lưu.</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">Memory sẽ được tạo tự động sau các cuộc trò chuyện.</p>
+                      <p className="text-sm text-muted-foreground">No memories saved yet.</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Memories are created automatically after conversations.</p>
                     </div>
                   ) : (
                     memories.map((mem: any, i: number) => (

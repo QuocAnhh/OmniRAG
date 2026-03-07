@@ -6,6 +6,7 @@ import type { Document } from '../types/api';
 import type { Bot } from '../types/api';
 import { Button } from '../components/ui/Button';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -50,6 +51,7 @@ export default function DocumentsPage() {
       setSelectedBotId(defaultBotId);
     } catch (error) {
       console.error('Failed to load bots:', error);
+      toast.error('Could not load your agents. Please refresh the page.');
     } finally {
       setLoadingBots(false);
     }
@@ -62,6 +64,7 @@ export default function DocumentsPage() {
       setDocuments(data);
     } catch (error) {
       console.error('Failed to load documents:', error);
+      toast.error('Could not load documents. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export default function DocumentsPage() {
     if (!file) return;
 
     if (!selectedBotId) {
-      alert('Please select a bot first');
+      toast.error('Please select an agent first');
       return;
     }
 
@@ -90,7 +93,7 @@ export default function DocumentsPage() {
       // Force reset input value so the same file could be uploaded again
       e.target.value = '';
     } catch (error) {
-      alert('Upload failed');
+      toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -114,7 +117,7 @@ export default function DocumentsPage() {
         await documentsApi.delete(selectedBotId, id);
         setDocuments(documents.filter(doc => doc.id !== id));
       } catch (error) {
-        alert('Delete failed');
+        toast.error('Failed to delete document. Please try again.');
       }
     }
   };
@@ -178,7 +181,7 @@ export default function DocumentsPage() {
               />
             </button>
             <span className="text-sm font-medium text-text-main dark:text-white">Build Knowledge Graph</span>
-            <span className="text-xs text-text-muted dark:text-gray-400">(dùng cho tài liệu phức tạp, dài — cần thêm thời gian xử lý)</span>
+            <span className="text-xs text-text-muted dark:text-gray-400">(for complex or long documents — requires extra processing time)</span>
           </div>
 
           {/* Upload Zone */}

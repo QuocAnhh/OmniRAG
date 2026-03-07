@@ -171,11 +171,11 @@ export default function BotWizardPage() {
                     personality: formData.personality
                 }
             });
-            toast.success('Agent created successfully!', { id: toastId });
+            toast.success('Agent created! Upload documents to activate RAG.', { id: toastId, duration: 5000 });
             window.dispatchEvent(new CustomEvent('bot-created'));
 
             if (newBot && newBot.id) {
-                navigate(`/bots/${newBot.id}/chat`);
+                navigate(`/bots/${newBot.id}/config?tab=knowledge`);
             } else {
                 navigate('/bots');
             }
