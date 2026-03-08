@@ -993,6 +993,13 @@ Answer:"""
                 logger.warning(f"LightRAG query failed: {exc}")
                 return ""
 
+        use_kg = bot_config.get("enable_knowledge_graph", False)
+
+        async def _maybe_lightrag() -> str:
+            if not use_kg:
+                return ""
+            return await _run_lightrag(bot_id, search_query)
+
         search_results, lightrag_raw = await asyncio.gather(
             asyncio.to_thread(
                 self._hybrid_search,
@@ -1001,7 +1008,7 @@ Answer:"""
                 query_embedding=query_embedding,
                 top_k=top_k
             ),
-            _run_lightrag(bot_id, search_query),
+            _maybe_lightrag(),
             return_exceptions=True,
         )
 

@@ -59,6 +59,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [uploading, setUploading] = useState(false);
   const [enableKnowledgeGraph, setEnableKnowledgeGraph] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatusState | null>(null);
+  const [advancedMode, setAdvancedMode] = useState(() => localStorage.getItem('botConfig_advancedMode') === 'true');
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const kgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -82,6 +83,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     max_tokens: 2000,
     top_k: 5,
     similarity_threshold: 0,
+    enable_knowledge_graph: false,
     zalo_integration: {
       account_id: '',
       is_active: false
@@ -104,6 +106,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         max_tokens: botData.config?.max_tokens || 2000,
         top_k: botData.config?.top_k || 5,
         similarity_threshold: botData.config?.similarity_threshold || 0.6,
+        enable_knowledge_graph: botData.config?.enable_knowledge_graph || false,
         zalo_integration: botData.config?.zalo_integration || {
           account_id: '',
           is_active: false
@@ -238,6 +241,11 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         if (kgStatus === 'completed') {
           clearUploadTimers();
           setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+          setFormData(prev => ({ ...prev, enable_knowledge_graph: true }));
+          // Persist the KG flag to the backend by merging with the latest config
+          botsApi.get(id!).then(latest => {
+            botsApi.update(id!, { config: { ...latest.config, enable_knowledge_graph: true } }).catch(console.error);
+          }).catch(console.error);
         } else if (kgStatus === 'failed') {
           clearUploadTimers();
           setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
@@ -266,6 +274,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           max_tokens: formData.max_tokens,
           top_k: formData.top_k,
           similarity_threshold: formData.similarity_threshold,
+          enable_knowledge_graph: formData.enable_knowledge_graph,
           zalo_integration: formData.zalo_integration,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {})
         },
@@ -546,37 +555,77 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     Behavior Engine
                   </h3>
 
+                  {/* Simple / Advanced toggle */}
+                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border">
+                    <span className="text-sm text-muted-foreground">
+                      {advancedMode ? 'Advanced mode — full controls visible' : 'Simple mode — smart defaults applied'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !advancedMode;
+                        setAdvancedMode(next);
+                        localStorage.setItem('botConfig_advancedMode', String(next));
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">{advancedMode ? 'toggle_on' : 'toggle_off'}</span>
+                      {advancedMode ? 'Advanced' : 'Simple'}
+                    </button>
+                  </div>
+
                   <div className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">Model</label>
-                        <div className="relative">
-                          <select
-                            value={formData.model}
-                            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm appearance-none cursor-pointer"
-                          >
-                            <optgroup label="OpenAI (Next Gen)">
-                              <option value="openai/gpt-5-mini">GPT-5 Mini (New!)</option>
-                              <option value="openai/gpt-4.1-mini">GPT-4.1 Mini</option>
-                              <option value="openai/gpt-4o">GPT-4o (Stable)</option>
-                              <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
-                            </optgroup>
-                            <optgroup label="Google">
-                              <option value="google/gemini-2.5-flash-lite-preview-09-2025">Gemini 2.5 Flash Lite (Preview)</option>
-                              <option value="google/gemini-flash-1.5">Gemini 1.5 Flash</option>
-                              <option value="google/gemini-pro-1.5">Gemini 1.5 Pro</option>
-                            </optgroup>
-                            <optgroup label="Meta & Open Source">
-                              <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
-                              <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B</option>
-                              <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
-                              <option value="deepseek/deepseek-chat">DeepSeek V3</option>
-                              <option value="mistralai/mistral-large">Mistral Large 2</option>
-                            </optgroup>
-                          </select>
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground material-symbols-outlined text-sm">expand_more</span>
-                        </div>
+                        {advancedMode ? (
+                          <div className="relative">
+                            <select
+                              value={formData.model}
+                              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm appearance-none cursor-pointer"
+                            >
+                              <optgroup label="OpenAI (Next Gen)">
+                                <option value="openai/gpt-5-mini">GPT-5 Mini (New!)</option>
+                                <option value="openai/gpt-4.1-mini">GPT-4.1 Mini</option>
+                                <option value="openai/gpt-4o">GPT-4o (Stable)</option>
+                                <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                              </optgroup>
+                              <optgroup label="Google">
+                                <option value="google/gemini-2.5-flash-lite-preview-09-2025">Gemini 2.5 Flash Lite (Preview)</option>
+                                <option value="google/gemini-flash-1.5">Gemini 1.5 Flash</option>
+                                <option value="google/gemini-pro-1.5">Gemini 1.5 Pro</option>
+                              </optgroup>
+                              <optgroup label="Meta & Open Source">
+                                <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
+                                <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B</option>
+                                <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
+                                <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+                                <option value="mistralai/mistral-large">Mistral Large 2</option>
+                              </optgroup>
+                            </select>
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground material-symbols-outlined text-sm">expand_more</span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'google/gemini-2.5-flash-lite-preview-09-2025', label: 'Fast', icon: '⚡', desc: 'Low latency' },
+                              { id: 'openai/gpt-4o-mini', label: 'Balanced', icon: '🎯', desc: 'Recommended' },
+                              { id: 'openai/gpt-4o', label: 'Powerful', icon: '🧠', desc: 'Best quality' },
+                            ].map(tier => (
+                              <button
+                                key={tier.id}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, model: tier.id })}
+                                className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${formData.model === tier.id ? 'bg-primary/10 border-primary text-primary' : 'bg-muted/10 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+                              >
+                                <span className="text-lg">{tier.icon}</span>
+                                <span className="text-xs font-bold">{tier.label}</span>
+                                <span className="text-[10px] opacity-70">{tier.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">Role</label>
@@ -647,6 +696,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
+                    {advancedMode && (
                     <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
                       <div className="space-y-2">
                         <div className="flex justify-between">
@@ -681,6 +731,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                         />
                       </div>
                     </div>
+                    )}
                   </div>
                 </div>
               </div>

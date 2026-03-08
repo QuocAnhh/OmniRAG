@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List, Union
 from pydantic import AnyHttpUrl, validator
+import secrets
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "OmniRAG"
@@ -39,14 +40,17 @@ class Settings(BaseSettings):
         return f"postgresql://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}@{values.get('POSTGRES_SERVER')}/{values.get('POSTGRES_DB')}"
 
     # JWT
-    SECRET_KEY: str = "YOUR_SUPER_SECRET_KEY_CHANGE_ME"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v: str, values: dict) -> str:
-        if v == "YOUR_SUPER_SECRET_KEY_CHANGE_ME" and values.get("ENVIRONMENT") == "production":
-            raise ValueError("SECRET_KEY must be set in production")
+        if not v:
+            if values.get("ENVIRONMENT") == "production":
+                raise ValueError("SECRET_KEY must be explicitly set in production")
+            # Dev/staging: auto-generate a secure ephemeral key
+            return secrets.token_hex(32)
         return v
 
     # ============================================================
