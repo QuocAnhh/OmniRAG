@@ -1,0 +1,24 @@
+# Secrets and local config
+.env
+*.env
+
+# Built binary (don't copy a locally-built binary into the image)
+gateway
+
+# IDE / editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git metadata
+.git/
+.gitignore
+
+# Test artifacts
+**/*_test.go
+coverage.out
+*.test
+
+# macOS
+.DS_Store

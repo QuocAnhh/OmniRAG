@@ -71,7 +71,8 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 		}
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rl.limit))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
-		c.Header("X-RateLimit-Reset", "1") // resets in ~1 second
+		// X-RateLimit-Reset must be a Unix epoch timestamp, not a relative duration.
+		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(time.Second).Unix()))
 
 		// Block if over limit
 		if count > int64(rl.limit) {
