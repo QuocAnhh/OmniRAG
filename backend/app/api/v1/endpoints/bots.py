@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
@@ -9,6 +9,24 @@ from pathlib import Path
 import logging
 import json
 from datetime import datetime, timezone
+
+# ─── File upload constants ────────────────────────────────────────────────────
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".md"}
+MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
+
+# Map allowed extensions → expected MIME type prefixes (loose check, no magic library needed)
+EXTENSION_MIME_MAP = {
+    ".pdf":  "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml",
+    ".doc":  "application/msword",
+    ".txt":  "text/",
+    ".md":   "text/",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml",
+    ".ppt":  "application/vnd.ms-powerpoint",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml",
+    ".xls":  "application/vnd.ms-excel",
+    ".csv":  "text/",
+}
 
 from pydantic import BaseModel
 from app.api import deps
@@ -154,25 +172,61 @@ async def upload_document(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
+    # ── Validate file ──────────────────────────────────────────────────────────
+    original_filename = file.filename or ""
+    if not original_filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    suffix = Path(original_filename).suffix.lower()
+    if suffix not in ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{suffix}' is not allowed. Allowed types: {allowed}"
+        )
+
+    # Cross-check content_type against extension (client-supplied, but acts as a sanity check)
+    declared_mime = (file.content_type or "").lower()
+    expected_mime_prefix = EXTENSION_MIME_MAP.get(suffix, "")
+    if declared_mime and expected_mime_prefix and not declared_mime.startswith(expected_mime_prefix):
+        logger.warning(
+            f"MIME mismatch on upload: extension={suffix}, content_type={declared_mime}, "
+            f"user_id={current_user.id}"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="File content type does not match its extension"
+        )
+
+    # Enforce file size at the application layer
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    if file_size > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB"
+        )
+
+    # Use a UUID-based storage key to prevent path traversal; keep original name in DB
+    safe_storage_name = f"{uuid.uuid4()}{suffix}"
+
     # Upload file to MinIO
     try:
-        file.file.seek(0, 2)
-        file_size = file.file.tell()
-        file.file.seek(0)
         file_path = storage_service.upload_file(
             file.file,
-            file.filename,
+            safe_storage_name,
             content_type=file.content_type or "application/octet-stream"
         )
     except Exception as e:
-        logger.error(f"Failed to upload document {file.filename} to storage: {str(e)}", exc_info=True)
+        logger.error(f"Failed to upload document to storage: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to upload file. Please try again.")
 
     # Save to DB (processing)
     doc = DocumentModel(
         id=uuid.uuid4(),
         bot_id=bot_uuid,
-        filename=file.filename,
+        filename=original_filename,
         file_type=file.content_type or "text/plain",
         file_size=file_size,
         file_path=file_path,
@@ -540,11 +594,10 @@ class PromptGenerationRequest(BaseModel):
 @router.get("/{bot_id}/memory", response_model=Dict[str, Any])
 async def get_user_memories(
     bot_id: str,
-    user_id: str = Query(..., description="User identifier to retrieve memories for"),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
-    """Get all stored Mem0 memories for a specific user+bot pair (admin/debug view)."""
+    """Get all stored Mem0 memories for the current user+bot pair."""
     try:
         bot_uuid = UUID(bot_id)
     except ValueError:
@@ -557,6 +610,7 @@ async def get_user_memories(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
+    user_id = str(current_user.id)
     memories = await memory_service.get_all(user_id=user_id, bot_id=bot_id)
     return {
         "user_id": user_id,
@@ -570,11 +624,10 @@ async def get_user_memories(
 @router.delete("/{bot_id}/memory", response_model=Dict[str, Any])
 async def delete_user_memories(
     bot_id: str,
-    user_id: str = Query(..., description="User identifier whose memories to delete"),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
-    """Delete ALL stored memories for a user+bot pair (GDPR compliance)."""
+    """Delete ALL stored memories for the current user+bot pair (GDPR compliance)."""
     try:
         bot_uuid = UUID(bot_id)
     except ValueError:
@@ -587,6 +640,7 @@ async def delete_user_memories(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
+    user_id = str(current_user.id)
     deleted_count = await memory_service.delete_all(user_id=user_id, bot_id=bot_id)
     return {
         "status": "deleted",

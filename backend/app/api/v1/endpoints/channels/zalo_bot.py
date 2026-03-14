@@ -2,6 +2,7 @@
 Zalo Bot Channel — Webhook & Management Endpoints
 Handles incoming Zalo Bot messages and connect/disconnect flows.
 """
+import hmac
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, Depends
@@ -45,9 +46,11 @@ async def zalo_bot_webhook(bot_id: str, request: Request):
         zalo_config = (bot.config or {}).get("zalo_bot", {})
         expected_secret = zalo_config.get("webhook_secret", "")
 
-        # Verify secret token header
+        # Verify secret token header using constant-time comparison to prevent timing attacks
         received_secret = request.headers.get("x-bot-api-secret-token", "")
-        if not expected_secret or received_secret != expected_secret:
+        if not expected_secret or not hmac.compare_digest(
+            received_secret.encode(), expected_secret.encode()
+        ):
             logger.warning(f"Zalo Bot webhook: Invalid secret for bot {bot_id}")
             raise HTTPException(status_code=403, detail="Invalid secret token")
     finally:

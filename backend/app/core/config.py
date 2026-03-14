@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     # ============================================================
     FUNC_API_URL: str = ""  # The URL to call Func.vn API (Reply Zalo Message)
     FUNC_API_TOKEN: str = "" # The Token provided by Func.vn for authentication
+    ZALO_HUB_WEBHOOK_SECRET: str = ""  # Secret for verifying incoming hub webhooks (set in .env)
 
     # ============================================================
     # Mem0 Memory Configuration

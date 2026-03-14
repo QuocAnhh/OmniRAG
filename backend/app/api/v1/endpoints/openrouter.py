@@ -3,13 +3,15 @@ OpenRouter API Endpoints
 Endpoints for testing and using OpenRouter services.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
 
 from app.services.openrouter_service import get_openrouter_service
 from app.services.openrouter_rag_service import get_openrouter_rag_service
+from app.api import deps
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,9 @@ class RAGChatRequest(BaseModel):
 
 # Endpoints
 @router.get("/test")
-async def test_openrouter_connection():
+async def test_openrouter_connection(
+    current_user: User = Depends(deps.get_current_active_user),
+):
     """Test OpenRouter API connection."""
     try:
         service = get_openrouter_service()
@@ -63,7 +67,10 @@ async def test_openrouter_connection():
 
 
 @router.post("/chat")
-async def chat_completion(request: ChatRequest):
+async def chat_completion(
+    request: ChatRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+):
     """Generate chat completion using OpenRouter."""
     try:
         service = get_openrouter_service()
@@ -87,7 +94,10 @@ async def chat_completion(request: ChatRequest):
 
 
 @router.post("/embeddings")
-async def generate_embeddings(request: EmbeddingRequest):
+async def generate_embeddings(
+    request: EmbeddingRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+):
     """Generate embeddings using OpenRouter."""
     try:
         service = get_openrouter_service()
@@ -116,7 +126,8 @@ async def ingest_document(
     bot_id: str,
     file: UploadFile = File(...),
     chunk_size: int = 1000,
-    chunk_overlap: int = 200
+    chunk_overlap: int = 200,
+    current_user: User = Depends(deps.get_current_active_user),
 ):
     """Ingest document into RAG system using OpenRouter embeddings."""
     try:
@@ -140,7 +151,10 @@ async def ingest_document(
 
 
 @router.post("/rag/chat")
-async def rag_chat(request: RAGChatRequest):
+async def rag_chat(
+    request: RAGChatRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+):
     """Chat with RAG system using OpenRouter for both retrieval and generation."""
     try:
         service = get_openrouter_rag_service()
