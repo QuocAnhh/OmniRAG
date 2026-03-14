@@ -47,6 +47,8 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    // Tracks the active stream so we can cancel it on unmount or new message
+    const streamAbortRef = useRef<AbortController | null>(null);
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
         messagesEndRef.current?.scrollIntoView({ behavior });
@@ -58,6 +60,13 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             scrollToBottom("auto");
         }
     }, [messages, isTyping]);
+
+    // Abort any in-flight stream when component unmounts
+    useEffect(() => {
+        return () => {
+            streamAbortRef.current?.abort();
+        };
+    }, []);
 
     // Load Bot and Session List
     useEffect(() => {
@@ -241,6 +250,11 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
         setMessages(prev => [...prev, userMsg, initialAiMsg]);
         setIsTyping(true);
 
+        // Cancel any previous in-flight stream before starting a new one
+        streamAbortRef.current?.abort();
+        const controller = new AbortController();
+        streamAbortRef.current = controller;
+
         const historyForStream = messages.filter(m => m.id !== 'welcome').map(m => ({
             role: m.role,
             content: m.content
@@ -258,7 +272,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 if (chunk.type === 'metadata' && chunk.lightrag_entities?.length) {
                     setActiveEntities(chunk.lightrag_entities);
                 }
-                
+
                 setMessages(prev => prev.map(msg => {
                     if (msg.id !== aiMsgId) return msg;
 
@@ -273,19 +287,19 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                             search_query: chunk.search_query,
                         };
                     } else if (chunk.type === 'content') {
-                        // Append content chunk
                         return {
                             ...msg,
                             content: (msg.content || '') + chunk.content
                         };
                     } else if (chunk.type === 'done') {
-                        // Stream finished
                         return msg;
                     }
                     return msg;
                 }));
-            });
+            }, controller.signal);
         } catch (error: any) {
+            // Ignore abort errors — they are intentional (unmount or new message)
+            if (error?.name === 'AbortError') return;
             toast.error('Failed to send message');
             console.error(error);
             // Remove the empty AI message if failed

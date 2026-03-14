@@ -11,45 +11,76 @@ export const chatApi = {
     return response.data;
   },
 
-  stream: async (botId: string, request: ChatRequest, onChunk: (chunk: any) => void) => {
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    const response = await fetch(`${API_BASE_URL}/api/v1/bots/${botId}/chat-stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(request)
-    });
+  stream: async (
+    botId: string,
+    request: ChatRequest,
+    onChunk: (chunk: any) => void,
+    signal?: AbortSignal,
+  ): Promise<void> => {
+    const TIMEOUT_MS = 90_000; // 90 s hard timeout
 
-    if (!response.ok) {
-      throw new Error('Streaming request failed');
+    // Internal timeout controller — aborts if LLM hangs
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(
+      () => timeoutController.abort(new DOMException('Stream timed out', 'TimeoutError')),
+      TIMEOUT_MS,
+    );
+
+    // Combine external cancellation signal with internal timeout signal
+    const combined = new AbortController();
+    const forwardAbort = (reason?: any) => combined.abort(reason);
+    timeoutController.signal.addEventListener('abort', () => forwardAbort(timeoutController.signal.reason), { once: true });
+    if (signal) {
+      if (signal.aborted) {
+        combined.abort(signal.reason);
+      } else {
+        signal.addEventListener('abort', () => forwardAbort(signal.reason), { once: true });
+      }
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/bots/${botId}/chat-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+        signal: combined.signal,
+      });
 
-    if (!reader) return;
+      if (!response.ok) {
+        throw new Error('Streaming request failed');
+      }
 
-    let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      if (!reader) return;
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            onChunk(data);
-          } catch (e) {
-            console.error('Error parsing stream chunk', e);
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onChunk(data);
+            } catch (e) {
+              console.error('Error parsing stream chunk', e);
+            }
           }
         }
       }
+    } finally {
+      clearTimeout(timeoutId);
     }
   },
 
