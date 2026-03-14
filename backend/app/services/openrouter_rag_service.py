@@ -35,8 +35,10 @@ try:
         for root, dirs, files in os.walk(model_cache_dir):
             for file in files:
                 if file.endswith(".lock"):
-                    try: os.remove(os.path.join(root, file))
-                    except: pass
+                    try:
+                        os.remove(os.path.join(root, file))
+                    except OSError:
+                        pass
 except Exception as e:
     print(f"Warning: Stale lock cleanup failed: {e}")
 
@@ -564,8 +566,8 @@ Answer:"""
                             self.qdrant_client.delete_collection,
                             self.collection_name
                         )
-                    except:
-                        pass
+                    except Exception as del_err:
+                        logger.warning(f"Could not delete Qdrant collection during dimension reset: {del_err}")
                     await asyncio.to_thread(self._ensure_collection)
             
             # Insert into Qdrant
