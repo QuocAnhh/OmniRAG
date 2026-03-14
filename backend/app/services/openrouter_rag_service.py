@@ -624,15 +624,24 @@ Answer:"""
         filename: str,
         chunking_strategy: str = "recursive",
         chunk_size: int = 1000,
-        chunk_overlap: int = 200
+        chunk_overlap: int = 200,
+        preloaded_documents=None,
     ) -> Dict[str, Any]:
         """
         Synchronous file ingestion for Celery worker.
+
+        Pass ``preloaded_documents`` to skip the internal ``_load_document``
+        call when the caller has already parsed the file (e.g. to also feed
+        the same content to LightRAG), avoiding a redundant disk read.
         """
         start_time = time.time()
 
-        logger.info(f"Loading document: {filename}")
-        documents = self._load_document(file_path, filename)
+        if preloaded_documents is not None:
+            documents = preloaded_documents
+            logger.info(f"Using pre-loaded document for: {filename}")
+        else:
+            logger.info(f"Loading document: {filename}")
+            documents = self._load_document(file_path, filename)
 
         logger.info(
             f"Chunking document with strategy={chunking_strategy}, size={chunk_size}, overlap={chunk_overlap}"

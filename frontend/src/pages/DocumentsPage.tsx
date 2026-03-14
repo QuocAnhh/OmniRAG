@@ -27,18 +27,54 @@ export default function DocumentsPage() {
     }
   }, [selectedBotId]);
 
-  // Polling for document processing status
+  // Polling for document processing status — exponential backoff
+  // Starts at 3 s, doubles on each poll with no status change, caps at 30 s.
+  // Resets to 3 s whenever a document's status actually changes.
+  // Stops automatically once all documents reach a terminal state.
   useEffect(() => {
     if (!selectedBotId || documents.length === 0) return;
-    const isProcessing = documents.some(doc => doc.status === 'processing' || doc.status === 'pending');
-    if (isProcessing) {
-      const interval = setInterval(() => {
-        // Silent load to update background state without triggering skeleton
-        documentsApi.list(selectedBotId).then(docs => setDocuments(docs)).catch(console.error);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [selectedBotId, documents]);
+
+    const isProcessing = documents.some(
+      doc => doc.status === 'processing' || doc.status === 'pending'
+    );
+    if (!isProcessing) return;
+
+    const INITIAL_INTERVAL = 3_000;
+    const MAX_INTERVAL = 30_000;
+    let currentInterval = INITIAL_INTERVAL;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const poll = () => {
+      documentsApi
+        .list(selectedBotId)
+        .then(freshDocs => {
+          // Check whether any status changed since the last poll
+          const hasChange = freshDocs.some(fresh => {
+            const prev = documents.find(d => d.id === fresh.id);
+            return prev && prev.status !== fresh.status;
+          });
+
+          setDocuments(freshDocs);
+
+          const stillProcessing = freshDocs.some(
+            d => d.status === 'processing' || d.status === 'pending'
+          );
+          if (!stillProcessing) return; // all done — stop polling
+
+          // Reset backoff on change; otherwise double it (up to MAX_INTERVAL)
+          currentInterval = hasChange
+            ? INITIAL_INTERVAL
+            : Math.min(currentInterval * 2, MAX_INTERVAL);
+
+          timeoutId = setTimeout(poll, currentInterval);
+        })
+        .catch(console.error);
+    };
+
+    timeoutId = setTimeout(poll, currentInterval);
+    return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBotId, documents.map(d => d.status).join(',')]);
 
   const loadBots = async () => {
     try {

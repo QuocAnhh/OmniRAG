@@ -80,48 +80,22 @@ def create_bot(
 
 @router.get("/{bot_id}", response_model=Bot)
 def read_bot(
-    bot_id: str,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot),
 ):
     """Get a specific bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     return bot
 
 @router.put("/{bot_id}", response_model=Bot)
 def update_bot(
-    bot_id: str,
     bot_in: BotUpdate,
+    bot: BotModel = Depends(deps.get_current_bot),
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
 ):
     """Update a bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    
     update_data = bot_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(bot, field, value)
-    
+
     db.add(bot)
     db.commit()
     db.refresh(bot)
@@ -129,23 +103,10 @@ def update_bot(
 
 @router.delete("/{bot_id}", status_code=204)
 def delete_bot(
-    bot_id: str,
+    bot: BotModel = Depends(deps.get_current_bot),
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
 ):
     """Delete a bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    
     db.delete(bot)
     db.commit()
     return None
@@ -156,21 +117,11 @@ async def upload_document(
     file: UploadFile = File(...),
     chunking_strategy: str = Form("recursive"),  # or "semantic"
     enable_knowledge_graph: bool = Form(False),
+    bot: BotModel = Depends(deps.get_current_bot),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Upload a document to a bot's knowledge base with advanced processing"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     # ── Validate file ──────────────────────────────────────────────────────────
     original_filename = file.filename or ""
@@ -251,25 +202,12 @@ async def upload_document(
 
 @router.get("/{bot_id}/documents", response_model=List[Document])
 def list_documents(
-    bot_id: str,
+    bot: BotModel = Depends(deps.get_current_bot),
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
 ):
     """List all documents for a bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    
     documents = db.query(DocumentModel).filter(
-        DocumentModel.bot_id == bot_uuid
+        DocumentModel.bot_id == bot.id
     ).all()
     return documents
 
@@ -277,26 +215,18 @@ def list_documents(
 def delete_document(
     bot_id: str,
     doc_id: str,
+    bot: BotModel = Depends(deps.get_current_bot),
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
 ):
     """Delete a document and its vectors from both DB and Qdrant"""
     try:
-        bot_uuid = UUID(bot_id)
         doc_uuid = UUID(doc_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    
+        raise HTTPException(status_code=400, detail="Invalid document ID format")
+
     doc = db.query(DocumentModel).filter(
         DocumentModel.id == doc_uuid,
-        DocumentModel.bot_id == bot_uuid
+        DocumentModel.bot_id == bot.id,
     ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -350,21 +280,9 @@ def delete_document(
 @router.get("/{bot_id}/knowledge-graph")
 async def get_bot_knowledge_graph(
     bot_id: str,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot),
 ):
     """Get knowledge graph data for a specific bot for the 3D UI"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
         
     from app.services.lightrag_service import get_lightrag_service
     try:
@@ -381,21 +299,10 @@ async def get_bot_knowledge_graph(
 async def chat_with_bot(
     bot_id: str,
     chat_in: ChatRequest,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Chat with bot using advanced RAG with caching and optimizations"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     # Use OpenRouter RAG with conversation history
     conversation_history = [m.model_dump() for m in chat_in.history] if chat_in.history else []
@@ -428,21 +335,10 @@ async def chat_with_bot(
 async def chat_with_bot_stream(
     bot_id: str,
     chat_in: ChatRequest,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Chat with bot using streaming advanced RAG"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     conversation_history = [m.model_dump() for m in chat_in.history] if chat_in.history else []
     session_id = chat_in.session_id if hasattr(chat_in, 'session_id') else None
@@ -473,21 +369,10 @@ async def get_bot_chat_history(
     bot_id: str,
     session_id: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Get chat history for a specific bot and optional session"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
         
     history = await rag_service.get_chat_history(
         bot_id=str(bot_id),
@@ -502,21 +387,10 @@ async def get_bot_chat_history(
 async def get_bot_sessions(
     bot_id: str,
     limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Get all chat sessions for a specific bot and current user"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
         
     sessions = await rag_service.get_sessions(
         bot_id=str(bot_id),
@@ -530,21 +404,10 @@ async def get_bot_sessions(
 async def delete_bot_session(
     bot_id: str,
     session_id: str,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Delete a specific chat session for a bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
         
     success = await rag_service.delete_session(
         bot_id=str(bot_id),
@@ -560,21 +423,10 @@ async def delete_bot_session(
 @router.delete("/{bot_id}/history", status_code=204)
 async def clear_bot_history(
     bot_id: str,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Clear all chat history/sessions for a bot"""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
         
     await rag_service.clear_all_history(
         bot_id=str(bot_id),
@@ -594,22 +446,10 @@ class PromptGenerationRequest(BaseModel):
 @router.get("/{bot_id}/memory", response_model=Dict[str, Any])
 async def get_user_memories(
     bot_id: str,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Get all stored Mem0 memories for the current user+bot pair."""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-
     user_id = str(current_user.id)
     memories = await memory_service.get_all(user_id=user_id, bot_id=bot_id)
     return {
@@ -624,22 +464,10 @@ async def get_user_memories(
 @router.delete("/{bot_id}/memory", response_model=Dict[str, Any])
 async def delete_user_memories(
     bot_id: str,
-    db: Session = Depends(deps.get_db),
+    bot: BotModel = Depends(deps.get_current_bot),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Delete ALL stored memories for the current user+bot pair (GDPR compliance)."""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-
     user_id = str(current_user.id)
     deleted_count = await memory_service.delete_all(user_id=user_id, bot_id=bot_id)
     return {
@@ -719,21 +547,9 @@ class RetrieveRequest(BaseModel):
 async def test_retrieval(
     bot_id: str,
     request: RetrieveRequest,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot),
 ):
     """Debug: run hybrid search and return scored chunks for a query."""
-    try:
-        bot_uuid = UUID(bot_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
-
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     try:
         import asyncio

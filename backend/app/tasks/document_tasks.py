@@ -53,17 +53,30 @@ def process_document_task(
         
         try:
             self.update_state(state='PROCESSING', meta={'status': 'Processing document'})
-            
-            # Process document with OpenRouter RAG service (Qdrant vector indexing)
+
             rag_service = get_openrouter_rag_service()
+
+            # Load document ONCE — reuse for both Qdrant indexing and LightRAG
+            # to avoid parsing the file twice when knowledge graph is enabled.
+            loaded_documents = rag_service._load_document(tmp_file_path, filename)
+
+            # Extract full text now (cheap, in-memory) if KG will need it later
+            full_text = (
+                "\n\n".join([doc.page_content for doc in loaded_documents])
+                if enable_knowledge_graph else ""
+            )
+
+            # Process document with OpenRouter RAG service (Qdrant vector indexing)
+            # Pass pre-loaded documents to skip a second _load_document call inside.
             ingest_result = rag_service.process_file_sync(
                 tmp_file_path,
                 bot_id,
                 filename,
-                chunking_strategy=chunking_strategy
+                chunking_strategy=chunking_strategy,
+                preloaded_documents=loaded_documents,
             )
             num_chunks = ingest_result.get("chunks_created", 0)
-            
+
             # Mark document as 'completed' immediately after Qdrant indexing.
             # Users can now chat with the bot right away — no need to wait for graph!
             _update_document_status(
@@ -78,14 +91,13 @@ def process_document_task(
                 },
                 error_message=None
             )
-            
+
             # --- Fire-and-forget: LightRAG Knowledge Graph (separate task) ---
             # Only runs if user explicitly opted in via enable_knowledge_graph=True.
             # Runs independently in the background. Does NOT block chatting.
+            # Uses full_text already extracted above — no second file parse.
             if enable_knowledge_graph:
                 try:
-                    documents = rag_service._load_document(tmp_file_path, filename)
-                    full_text = "\n\n".join([doc.page_content for doc in documents])
                     if full_text.strip():
                         build_knowledge_graph_task.delay(bot_id=bot_id, full_text=full_text, filename=filename, document_id=document_id)
                         logger.info(f"Queued LightRAG knowledge graph task for bot={bot_id}, file={filename}")
