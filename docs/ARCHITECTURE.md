@@ -7,14 +7,13 @@ Browser
   │
   ↓
 Go API Gateway  (port 8080)
-  │  CORS  │  Rate Limiting (100 rps)  │  Redis Cache (1h TTL)  │  Logging
+  │  CORS  │  Rate Limiting (100 rps)  │  Redis Cache (1h TTL)  │  Structured Logging
   ↓
 FastAPI Backend  (port 8000)
   │
   ├── Auth API          /api/v1/auth/*
   ├── Bot API           /api/v1/bots/*
   ├── Bot Templates     /api/v1/bot-templates/*
-  ├── Folders           /api/v1/folders/*
   ├── Documents         /api/v1/bots/{id}/documents
   ├── OpenRouter RAG    /api/v1/openrouter/*
   ├── Analytics         /api/v1/analytics/*
@@ -24,7 +23,7 @@ FastAPI Backend  (port 8000)
   ├── Zalo Hub          /api/v1/channels/zalo/*
   └── Zalo Bot          /api/v1/channels/zalo-bot/*
   │
-  ├── PostgreSQL  (port 5433) — Users, Bots, Documents metadata, Folders
+  ├── PostgreSQL  (port 5433) — Users, Bots, Documents metadata
   ├── MongoDB     (port 27017) — Chat logs, conversation history
   ├── Redis       (port 6380) — Celery broker, gateway cache
   ├── Qdrant      (port 6333) — Vector embeddings (HNSW)
@@ -56,75 +55,116 @@ app/
 │   ├── deps.py              — Shared dependencies (DB, auth)
 │   └── v1/endpoints/
 │       ├── auth.py          — Register, login, /me
-│       ├── bots.py          — Bot CRUD + chat + document endpoints
-│       ├── bot_templates.py — Pre-built bot templates
-│       ├── folders.py       — Document/bot folder management
-│       ├── openrouter.py    — Direct OpenRouter: chat, embed, RAG
+│       ├── bots.py          — Bot CRUD + document upload (domain profile resolution)
+│       ├── bot_templates.py — Pre-built templates (domain defaults propagated)
+│       ├── openrouter.py    — RAG chat + streaming endpoints
 │       ├── analytics.py     — Conversation & usage analytics
-│       ├── dashboard.py     — Dashboard stats
+│       ├── dashboard.py     — Dashboard stats (stats, recent convos)
 │       ├── users.py         — User management
-│       ├── tenants.py       — Tenant settings
 │       ├── integrations.py  — External integration hooks
-│       ├── data_grid.py     — Paginated data grid
 │       └── channels/
 │           ├── zalo_hub.py  — Zalo Hub webhook receiver
 │           └── zalo_bot.py  — Zalo bot task dispatcher
 ├── services/
-│   ├── openrouter_rag_service.py  — Main RAG pipeline (hybrid search, rerank, LightRAG, Mem0)
+│   ├── openrouter_rag_service.py  — Main RAG pipeline (see RAG Pipeline below)
+│   ├── domain_config.py           — Domain profile registry (general/education/legal/sales)
 │   ├── openrouter_service.py      — OpenRouter HTTP wrapper (chat + embeddings)
 │   ├── lightrag_service.py        — LightRAG knowledge graph (entity/rel extraction)
 │   ├── memory_service.py          — Mem0 persistent conversation memory
 │   ├── bot_templates.py           — Bot template business logic
 │   ├── cache_service.py           — Redis cache wrapper
 │   ├── storage_service.py         — MinIO file storage
-│   └── channels/                  — Zalo message handling services
-├── models/                  — SQLAlchemy ORM (Bot, Document, Folder, Tenant, User)
-├── schemas/                 — Pydantic v2 schemas (request/response)
+│   └── channels/                  — Zalo message handling
+├── models/                  — SQLAlchemy ORM (Bot, Document, Tenant, User)
+├── schemas/                 — Pydantic v2 schemas; BotConfig includes domain + chunk fields
 ├── tasks/
-│   ├── document_tasks.py    — Celery: chunk → embed → store in Qdrant
+│   ├── document_tasks.py    — Celery: chunk → contextual prefix → embed → Qdrant
 │   ├── zalo_bot_tasks.py    — Celery: Zalo bot async message tasks
 │   └── zalo_tasks.py        — Celery: Zalo integration tasks
 ├── db/                      — DB connections (PostgreSQL, MongoDB, Redis)
 └── core/
-    ├── config.py            — Settings (pydantic-settings, reads .env)
+    ├── config.py            — Settings (pydantic-settings, reads .env); includes RERANKER_MODEL
     └── security.py          — JWT utilities
 ```
 
-## RAG Pipeline
+## Advanced RAG Pipeline
 
-Main endpoint: `POST /api/v1/openrouter/rag/chat` (also accessible via `POST /api/v1/bots/{id}/chat`)
+Main endpoints:
+- `POST /api/v1/openrouter/rag/chat` — standard response
+- `POST /api/v1/openrouter/rag/stream` — SSE streaming
 
 ```
 User Query
   │
-  ├─► Query Transformation
-  │     ├── HyDE (hypothetical answer → embed)
-  │     └── Multi-query (rephrase × N)
+  ├─► 1. Query Rewriting        gpt-4o-mini, search-optimized
   │
-  ├─► Hybrid Search (Qdrant)
-  │     ├── Vector search (cosine similarity)
-  │     └── Keyword/metadata filter
+  ├─► 2. HyDE + Multi-Query     concurrent:
+  │         HyDE hypothesis     domain-aware passage → embed
+  │         Query variants      2 reformulations for broader recall
   │
-  ├─► Re-ranking (cross-encoder sort)
+  ├─► 3. Multi-Query Fusion     3× parallel _hybrid_search → RRF merge
+  │       +
+  │       LightRAG query        concurrent, if enable_knowledge_graph
   │
-  ├─► Knowledge Graph Query (LightRAG, optional)
-  │     └── Entity/relationship context injection
+  ├─► 4. Hybrid Search          vector (HyDE embed) + BM25 → RRF → Cross-Encoder rerank
   │
-  ├─► Memory Retrieval (Mem0, top-K facts)
+  ├─► 5. Score Filtering        similarity_threshold (default 0.15)
   │
-  ├─► LLM Generation (OpenRouter)
-  │     └── 400+ models available
+  ├─► 6. CRAG                   relevant / ambiguous / no_context → system prompt signal
   │
-  └─► Memory Update (Mem0 fact extraction)
+  ├─► 7. Context Assembly       [[n]]-cited; parent_text used if parent_child chunking
+  │
+  ├─► 8. Memory Retrieval       Mem0 top-K facts → prepend to system prompt
+  │
+  ├─► 9. LLM Generation         OpenRouter, domain suffix + CRAG signal injected
+  │
+  └─► 10. Memory Update         async, non-blocking
 ```
+
+## Document Ingestion Pipeline
+
+```
+File Upload (PDF/DOCX/PPTX/TXT)
+  │
+  ├── MinIO storage
+  │
+  └── Celery task dispatched
+        │
+        ├── domain profile resolved (chunk_size, strategy from bot.config.domain)
+        │
+        ├── _chunk_documents()
+        │     recursive | sentence | article | parent_child
+        │
+        ├── Contextual Retrieval
+        │     _generate_contextual_prefix_batch()
+        │     → 1-2 sentence context per chunk (parallel, capped at 50)
+        │     → enriched_text = prefix + "\n\n" + chunk_text (for embedding)
+        │
+        ├── embed_batch_async(enriched_texts)
+        │     OpenRouter text-embedding-3-small
+        │
+        ├── Qdrant upsert
+        │     payload: { text, parent_text, context_prefix, source, bot_id }
+        │
+        └── LightRAG ingestion (if enable_knowledge_graph)
+```
+
+## Domain Profiles (`domain_config.py`)
+
+| Domain | Strategy | Chunk | K | LightRAG | KG Auto |
+|--------|----------|-------|---|----------|---------|
+| `general` | recursive | 512 | 10 | naive | No |
+| `education` | sentence | 384 | 12 | local | Yes |
+| `legal` | article | 1024 | 8 | hybrid | Yes |
+| `sales` | recursive | 256 | 15 | naive | No |
 
 ## Knowledge Graph (LightRAG)
 
 - Triggered during document ingestion — extracts entities & relationships
-- Stored in `backend/rag_storage/lightrag_{bot_id}/` (local, untracked)
+- Stored in `backend/rag_storage/lightrag_{bot_id}/` (local, untracked by git)
 - LLM for extraction: configurable via `LIGHTRAG_LLM_MODEL` (default `openai/gpt-4.1-mini`)
-- Embeddings: OpenRouter `text-embedding-3-small`
 - Frontend visualisation: `KnowledgeGraphPage` using `@react-sigma/core` + `graphology`
+- Query runs concurrently with hybrid search — no added latency
 
 ## Authentication
 
@@ -137,8 +177,6 @@ POST /api/v1/auth/login
 ```
 
 ## Go Gateway
-
-Key behaviours (`gateway/`):
 
 | Feature | Detail |
 |---------|--------|
@@ -153,15 +191,25 @@ Key behaviours (`gateway/`):
 
 ```
 src/
-├── api/          — Axios clients (client.ts auto-attaches Bearer token)
-├── pages/        — 14 page components
+├── api/              — Axios clients (client.ts auto-attaches Bearer token)
+├── pages/
+│   ├── DashboardPage.tsx     — Stats tiles, recent convos, agent status
+│   ├── BotsPage.tsx          — Bot list (Chat = primary CTA)
+│   ├── BotWizardPage.tsx     — Template → Domain selector → Config → Review
+│   ├── BotConfigPage.tsx     — Full advanced config, KG auto-enable from domain
+│   ├── ChatPage.tsx          — SSE streaming chat
+│   ├── KnowledgeGraphPage.tsx
+│   ├── SettingsPage.tsx
+│   ├── AuthPage.tsx
+│   ├── LandingPage.tsx
+│   └── Docs/ZaloBotGuidePage.tsx
 ├── components/
-│   ├── chat/     — ChatWindow, MessageBubble, KnowledgeGraphPanel
-│   ├── bots/     — Bot cards, config forms
-│   ├── documents/— Upload, list, status
-│   └── ui/       — Primitives (button, modal, etc.)
-├── store/        — Zustand (authStore)
-├── hooks/        — Custom React hooks
-├── types/        — TypeScript interfaces
-└── lib/          — Utilities
+│   ├── Layout/               — Sidebar (Home+AI Agents+Settings nav), ChatLayout
+│   ├── bots/                 — TemplateSelector (domain badges, Blueprint cards)
+│   └── ui/                   — Primitives
+├── store/            — Zustand (authStore: JWT + user)
+├── utils/
+│   └── domainHelpers.ts      — DOMAIN_META map + getDomainMeta() utility
+└── types/
+    └── api.ts                — BotConfig: domain, chunking_strategy, chunk_size, chunk_overlap
 ```

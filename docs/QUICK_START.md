@@ -84,13 +84,22 @@ curl -X POST http://localhost:8080/api/v1/bots \
     "name": "My First Bot",
     "description": "Demo bot",
     "config": {
+      "domain": "general",
       "llm_model": "openai/gpt-4o-mini",
       "temperature": 0.7,
-      "enable_knowledge_graph": true,
       "enable_memory": true
     }
   }'
 ```
+
+**`domain` options và tác động:**
+
+| Domain | Chunking | KG | Dùng khi |
+|--------|----------|----|----------|
+| `general` | recursive 512 | Off | Văn bản tổng quát |
+| `education` | sentence 384 | **Auto ON** | Sách, tài liệu học thuật |
+| `legal` | article 1024 | **Auto ON** | Văn bản pháp lý, hợp đồng |
+| `sales` | recursive 256 | Off | Product catalog, brochure |
 
 Lưu `id` (bot_id) từ response.
 
@@ -207,9 +216,10 @@ docker exec -it omnirag-db-1 psql -U postgres -d omnirag -c "SELECT name, id FRO
 
 - Dùng `openai/gpt-4o-mini` cho queries thông thường (nhanh + rẻ)
 - Dùng `openai/gpt-4o` hoặc `anthropic/claude-3.5-sonnet` cho reasoning phức tạp
-- `chunking_strategy=semantic` tốt hơn cho tài liệu có cấu trúc (FAQ, manual)
-- `chunking_strategy=recursive` là default, tốt cho văn bản thông thường
-- Bật `enable_knowledge_graph=true` để extract entities — hữu ích cho tài liệu nhiều khái niệm
+- Chọn đúng `domain` khi tạo bot — domain tự động set chunking, retrieval K, và KG mode phù hợp
+- `chunking_strategy=parent_child` để LLM nhận full context xung quanh đoạn match
+- Domain `education` và `legal` tự động bật Knowledge Graph — không cần set thủ công
+- Thêm `"enable_multi_query": false` vào bot config nếu cần giảm latency
 
 ---
 

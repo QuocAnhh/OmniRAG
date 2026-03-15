@@ -54,14 +54,26 @@ docker compose up -d --build
 
 ## Key Features
 
+### AI & RAG
+- **Domain-Aware RAG** — 4 specialized domains: General, Education (sentence chunking + KG), Legal (article chunking + hybrid KG), Sales (dense retrieval)
+- **HyDE** — Hypothetical Document Embedding: embed a generated passage instead of the raw query for better semantic recall
+- **Multi-Query Fusion** — 3 query variants searched in parallel, merged via Reciprocal Rank Fusion
+- **Contextual Retrieval** — Anthropic technique: situating context prepended to each chunk at index time
+- **CRAG** — Corrective RAG: classify retrieval quality, prevent hallucination when KB lacks an answer
+- **Parent-Child Chunking** — child chunks for precise matching, parent text returned to LLM for full context
+- **Hybrid Search** — vector (semantic) + BM25 keyword, merged via RRF, reranked by Cross-Encoder (`BAAI/bge-reranker-v2-m3`)
+- **Knowledge Graph** — LightRAG entity/relationship extraction + interactive graph visualisation
+- **Persistent Memory** — Mem0 cross-session fact extraction and retrieval
 - **400+ AI Models** via OpenRouter (GPT-4o, Claude, Gemini, Llama, ...)
-- **Hybrid RAG**: semantic + keyword search with re-ranking
-- **Knowledge Graph** powered by LightRAG (entity/relationship extraction)
-- **Persistent Memory** via Mem0 (cross-session conversation context)
-- **Multi-tenancy**: full data isolation per organisation
-- **Document Processing**: PDF, DOCX, PPTX, TXT via Celery async jobs
-- **Zalo Bot Integration**: webhook-based channel support
-- **Go API Gateway**: caching (1h TTL), rate limiting (100 rps), structured logging
+
+### Platform
+- **Bot Wizard** — guided creation with domain selector (General / Education / Legal / Sales)
+- **Dashboard** — real-time stats, recent conversations, agent status panel
+- **Streaming Chat** — SSE-based streaming responses
+- **Document Processing** — PDF, DOCX, PPTX, TXT via Celery async jobs
+- **Multi-tenancy** — full data isolation per organisation
+- **Zalo Bot Integration** — webhook-based channel support
+- **Go API Gateway** — Redis caching (1h TTL), rate limiting (100 rps), structured logging
 
 ## Documentation
 
@@ -71,22 +83,10 @@ All detailed guides live in `docs/`:
 |------|-------------|
 | [QUICK_START.md](docs/QUICK_START.md) | 5-minute workflow walkthrough |
 | [STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md) | Full setup & env config |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & components |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, RAG pipeline, ingestion flow |
 | [FEATURES.md](docs/FEATURES.md) | Complete feature list |
+| [ADVANCED_RAG_FEATURES.md](docs/ADVANCED_RAG_FEATURES.md) | RAG pipeline deep-dive (HyDE, CRAG, Multi-Query, etc.) |
 | [API_REFERENCE.md](docs/API_REFERENCE.md) | All API endpoints |
-| [ADVANCED_RAG_FEATURES.md](docs/ADVANCED_RAG_FEATURES.md) | RAG pipeline deep-dive |
 | [GATEWAY_QUICKSTART.md](docs/GATEWAY_QUICKSTART.md) | Go Gateway setup |
 | [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | Database access & queries |
-| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common fixes |
-
-## Scripts
-
-```bash
-cd scripts
-python validate_env.py        # Check env variables
-python test_full_system.py    # End-to-end API test suite
-bash test_all_apis.sh         # Test all endpoints via curl
-```
-
-## License
-MIT
+| [ZALO_BOT_INTEGRATION_PLAN.md](docs/ZALO_BOT_INTEGRATION_PLAN.md) | Zalo channel integration |
