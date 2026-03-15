@@ -1,15 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { LayoutGrid, BotMessageSquare, Settings, LogOut, Hexagon, Component } from 'lucide-react';
+import { LayoutGrid, BotMessageSquare, Settings, LogOut } from 'lucide-react';
 import { LogoIcon } from '../ui/LogoIcon';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: any; // Lucide icon component
+  icon: any;
 }
 
 const navItems: NavItem[] = [
+  { path: '/dashboard', label: 'Home', icon: LayoutGrid },
   { path: '/bots', label: 'AI Agents', icon: BotMessageSquare },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -18,7 +19,10 @@ export default function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string) =>
+    path === '/dashboard'
+      ? location.pathname === '/dashboard'
+      : location.pathname.startsWith(path);
 
   return (
     <aside className="w-64 flex-shrink-0 bg-background/40 border-r border-white/5 flex flex-col h-full relative z-20 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.5)]">

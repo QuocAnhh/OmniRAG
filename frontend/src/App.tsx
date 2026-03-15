@@ -9,12 +9,10 @@ import { LogoIcon } from './components/ui/LogoIcon';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const BotsPage = lazy(() => import('./pages/BotsPage'));
-const BotStudioPage = lazy(() => import('./pages/BotStudioPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const BotWizardPage = lazy(() => import('./pages/BotWizardPage'));
 const BotConfigPage = lazy(() => import('./pages/BotConfigPage'));
-const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const LinearShowcasePage = lazy(() => import('./pages/LinearShowcasePage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ZaloBotGuidePage = lazy(() => import('./pages/Docs/ZaloBotGuidePage'));
@@ -106,7 +104,11 @@ function App() {
           <Route path="/docs/zalo-bot" element={<ZaloBotGuidePage />} />
 
           {/* Protected routes */}
-          <Route path="/dashboard" element={<Navigate to="/bots" replace />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
           <Route path="/bots" element={
             <ProtectedRoute>
               <BotsPage />
@@ -138,26 +140,11 @@ function App() {
               <KnowledgeGraphPage />
             </ProtectedRoute>
           } />
-          {/* Generic :id route comes LAST so it doesn't swallow the above */}
-          <Route path="/bots/:id" element={
-            <ProtectedRoute>
-              <BotStudioPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/documents" element={
-            <ProtectedRoute>
-              <DocumentsPage />
-            </ProtectedRoute>
-          } />
+          {/* Generic :id — redirect to chat */}
+          <Route path="/bots/:id" element={<Navigate to="chat" replace />} />
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/linear-showcase" element={
-            <ProtectedRoute>
-              <LinearShowcasePage />
             </ProtectedRoute>
           } />
 

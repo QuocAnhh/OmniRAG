@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Bot as BotIcon, Plus, Play, Settings, Trash2, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { getDomainMeta } from '../utils/domainHelpers';
 
 export default function BotsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -196,7 +197,7 @@ export default function BotsPage() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">{bot.name}</h3>
-                        <div className="mt-1">
+                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                           {bot.is_active ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                               Active
@@ -206,6 +207,15 @@ export default function BotsPage() {
                               Inactive
                             </span>
                           )}
+                          {(() => {
+                            const dm = getDomainMeta(bot.config?.domain);
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${dm.badge}`}>
+                                <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
+                                {dm.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -221,17 +231,17 @@ export default function BotsPage() {
                 <div className="p-4 border-t border-white/5 bg-background/60 backdrop-blur-md flex items-center gap-2 relative z-10">
                   <Link
                     to={`/bots/${bot.id}/chat`}
-                    className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/20 hover:shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all bg-white/5 border border-transparent hover:border-primary/30 flex-shrink-0"
-                    title="Open Playground"
+                    className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl text-sm transition-all text-center flex items-center justify-center gap-2 hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:-translate-y-0.5 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
                   >
-                    <Play className="w-5 h-5 fill-current" />
+                    <Play className="w-4 h-4 fill-current" />
+                    Start Chat
                   </Link>
                   <Link
                     to={`/bots/${bot.id}/config`}
-                    className="flex-1 px-4 py-2.5 text-foreground border border-white/10 hover:border-primary/50 bg-white/5 hover:bg-primary/10 font-semibold rounded-xl text-sm transition-all text-center flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(var(--primary),0.2)]"
+                    className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all bg-white/5 border border-white/10 hover:border-white/20 flex-shrink-0"
+                    title="Configure"
                   >
-                    <Settings className="w-4 h-4" />
-                    Configure
+                    <Settings className="w-5 h-5" />
                   </Link>
                   <button
                     onClick={(e) => handleDelete(bot.id, e)}
