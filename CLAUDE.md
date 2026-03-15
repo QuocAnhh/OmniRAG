@@ -84,7 +84,8 @@ The gateway handles CORS, rate limiting (100 req/s dev / 200 prod), and Redis ca
 ### Backend Structure (`backend/app/`)
 - `api/v1/endpoints/` — FastAPI route handlers (auth, bots, documents, openrouter, analytics, integrations, channels)
 - `services/` — Business logic; key services:
-  - `openrouter_rag_service.py` — Main RAG pipeline (hybrid search, reranking, query transformation)
+  - `openrouter_rag_service.py` — Main RAG pipeline (see Advanced RAG Pipeline below)
+  - `domain_config.py` — Domain profile registry (general/education/legal/sales)
   - `lightrag_service.py` — Knowledge graph RAG (entity/relationship extraction via LightRAG-HKU)
   - `memory_service.py` — Persistent conversation memory via Mem0
 - `models/` — SQLAlchemy ORM models
@@ -94,19 +95,98 @@ The gateway handles CORS, rate limiting (100 req/s dev / 200 prod), and Redis ca
 
 ### Frontend Structure (`frontend/src/`)
 - `api/` — Axios-based API client with JWT interceptors (`client.ts` auto-attaches Bearer token)
-- `pages/` — 14 page components (Dashboard, Bots, Documents, Chat, KnowledgeGraph, Analytics, etc.)
+- `pages/` — Active pages: Dashboard, Bots, BotWizard, BotConfig, Chat, KnowledgeGraph, Settings, Auth, Landing, Docs/ZaloBot
 - `store/` — Zustand store (`authStore` for JWT + user state)
 - `components/` — Layout, UI primitives, forms
+- `utils/domainHelpers.ts` — Shared domain metadata (label, icon, color) used across pages
 
-### Key RAG Pipeline Details
-The main chat endpoint is `POST /api/v1/openrouter/rag/chat`. It:
-1. Performs hybrid search (keyword + semantic) in Qdrant
-2. Applies multi-stage ranking/reranking
-3. Optionally queries LightRAG knowledge graph
-4. Queries OpenRouter LLM API (400+ models available)
-5. Updates Mem0 memory with conversation context
+---
 
-### Authentication
+## Advanced RAG Pipeline
+
+The main chat endpoints are:
+- `POST /api/v1/openrouter/rag/chat` — standard (non-streaming)
+- `POST /api/v1/openrouter/rag/stream` — SSE streaming
+
+### Pipeline Steps (per request)
+1. **Query Rewriting** — `_rewrite_query()`: rewrites user query to be search-optimized using `gpt-4o-mini`
+2. **HyDE** — `_generate_hyde_hypothesis()`: generates a hypothetical document passage matching the domain, embeds it instead of the raw query (doc-to-doc similarity >> query-to-doc)
+3. **Multi-Query Fusion** — `_generate_query_variants()` + `_multi_query_search()`: generates 2 additional query reformulations, searches each independently, merges all results via Reciprocal Rank Fusion (RRF). Final score = `0.7 × reranker score + 0.3 × cross-query RRF`
+4. **Hybrid Search** — `_hybrid_search()`: vector (semantic) + full-text search (Qdrant BM25-style), merged via RRF, re-ranked by Cross-Encoder
+5. **LightRAG** (optional) — entity/relationship graph query, runs concurrently with search
+6. **CRAG** — `_crag_classify()`: classifies retrieval quality as `relevant` / `ambiguous` / `no_context`. Injects signal into system prompt to prevent hallucination when KB has no answer
+7. **Context Assembly** — builds `[[n]]`-cited context blocks; uses `parent_text` if Parent-Child chunking was used
+8. **Answer Synthesis** — OpenRouter LLM call with domain-specific system prompt suffix + CRAG signal + memory block
+
+### Domain Profiles (`backend/app/services/domain_config.py`)
+Each bot has a `domain` field (default: `general`). The domain profile controls chunking, retrieval, and LightRAG behavior:
+
+| Domain | Chunk Strategy | Chunk Size | Retrieval K | LightRAG | LightRAG Mode |
+|--------|---------------|------------|-------------|----------|---------------|
+| `general` | recursive | 512 | 10 | No | naive |
+| `education` | sentence | 384 | 12 | Yes | local |
+| `legal` | article | 1024 | 8 | Yes | hybrid |
+| `sales` | recursive | 256 | 15 | No | naive |
+
+- **article** chunking splits at Vietnamese legal article markers (`Điều N`) then sub-splits oversized articles
+- **sentence** chunking uses a rolling-window accumulator preserving paragraph coherence
+- **parent_child** chunking creates small child chunks (1/4 of chunk_size) for precise matching; parent text is stored and returned to the LLM for richer context
+- `enable_knowledge_graph` is auto-set to `true` when domain is `education` or `legal`
+
+### Document Processing Pipeline
+```
+Upload → MinIO storage → Celery task dispatched
+  → domain profile resolved (chunk_size, chunk_overlap, strategy)
+  → _chunk_documents() (recursive | sentence | article | parent_child)
+  → Contextual Retrieval: _generate_contextual_prefix_batch()
+      generates 1-2 sentence situating context per chunk via gpt-4o-mini
+      enriched text (prefix + chunk) used for embedding; original stored for display
+  → embed_batch_async() → Qdrant upsert
+      payload: { text, parent_text, context_prefix, source, bot_id, metadata }
+  → LightRAG ingestion (if domain uses KG)
+```
+
+### BotConfig Schema Fields (relevant to RAG)
+```python
+domain: str = "general"              # general | education | legal | sales
+chunking_strategy: str | None        # override domain default
+chunk_size: int | None               # override domain default
+chunk_overlap: int | None            # override domain default
+enable_knowledge_graph: bool         # auto-true for education/legal
+enable_multi_query: bool = True      # can disable per-bot to reduce latency
+similarity_threshold: float = 0.15  # min hybrid_score to include in context
+top_k: int                           # overrides domain's retrieval_k
+```
+
+---
+
+## Frontend Pages & Routes
+
+| Route | Page | Notes |
+|-------|------|-------|
+| `/` | LandingPage | Public |
+| `/auth` | AuthPage | Public |
+| `/dashboard` | DashboardPage | Stats tiles, recent convos, agent status |
+| `/bots` | BotsPage | List all bots; Chat is primary CTA |
+| `/bots/new` | BotWizardPage | Multi-step: template → domain selector → config → review |
+| `/bots/:id/config` | BotConfigPage | Always shows full advanced controls |
+| `/bots/:id/chat` | ChatPage | Streaming chat |
+| `/bots/:id/graph` | KnowledgeGraphPage | LightRAG entity/relationship visualization |
+| `/settings` | SettingsPage | User settings |
+| `/docs/zalo-bot` | ZaloBotGuidePage | Public integration guide |
+
+**Removed routes** (deleted, not just hidden): `/documents`, `/linear-showcase`, BotStudioPage (`/bots/:id` generic)
+
+### Key Frontend Patterns
+- **Domain selector**: step in BotWizardPage — 4 cards (General/Education/Legal/Sales) with descriptions
+- **Domain badges**: shown on TemplateSelector cards and BotConfigPage header via `getDomainMeta()` from `utils/domainHelpers.ts`
+- **KG auto-enable**: BotConfigPage derives `enable_knowledge_graph` from domain on load: `botData.config?.enable_knowledge_graph || ['education', 'legal'].includes(domain)`
+- **BotConfigPage**: always shows advanced controls (no Simple/Advanced toggle); post-upload shows "Start Chatting" CTA
+- **Dashboard**: calls `botsApi.list()`, `analyticsApi.getConversations(8)`, `analyticsApi.getStats()`, `documentsApi.list(botId)` in parallel; all wrapped in `.catch()` for graceful degradation
+
+---
+
+## Authentication
 - JWT tokens, 30-minute expiry
 - Frontend stores token in Zustand + localStorage via `authStore`
 - All API requests auto-attach `Authorization: Bearer <token>` via Axios interceptor in `api/client.ts`
@@ -114,7 +194,7 @@ The main chat endpoint is `POST /api/v1/openrouter/rag/chat`. It:
 ## Environment Configuration
 
 Backend config lives in `backend/.env`. Key variables in `backend/app/core/config.py`:
-- `OPENROUTER_API_KEY` — Primary LLM provider
+- `OPENROUTER_API_KEY` — Primary LLM provider (used for both LLM and embeddings)
 - `DATABASE_URL` — PostgreSQL connection
 - `REDIS_URL` — Redis connection
 - `QDRANT_HOST/PORT` — Vector DB
@@ -122,6 +202,7 @@ Backend config lives in `backend/.env`. Key variables in `backend/app/core/confi
 - `SECRET_KEY` — JWT signing key (required in production)
 - `MEM0_*` — Memory service configuration
 - `ZALO_*` — Zalo integration webhook credentials
+- `RERANKER_MODEL` — Cross-encoder model for reranking (default: `BAAI/bge-reranker-v2-m3`)
 
 ## Important Patterns
 
@@ -131,11 +212,14 @@ Backend config lives in `backend/.env`. Key variables in `backend/app/core/confi
 3. Register router in `backend/app/api/api.py`
 4. Add corresponding API call in `frontend/src/api/`
 
+### Adding a New Domain
+1. Add entry to `DOMAIN_PROFILES` in `backend/app/services/domain_config.py`
+2. Add to `Literal` type in `DomainProfile.chunk_strategy` if using a new chunking strategy
+3. Add to `DOMAIN_META` in `frontend/src/utils/domainHelpers.ts`
+4. Add domain card in BotWizardPage domain selector step
+
 ### Background Tasks
 Use Celery tasks in `backend/app/tasks/` for long-running operations (document embedding, external API calls). Redis is the broker.
-
-### Document Processing Pipeline
-Documents are uploaded to MinIO → Celery task chunks and embeds via `sentence-transformers` → stored in Qdrant with metadata → available for RAG retrieval.
 
 ### Knowledge Graph
 LightRAG stores graph data in `backend/rag_storage/` (untracked, local). The `KnowledgeGraphPage` component visualizes entities/relationships using `@react-sigma/core` + `graphology`.
