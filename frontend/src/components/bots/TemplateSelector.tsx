@@ -1,224 +1,239 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { botTemplatesApi } from '../../api/botTemplates';
 import type { BotTemplate } from '../../api/botTemplates';
+import { getDomainMeta, DOMAIN_KEYS } from '../../utils/domainHelpers';
+import type { DomainKey } from '../../utils/domainHelpers';
 
-interface TemplateCardProps {
-    template: BotTemplate;
-    onSelect: (template: BotTemplate) => void;
-}
+// ─── Blueprint Card ────────────────────────────────────────────────────────────
 
-function TemplateCard({ template, onSelect }: TemplateCardProps) {
-    const domainColors = {
-        education: 'from-blue-500/10 to-indigo-500/10 border-blue-500/20 hover:border-blue-500/40',
-        sales: 'from-green-500/10 to-emerald-500/10 border-green-500/20 hover:border-green-500/40',
-        legal: 'from-amber-500/10 to-yellow-500/10 border-amber-500/20 hover:border-amber-500/40',
-        other: 'from-gray-500/10 to-slate-500/10 border-gray-500/20 hover:border-gray-500/40',
-    };
-
-    const domainIcons = {
-        education: 'text-blue-500',
-        sales: 'text-green-500',
-        legal: 'text-amber-500',
-        other: 'text-gray-500',
-    };
-
+function BlueprintCard({ domain }: { domain: DomainKey }) {
+    const meta = getDomainMeta(domain);
     return (
-        <div
-            onClick={() => onSelect(template)}
-            className={`group relative bg-gradient-to-br ${domainColors[template.domain]} 
-        rounded-2xl p-6 border-2 transition-all duration-300 cursor-pointer
-        hover:shadow-xl hover:-translate-y-1`}
-        >
-            {/* Icon */}
-            <div className={`size-14 rounded-xl bg-white/80 flex items-center justify-center mb-4 
-        group-hover:scale-110 transition-transform duration-300`}>
-                <span className={`material-symbols-outlined text-3xl ${domainIcons[template.domain]}`}>
-                    {template.icon}
-                </span>
+        <div className="mt-4 rounded-2xl border border-white/8 bg-background/30 backdrop-blur-md p-5">
+            <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-[18px] text-muted-foreground/60">auto_fix_high</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Domain Blueprint</span>
             </div>
-
-            {/* Content */}
-            <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                {template.name}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {template.description}
-            </p>
-
-            {/* Features Pills */}
-            <div className="flex flex-wrap gap-2">
-                {Object.keys(template.features).slice(0, 3).map((feature) => (
-                    <span
-                        key={feature}
-                        className="px-2 py-0.5 bg-background/60 text-xs font-medium rounded-full text-foreground/70"
-                    >
-                        {feature.replace('_', ' ')}
-                    </span>
+            <div className="flex flex-col gap-3">
+                {meta.blueprint.map((item) => (
+                    <div key={item.label} className="flex items-start gap-2">
+                        <span className={`material-symbols-outlined text-[14px] flex-shrink-0 mt-0.5 ${item.active ? meta.iconColor : 'text-muted-foreground/25'}`}>
+                            {item.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-wider leading-tight">
+                                {item.label}
+                            </div>
+                            <div className={`text-xs font-medium mt-0.5 ${item.active ? 'text-foreground/75' : 'text-muted-foreground/30 line-through'}`}>
+                                {item.value}
+                            </div>
+                        </div>
+                    </div>
                 ))}
-                {Object.keys(template.features).length > 3 && (
-                    <span className="px-2 py-0.5 bg-background/60 text-xs font-medium rounded-full text-foreground/70">
-                        +{Object.keys(template.features).length - 3} more
-                    </span>
-                )}
-            </div>
-
-            {/* Hover arrow */}
-            <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="material-symbols-outlined text-primary">arrow_forward</span>
             </div>
         </div>
     );
 }
 
-export default function TemplateSelector({ onSelect }: { onSelect?: (template: BotTemplate) => void }) {
-    const navigate = useNavigate();
+// ─── Template Card ─────────────────────────────────────────────────────────────
+
+function TemplateCard({ template, onSelect }: { template: BotTemplate; onSelect: (t: BotTemplate) => void }) {
+    const dm = getDomainMeta(template.domain);
+    return (
+        <button
+            onClick={() => onSelect(template)}
+            className="group w-full text-left rounded-2xl border border-white/8 bg-background/30 hover:bg-background/50 hover:border-white/20 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+        >
+            <div className="flex items-start gap-3 mb-3">
+                <div className="size-9 rounded-xl bg-background/50 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
+                    <span className={`material-symbols-outlined text-[18px] ${dm.iconColor}`}>
+                        {template.icon || dm.icon}
+                    </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                        {template.name}
+                    </h4>
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold mt-0.5 ${dm.badge}`}>
+                        <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
+                        {dm.label}
+                    </span>
+                </div>
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{template.description}</p>
+            {Object.keys(template.features).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                    {Object.keys(template.features).slice(0, 3).map((f) => (
+                        <span key={f} className="px-2 py-0.5 bg-white/5 text-[10px] font-medium rounded-full text-muted-foreground/70">
+                            {f.replace(/_/g, ' ')}
+                        </span>
+                    ))}
+                    {Object.keys(template.features).length > 3 && (
+                        <span className="px-2 py-0.5 bg-white/5 text-[10px] font-medium rounded-full text-muted-foreground/50">
+                            +{Object.keys(template.features).length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
+        </button>
+    );
+}
+
+// ─── Main TemplateSelector ─────────────────────────────────────────────────────
+
+export default function TemplateSelector({ onSelect }: { onSelect: (template: BotTemplate) => void }) {
     const [templates, setTemplates] = useState<BotTemplate[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedDomain, setSelectedDomain] = useState<'all' | 'education' | 'sales' | 'legal'>('all');
+    const [selectedDomain, setSelectedDomain] = useState<DomainKey>('general');
 
     useEffect(() => {
-        loadTemplates();
+        botTemplatesApi.list()
+            .then(setTemplates)
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, []);
 
-    const loadTemplates = async () => {
-        try {
-            const data = await botTemplatesApi.list();
-            setTemplates(data);
-        } catch (error) {
-            console.error('Failed to load templates:', error);
-        } finally {
-            setLoading(false);
-        }
+    const filteredTemplates = templates.filter((t) => {
+        const tDomain = (['education', 'legal', 'sales'].includes(t.domain) ? t.domain : 'general') as DomainKey;
+        return tDomain === selectedDomain;
+    });
+
+    const blankTemplate: BotTemplate = {
+        id: 'blank',
+        name: 'Start from Scratch',
+        description: 'Build a fully custom agent without a predefined template.',
+        domain: 'general',
+        icon: 'edit_note',
+        features: {},
+        system_prompt: '',
+        welcome_message: 'Hello! How can I help you?',
+        temperature: 0.7,
+        personality: 'professional',
+        fallback_message: "I'm sorry, I don't understand.",
+        max_tokens: 1000,
+        tone_formality: 0.5,
+        verbosity: 'concise',
+        suggested_categories: [],
+        sample_queries: [],
+        required_metadata_fields: [],
     };
-
-    const filteredTemplates = selectedDomain === 'all'
-        ? templates
-        : templates.filter((t) => t.domain === selectedDomain);
-
-    const handleTemplateSelect = (template: BotTemplate) => {
-        if (onSelect) {
-            onSelect(template);
-        } else {
-            // Navigate to bot creation with template
-            navigate(`/bots/new?template=${template.id}`);
-        }
-    };
-
-    const domainTabs = [
-        { id: 'all' as const, label: 'All Templates', icon: 'apps' },
-        { id: 'education' as const, label: 'Education', icon: 'school' },
-        { id: 'sales' as const, label: 'Sales', icon: 'trending_up' },
-        { id: 'legal' as const, label: 'Legal', icon: 'gavel' },
-    ];
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6">
             {/* Header */}
             <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3 border border-primary/20">
-                    <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
-                    Start with a Template
+                    <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                    Step 1 of 4 — Choose Template & Domain
                 </div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                    Choose Your Starting Point
-                </h2>
-                <p className="text-muted-foreground mt-2">
-                    Pre-configured templates optimized for specific industries and use cases
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">Pick a Starting Point</h2>
+                <p className="text-muted-foreground mt-1 text-sm">
+                    Select a domain, then choose a template — or start from scratch.
                 </p>
             </div>
 
-            {/* Domain Filter Tabs */}
-            <div className="flex gap-2 flex-wrap">
-                {domainTabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setSelectedDomain(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${selectedDomain === tab.id
-                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            }`}
-                    >
-                        <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
-                        <span>{tab.label}</span>
-                        {tab.id !== 'all' && (
-                            <span className="ml-1 px-1.5 py-0.5 bg-background/20 rounded text-xs">
-                                {templates.filter((t) => t.domain === tab.id).length}
-                            </span>
-                        )}
-                    </button>
-                ))}
-            </div>
+            {/* 2-Panel Layout */}
+            <div className="flex gap-5 min-h-[520px]">
 
-            {/* Start from Scratch Option */}
-            <div className="p-6 bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                onClick={() => {
-                    const blankTemplate: BotTemplate = {
-                        id: 'blank',
-                        name: 'Blank Bot',
-                        description: 'Start from scratch with a clean slate.',
-                        domain: 'other',
-                        icon: 'edit_note',
-                        features: {},
-                        system_prompt: '',
-                        welcome_message: 'Hello! I am a new bot.',
-                        temperature: 0.7,
-                        personality: 'neutral',
-                        fallback_message: "I'm sorry, I don't understand.",
-                        max_tokens: 1000,
-                        tone_formality: 0.5,
-                        verbosity: 'concise',
-                        suggested_categories: [],
-                        sample_queries: [],
-                        required_metadata_fields: []
-                    };
-                    if (onSelect) {
-                        onSelect(blankTemplate);
-                    } else {
-                        navigate('/bots/new?template=blank');
-                    }
-                }}
-            >
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <span className="material-symbols-outlined text-primary text-2xl">edit_note</span>
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">Start from Scratch</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Build a custom bot without using a template
-                            </p>
-                        </div>
-                    </div>
-                    <div className="size-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                {/* LEFT: Domain Sidebar */}
+                <div className="w-52 flex-shrink-0 flex flex-col gap-2">
+                    <div className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1 mb-1">Domain</div>
+                    {DOMAIN_KEYS.map((key) => {
+                        const meta = getDomainMeta(key);
+                        const isSelected = selectedDomain === key;
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setSelectedDomain(key)}
+                                className={`group flex items-center gap-3 w-full text-left px-3 py-3 rounded-xl border transition-all duration-200 ${
+                                    isSelected
+                                        ? 'border-white/15 bg-background/60 shadow-sm'
+                                        : 'border-transparent hover:border-white/8 hover:bg-background/30'
+                                }`}
+                            >
+                                <div className={`size-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    isSelected ? 'bg-background/80 border border-white/10' : 'bg-transparent'
+                                }`}>
+                                    <span className={`material-symbols-outlined text-[18px] transition-colors ${
+                                        isSelected ? meta.iconColor : 'text-muted-foreground/40 group-hover:text-muted-foreground/70'
+                                    }`}>
+                                        {meta.icon}
+                                    </span>
+                                </div>
+                                <div className="min-w-0">
+                                    <div className={`text-sm font-semibold truncate transition-colors ${
+                                        isSelected ? 'text-foreground' : 'text-muted-foreground/70 group-hover:text-muted-foreground'
+                                    }`}>
+                                        {meta.label}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground/40 truncate mt-0.5">
+                                        {meta.chunkingHint}
+                                    </div>
+                                </div>
+                                {isSelected && (
+                                    <span className="material-symbols-outlined text-[14px] text-muted-foreground/40 ml-auto flex-shrink-0">chevron_right</span>
+                                )}
+                            </button>
+                        );
+                    })}
+
+                    {/* Blueprint Card in sidebar below domain list */}
+                    <div className="mt-2">
+                        <BlueprintCard domain={selectedDomain} />
                     </div>
                 </div>
-            </div>
 
-            {/* Templates Grid */}
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <div className="inline-block size-10 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    <p className="text-muted-foreground ml-4">Loading templates...</p>
+                {/* RIGHT: Template Grid */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1 mb-3">
+                        Templates for {getDomainMeta(selectedDomain).label}
+                    </div>
+
+                    {loading ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                            {/* Template cards */}
+                            {filteredTemplates.length > 0 ? (
+                                filteredTemplates.map((t) => (
+                                    <TemplateCard key={t.id} template={t} onSelect={onSelect} />
+                                ))
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-muted-foreground/50">
+                                    No templates for this domain yet
+                                </div>
+                            )}
+
+                            {/* Blank template always at bottom */}
+                            <button
+                                onClick={() => onSelect({ ...blankTemplate, domain: selectedDomain })}
+                                className="group w-full text-left rounded-2xl border border-dashed border-white/10 hover:border-white/20 bg-transparent hover:bg-background/30 p-5 transition-all duration-200"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="size-9 rounded-xl bg-background/30 border border-white/8 flex items-center justify-center flex-shrink-0">
+                                        <span className="material-symbols-outlined text-[18px] text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors">
+                                            edit_note
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                                            Start from Scratch
+                                        </div>
+                                        <div className="text-xs text-muted-foreground/40 mt-0.5">
+                                            Custom agent, {getDomainMeta(selectedDomain).label} domain settings applied
+                                        </div>
+                                    </div>
+                                    <span className="material-symbols-outlined text-[16px] text-muted-foreground/30 ml-auto group-hover:text-muted-foreground/60 transition-colors">
+                                        arrow_forward
+                                    </span>
+                                </div>
+                            </button>
+                        </div>
+                    )}
                 </div>
-            ) : filteredTemplates.length === 0 ? (
-                <div className="text-center py-20 bg-muted/20 rounded-3xl border border-dashed border-border">
-                    <p className="text-muted-foreground">No templates found for this domain</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredTemplates.map((template) => (
-                        <TemplateCard
-                            key={template.id}
-                            template={template}
-                            onSelect={onSelect ? onSelect : handleTemplateSelect}
-                        />
-                    ))}
-                </div>
-            )}
+            </div>
         </div>
     );
 }
-

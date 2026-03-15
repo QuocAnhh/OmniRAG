@@ -10,6 +10,7 @@ import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import type { Bot, Document } from '../types/api';
 import RetrievalTester from '../components/retrieval/RetrievalTester';
+import { getDomainMeta } from '../utils/domainHelpers';
 
 
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
@@ -57,9 +58,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [enableKnowledgeGraph, setEnableKnowledgeGraph] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatusState | null>(null);
-  const [advancedMode, setAdvancedMode] = useState(() => localStorage.getItem('botConfig_advancedMode') === 'true');
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const kgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,6 +83,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     top_k: 5,
     similarity_threshold: 0,
     enable_knowledge_graph: false,
+    domain: 'general' as 'general' | 'education' | 'legal' | 'sales',
     zalo_integration: {
       account_id: '',
       is_active: false
@@ -106,7 +106,9 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         max_tokens: botData.config?.max_tokens || 2000,
         top_k: botData.config?.top_k || 5,
         similarity_threshold: botData.config?.similarity_threshold || 0.6,
-        enable_knowledge_graph: botData.config?.enable_knowledge_graph || false,
+        domain: (botData.config?.domain as 'general' | 'education' | 'legal' | 'sales') || 'general',
+        enable_knowledge_graph: botData.config?.enable_knowledge_graph
+          || ['education', 'legal'].includes(botData.config?.domain ?? ''),
         zalo_integration: botData.config?.zalo_integration || {
           account_id: '',
           is_active: false
@@ -275,6 +277,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           top_k: formData.top_k,
           similarity_threshold: formData.similarity_threshold,
           enable_knowledge_graph: formData.enable_knowledge_graph,
+          domain: formData.domain,
           zalo_integration: formData.zalo_integration,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {})
         },
@@ -318,13 +321,15 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }, 1000);
 
     try {
-      const uploadPromise = documentsApi.upload(id, file, 'recursive', enableKnowledgeGraph, abortController.signal);
+      // Pass the bot's configured chunking_strategy (backend resolves domain defaults if not set)
+      const effectiveStrategy = bot?.config?.chunking_strategy || 'recursive';
+      const uploadPromise = documentsApi.upload(id, file, effectiveStrategy, formData.enable_knowledge_graph, abortController.signal);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
       const [doc] = await Promise.all([uploadPromise, delayPromise]);
 
       clearUploadTimers();
 
-      if (!enableKnowledgeGraph) {
+      if (!formData.enable_knowledge_graph) {
         setUploading(false);
         setUploadStatus({
           phase: 'done',
@@ -440,7 +445,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 <span className="material-symbols-outlined text-3xl">settings</span>
               </div>
               <div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <h2 className="text-xl font-bold text-foreground">
                     {bot?.name || 'Agent Configuration'}
                   </h2>
@@ -450,6 +455,15 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     }`}>
                     {bot?.is_active ? 'Active' : 'Inactive'}
                   </span>
+                  {bot && (() => {
+                    const dm = getDomainMeta(bot.config?.domain);
+                    return (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${dm.badge}`}>
+                        <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
+                        {dm.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">Manage behavior, knowledge, and integrations</p>
               </div>
@@ -542,6 +556,36 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                         className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm resize-none"
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">Domain</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['general', 'education', 'legal', 'sales'] as const).map((d) => {
+                          const dm = getDomainMeta(d);
+                          return (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => {
+                                const useKg = ['education', 'legal'].includes(d);
+                                setFormData({ ...formData, domain: d, enable_knowledge_graph: useKg });
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left text-xs font-medium transition-all ${
+                                formData.domain === d
+                                  ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+                                  : 'border-border bg-muted/10 text-muted-foreground hover:border-primary/40'
+                              }`}
+                            >
+                              <span className={`material-symbols-outlined text-[16px] ${formData.domain === d ? '' : 'text-muted-foreground/50'}`}>{dm.icon}</span>
+                              <span>{dm.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {getDomainMeta(formData.domain).chunkingHint} · {getDomainMeta(formData.domain).description.split('.')[0]}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -555,31 +599,11 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     Behavior Engine
                   </h3>
 
-                  {/* Simple / Advanced toggle */}
-                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border">
-                    <span className="text-sm text-muted-foreground">
-                      {advancedMode ? 'Advanced mode — full controls visible' : 'Simple mode — smart defaults applied'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = !advancedMode;
-                        setAdvancedMode(next);
-                        localStorage.setItem('botConfig_advancedMode', String(next));
-                      }}
-                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">{advancedMode ? 'toggle_on' : 'toggle_off'}</span>
-                      {advancedMode ? 'Advanced' : 'Simple'}
-                    </button>
-                  </div>
-
                   <div className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">Model</label>
-                        {advancedMode ? (
-                          <div className="relative">
+                        <div className="relative">
                             <select
                               value={formData.model}
                               onChange={(e) => setFormData({ ...formData, model: e.target.value })}
@@ -606,26 +630,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                             </select>
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground material-symbols-outlined text-sm">expand_more</span>
                           </div>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-2">
-                            {[
-                              { id: 'google/gemini-2.5-flash-lite-preview-09-2025', label: 'Fast', icon: '⚡', desc: 'Low latency' },
-                              { id: 'openai/gpt-4o-mini', label: 'Balanced', icon: '🎯', desc: 'Recommended' },
-                              { id: 'openai/gpt-4o', label: 'Powerful', icon: '🧠', desc: 'Best quality' },
-                            ].map(tier => (
-                              <button
-                                key={tier.id}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, model: tier.id })}
-                                className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${formData.model === tier.id ? 'bg-primary/10 border-primary text-primary' : 'bg-muted/10 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
-                              >
-                                <span className="text-lg">{tier.icon}</span>
-                                <span className="text-xs font-bold">{tier.label}</span>
-                                <span className="text-[10px] opacity-70">{tier.desc}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">Role</label>
@@ -696,7 +700,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
-                    {advancedMode && (
                     <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
                       <div className="space-y-2">
                         <div className="flex justify-between">
@@ -731,7 +734,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                         />
                       </div>
                     </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -761,16 +763,40 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 </div>
               </div>
 
+              {/* Domain / Chunking Strategy Banner */}
+              {bot && (() => {
+                const dm = getDomainMeta(bot.config?.domain);
+                const chunkHint = bot.config?.chunking_strategy
+                  ? `${bot.config.chunking_strategy} chunking · ${bot.config?.chunk_size ?? '—'} tokens`
+                  : dm.chunkingHint;
+                const isKgDomain = ['education', 'legal'].includes(bot.config?.domain ?? '');
+                return (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-muted/30 border border-border rounded-xl text-sm">
+                    <span className={`material-symbols-outlined text-[20px] ${dm.iconColor}`}>{dm.icon}</span>
+                    <div>
+                      <span className="font-semibold">{dm.label} domain</span>
+                      <span className="mx-2 text-muted-foreground">·</span>
+                      <span className="font-mono text-muted-foreground">{chunkHint}</span>
+                    </div>
+                    {!isKgDomain && (
+                      <span className="ml-auto text-xs text-muted-foreground italic">
+                        KG is most useful for Education and Legal domains
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Upload Settings */}
               <div className="flex items-center gap-3 px-1">
                 <button
                   type="button"
-                  onClick={() => setEnableKnowledgeGraph(v => !v)}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enableKnowledgeGraph ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, enable_knowledge_graph: !prev.enable_knowledge_graph }))}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enable_knowledge_graph ? 'bg-primary' : 'bg-muted-foreground/30'}`}
                   role="switch"
-                  aria-checked={enableKnowledgeGraph}
+                  aria-checked={formData.enable_knowledge_graph}
                 >
-                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enableKnowledgeGraph ? 'translate-x-4' : 'translate-x-0'}`} />
+                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enable_knowledge_graph ? 'translate-x-4' : 'translate-x-0'}`} />
                 </button>
                 <span className="text-sm font-medium text-foreground">Build Knowledge Graph</span>
                 <span className="text-xs text-muted-foreground">(cho tài liệu phức tạp, dài — tốn thêm thời gian xử lý)</span>
@@ -934,28 +960,48 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {/* --- DONE (no KG) --- */}
                   {uploadStatus.phase === 'done' && (
                     <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed and ready for chat.</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.elapsedSeconds)}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-emerald-400 text-xl flex-shrink-0">check_circle</span>
+                        <div>
+                          <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed and ready.</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.elapsedSeconds)}</p>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => setUploadStatus(null)}
-                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dismiss
-                      </button>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onClick={() => navigate(`/bots/${id}/chat`)}
+                          className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+                          <span className="material-symbols-outlined text-[16px]">chat</span>
+                          Start Chatting
+                        </button>
+                        <button type="button" onClick={() => setUploadStatus(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                          Dismiss
+                        </button>
+                      </div>
                     </div>
                   )}
 
                   {/* --- KG DONE --- */}
                   {uploadStatus.phase === 'kg_done' && (
                     <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed and knowledge graph built.</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.kgElapsedSeconds)}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-violet-400 text-xl flex-shrink-0">account_tree</span>
+                        <div>
+                          <p className="font-semibold text-foreground">"{uploadStatus.filename}" indexed + knowledge graph built.</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Completed in {formatElapsed(uploadStatus.kgElapsedSeconds)}</p>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => setUploadStatus(null)}
-                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
-                        Dismiss
-                      </button>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onClick={() => navigate(`/bots/${id}/chat`)}
+                          className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+                          <span className="material-symbols-outlined text-[16px]">chat</span>
+                          Start Chatting
+                        </button>
+                        <button type="button" onClick={() => setUploadStatus(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                          Dismiss
+                        </button>
+                      </div>
                     </div>
                   )}
 

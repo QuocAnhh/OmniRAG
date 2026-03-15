@@ -5,8 +5,11 @@ import Layout from '../components/Layout/Layout';
 import TemplateSelector from '../components/bots/TemplateSelector';
 import { botTemplatesApi } from '../api/botTemplates';
 import type { BotTemplate } from '../api/botTemplates';
+import { getDomainMeta } from '../utils/domainHelpers';
+import type { DomainKey } from '../utils/domainHelpers';
 
-// Step components
+// ─── Step Components ───────────────────────────────────────────────────────────
+
 function IdentityStep({ onNext, onBack, data, updateData }: any) {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -85,7 +88,6 @@ function PersonalityStep({ onNext, onBack, data, updateData }: any) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        {/* Simple presets for now */}
                         {['Professional', 'Friendly', 'Technical', 'Casual'].map(p => (
                             <button
                                 key={p}
@@ -118,7 +120,8 @@ function PersonalityStep({ onNext, onBack, data, updateData }: any) {
     );
 }
 
-// Main Wizard Component
+// ─── Main Wizard ───────────────────────────────────────────────────────────────
+
 export default function BotWizardPage() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -130,14 +133,17 @@ export default function BotWizardPage() {
         temperature: number;
         personality: string;
         templateName?: string;
+        domain: DomainKey;
     }>({
         templateId: '',
         name: '',
         description: '',
         temperature: 0.7,
-        personality: 'professional'
+        personality: 'professional',
+        domain: 'general',
     });
 
+    // 4 steps: Template+Domain → Identity → Behavior → Review
     const steps = [
         { number: 1, title: 'Template' },
         { number: 2, title: 'Identity' },
@@ -146,14 +152,18 @@ export default function BotWizardPage() {
     ];
 
     const handleTemplateSelect = (template: BotTemplate) => {
+        const templateDomain = (['education', 'legal', 'sales'].includes(template.domain)
+            ? template.domain
+            : 'general') as DomainKey;
         setFormData(prev => ({
             ...prev,
             templateId: template.id,
             templateName: template.name,
             name: prev.name || template.name,
             description: prev.description || template.description,
-            temperature: template.temperature,
-            personality: template.personality
+            temperature: template.temperature ?? prev.temperature,
+            personality: template.personality ?? prev.personality,
+            domain: templateDomain,
         }));
         setStep(2);
     };
@@ -168,24 +178,27 @@ export default function BotWizardPage() {
                 description: formData.description,
                 customize_config: {
                     temperature: formData.temperature,
-                    personality: formData.personality
+                    personality: formData.personality,
+                    domain: formData.domain,
                 }
             });
             toast.success('Agent created! Upload documents to activate RAG.', { id: toastId, duration: 5000 });
             window.dispatchEvent(new CustomEvent('bot-created'));
 
-            if (newBot && newBot.id) {
+            if (newBot?.id) {
                 navigate(`/bots/${newBot.id}/config?tab=knowledge`);
             } else {
                 navigate('/bots');
             }
         } catch (error) {
-            console.error("Failed to create bot", error);
+            console.error('Failed to create bot', error);
             toast.error('Failed to create agent. Please try again.', { id: toastId });
         } finally {
             setLoading(false);
         }
     };
+
+    const domainMeta = getDomainMeta(formData.domain);
 
     return (
         <Layout breadcrumbs={[
@@ -199,7 +212,7 @@ export default function BotWizardPage() {
                 <div className="mb-10">
                     <h1 className="text-3xl font-bold text-foreground mb-6">Create New Agent</h1>
 
-                    <div className="relative flex items-center justify-between max-w-2xl mx-auto">
+                    <div className="relative flex items-center justify-between max-w-xl mx-auto">
                         {/* Connecting Line */}
                         <div className="absolute top-1/2 left-0 w-full h-1 bg-muted -z-10 -translate-y-1/2 rounded-full"></div>
                         <div
@@ -210,12 +223,14 @@ export default function BotWizardPage() {
                         {steps.map((s) => (
                             <div key={s.number} className="flex flex-col items-center gap-2 bg-background px-2">
                                 <div className={`
-                   size-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all
-                   ${step >= s.number
+                                    size-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all
+                                    ${step >= s.number
                                         ? 'bg-primary border-primary text-primary-foreground'
                                         : 'bg-background border-muted text-muted-foreground'}
-                 `}>
-                                    {step > s.number ? '✓' : s.number}
+                                `}>
+                                    {step > s.number
+                                        ? <span className="material-symbols-outlined text-[18px]">check</span>
+                                        : s.number}
                                 </div>
                                 <span className={`text-xs font-medium ${step >= s.number ? 'text-primary' : 'text-muted-foreground'}`}>
                                     {s.title}
@@ -227,12 +242,15 @@ export default function BotWizardPage() {
 
                 {/* Step Content */}
                 <div className="min-h-[400px]">
+
+                    {/* Step 1: Template + Domain (merged) */}
                     {step === 1 && (
                         <div className="animate-in fade-in zoom-in-95 duration-300">
                             <TemplateSelector onSelect={handleTemplateSelect} />
                         </div>
                     )}
 
+                    {/* Step 2: Identity */}
                     {step === 2 && (
                         <IdentityStep
                             data={formData}
@@ -242,6 +260,7 @@ export default function BotWizardPage() {
                         />
                     )}
 
+                    {/* Step 3: Behavior */}
                     {step === 3 && (
                         <PersonalityStep
                             data={formData}
@@ -251,11 +270,12 @@ export default function BotWizardPage() {
                         />
                     )}
 
+                    {/* Step 4: Review & Create */}
                     {step === 4 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="bg-card rounded-2xl border border-border p-8">
                                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-green-600">rocket_launch</span>
+                                    <span className="material-symbols-outlined text-green-500">rocket_launch</span>
                                     Review & Launch
                                 </h3>
 
@@ -269,7 +289,7 @@ export default function BotWizardPage() {
                                             </div>
                                             <div>
                                                 <div className="text-xs text-muted-foreground">Description</div>
-                                                <div className="font-medium text-sm">{formData.description}</div>
+                                                <div className="font-medium text-sm">{formData.description || '—'}</div>
                                             </div>
                                             <div>
                                                 <div className="text-xs text-muted-foreground">Template</div>
@@ -278,21 +298,42 @@ export default function BotWizardPage() {
                                                     {formData.templateName}
                                                 </div>
                                             </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground mb-1">Domain</div>
+                                                <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold ${domainMeta.badge}`}>
+                                                    <span className="material-symbols-outlined text-[13px]">{domainMeta.icon}</span>
+                                                    {domainMeta.label}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Configuration</h4>
-                                        <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Auto-Configuration</h4>
+                                        <div className="space-y-3">
+                                            {domainMeta.blueprint.map((item) => (
+                                                <div key={item.label} className="flex items-center gap-2.5">
+                                                    <span className={`material-symbols-outlined text-[15px] ${item.active ? domainMeta.iconColor : 'text-muted-foreground/30'}`}>
+                                                        {item.icon}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground w-28">{item.label}</span>
+                                                    <span className={`text-xs font-medium ${item.active ? 'text-foreground/80' : 'text-muted-foreground/40'}`}>
+                                                        {item.value}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-6 space-y-4">
                                             <div>
                                                 <div className="text-xs text-muted-foreground">Personality</div>
                                                 <div className="capitalize font-medium">{formData.personality}</div>
                                             </div>
                                             <div>
                                                 <div className="text-xs text-muted-foreground">Creativity (Temp)</div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 mt-1">
                                                     <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
-                                                        <div className="h-full bg-primary" style={{ width: `${formData.temperature * 100}%` }}></div>
+                                                        <div className="h-full bg-primary rounded-full" style={{ width: `${formData.temperature * 100}%` }}></div>
                                                     </div>
                                                     <span className="text-sm font-medium">{formData.temperature}</span>
                                                 </div>
@@ -318,7 +359,7 @@ export default function BotWizardPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <span className="material-symbols-outlined">rocket_launch</span>
+                                            <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
                                             Create Agent
                                         </>
                                     )}
