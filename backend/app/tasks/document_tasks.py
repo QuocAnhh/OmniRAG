@@ -25,7 +25,9 @@ def process_document_task(
     file_path: str,
     filename: str,
     chunking_strategy: str = "recursive",
-    enable_knowledge_graph: bool = False
+    enable_knowledge_graph: bool = False,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
 ):
     """
     Background task to process document:
@@ -73,6 +75,8 @@ def process_document_task(
                 bot_id,
                 filename,
                 chunking_strategy=chunking_strategy,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
                 preloaded_documents=loaded_documents,
             )
             num_chunks = ingest_result.get("chunks_created", 0)

@@ -23,6 +23,12 @@ class BotConfig(BaseModel):
     enable_memory: bool = Field(default=True)
     enable_knowledge_graph: bool = Field(default=False, description="Whether a KG has been built for this bot")
 
+    # Domain
+    domain: str = Field(default="general", description="RAG domain profile: general | education | legal | sales")
+    chunking_strategy: str | None = Field(default=None, description="Override domain default chunking strategy")
+    chunk_size: int | None = Field(default=None, ge=64, le=4096, description="Override domain default chunk size")
+    chunk_overlap: int | None = Field(default=None, ge=0, le=512, description="Override domain default chunk overlap")
+
     class Config:
         extra = "allow"   # Allow legacy keys from existing bots without breaking
 

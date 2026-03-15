@@ -54,6 +54,12 @@ def create_bot_from_template(
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {request.template_id}")
     
+    # Resolve domain profile defaults
+    from app.services.domain_config import get_domain_profile
+    # Map template domain → RAG domain key (template uses "other" for general)
+    raw_domain = template.domain if template.domain in ("education", "legal", "sales") else "general"
+    domain_profile = get_domain_profile(raw_domain)
+
     # Build bot configuration from template
     bot_config = {
         "welcome_message": template.welcome_message,
@@ -70,6 +76,11 @@ def create_bot_from_template(
         "suggested_categories": template.suggested_categories,
         "sample_queries": template.sample_queries,
         "required_metadata_fields": template.required_metadata_fields,
+        # Domain-aware RAG settings
+        "domain": raw_domain,
+        "chunking_strategy": domain_profile.chunk_strategy,
+        "chunk_size": domain_profile.chunk_size,
+        "chunk_overlap": domain_profile.chunk_overlap,
     }
     
     # Apply any custom overrides

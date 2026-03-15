@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
@@ -188,14 +188,27 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
+    # Resolve chunk params: explicit form values override domain profile defaults
+    from app.services.domain_config import get_domain_profile
+    bot_domain = (bot.config or {}).get("domain", "general")
+    domain_profile = get_domain_profile(bot_domain)
+    bot_cfg = bot.config or {}
+    effective_strategy = chunking_strategy if chunking_strategy != "recursive" else (
+        bot_cfg.get("chunking_strategy") or domain_profile.chunk_strategy
+    )
+    effective_chunk_size = bot_cfg.get("chunk_size") or domain_profile.chunk_size
+    effective_chunk_overlap = bot_cfg.get("chunk_overlap") or domain_profile.chunk_overlap
+
     # Enqueue background processing
     process_document_task.delay(
         str(doc.id),
         str(bot_id),
         file_path,
         file.filename,
-        chunking_strategy,
-        enable_knowledge_graph
+        effective_strategy,
+        enable_knowledge_graph,
+        effective_chunk_size,
+        effective_chunk_overlap,
     )
     
     return doc

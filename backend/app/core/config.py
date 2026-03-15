@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     # Local embeddings (optional alternative to API)
     USE_LOCAL_EMBEDDINGS: bool = False  # Set to True to use local model instead of API
     LOCAL_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+
+    # Reranker model (multilingual, supports Vietnamese)
+    RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"
     
     # Qdrant Vector DB
     QDRANT_HOST: str = "qdrant"
