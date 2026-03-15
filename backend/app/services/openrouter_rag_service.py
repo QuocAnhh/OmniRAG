@@ -255,6 +255,61 @@ class OpenRouterRAGService:
         
         return loader.load()
     
+    @staticmethod
+    def _chunk_article(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+        """
+        Article-boundary chunking for legal documents.
+        Splits at Vietnamese article markers (Điều N) then sub-splits oversized articles.
+        """
+        # Split at article boundaries — keep the "Điều" marker with the following text
+        parts = re.split(r'(?=Điều\s+\d+)', text)
+        result: List[str] = []
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            if len(part) <= chunk_size:
+                result.append(part)
+            else:
+                # Sub-split oversized articles recursively
+                result.extend(splitter.split_text(part))
+        return result
+
+    @staticmethod
+    def _chunk_sentence(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+        """
+        Sentence-aware chunking using a rolling-window accumulator.
+        Preserves paragraph coherence by joining sentences up to chunk_size.
+        """
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+        chunks: List[str] = []
+        current: List[str] = []
+        current_len = 0
+        for sent in sentences:
+            sent_len = len(sent)
+            if current_len + sent_len > chunk_size and current:
+                chunks.append(" ".join(current))
+                # Keep overlap by retaining last few sentences
+                overlap_chars = 0
+                keep: List[str] = []
+                for s in reversed(current):
+                    overlap_chars += len(s)
+                    keep.insert(0, s)
+                    if overlap_chars >= chunk_overlap:
+                        break
+                current = keep
+                current_len = sum(len(s) for s in current)
+            current.append(sent)
+            current_len += sent_len
+        if current:
+            chunks.append(" ".join(current))
+        return chunks
+
     def _chunk_documents(
         self,
         documents: List[LangChainDocument],
@@ -263,7 +318,47 @@ class OpenRouterRAGService:
         chunk_overlap: int = 200
     ) -> List[LangChainDocument]:
         """Split documents into chunks using specified strategy."""
-        
+
+        if chunking_strategy == "article":
+            chunks: List[LangChainDocument] = []
+            for doc in documents:
+                for piece in self._chunk_article(doc.page_content, chunk_size, chunk_overlap):
+                    chunks.append(LangChainDocument(page_content=piece, metadata=doc.metadata.copy()))
+            logger.info(f"Created {len(chunks)} chunks using article strategy")
+            return chunks
+
+        if chunking_strategy == "sentence":
+            chunks = []
+            for doc in documents:
+                for piece in self._chunk_sentence(doc.page_content, chunk_size, chunk_overlap):
+                    chunks.append(LangChainDocument(page_content=piece, metadata=doc.metadata.copy()))
+            logger.info(f"Created {len(chunks)} chunks using sentence strategy")
+            return chunks
+
+        if chunking_strategy == "parent_child":
+            # Parent-Child Chunking:
+            # Large parent chunks preserve context; small child chunks enable precise matching.
+            # Each child carries its parent text in metadata so retrieval returns the richer context.
+            parent_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                separators=["\n\n", "\n", ". ", " ", ""],
+            )
+            child_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=max(128, chunk_size // 4),
+                chunk_overlap=max(32, chunk_overlap // 2),
+                separators=["\n\n", "\n", ". ", " ", ""],
+            )
+            result_chunks: List[LangChainDocument] = []
+            for doc in documents:
+                for parent_text in parent_splitter.split_text(doc.page_content):
+                    for child_piece in child_splitter.split_text(parent_text):
+                        meta = doc.metadata.copy()
+                        meta["parent_text"] = parent_text
+                        result_chunks.append(LangChainDocument(page_content=child_piece, metadata=meta))
+            logger.info(f"Created {len(result_chunks)} child chunks with parent_child strategy")
+            return result_chunks
+
         if chunking_strategy == "semantic":
             # Semantic chunking: split at sentence boundaries
             try:
@@ -287,7 +382,7 @@ class OpenRouterRAGService:
                 chunk_overlap=chunk_overlap,
                 separators=["\n\n", "\n", ". ", " ", ""]
             )
-        
+
         chunks = text_splitter.split_documents(documents)
         logger.info(f"Created {len(chunks)} chunks using {chunking_strategy} strategy")
         return chunks
@@ -334,15 +429,16 @@ class OpenRouterRAGService:
             model_cache_dir = os.getenv('HF_HOME', '/tmp/huggingface_cache')
             os.makedirs(model_cache_dir, exist_ok=True)
             
-            logger.info(f"Loading Reranker Model (cross-encoder/ms-marco-MiniLM-L-6-v2) on demand (cache: {model_cache_dir})...")
-            
+            reranker_model = getattr(settings, "RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+            logger.info(f"Loading Reranker Model ({reranker_model}) on demand (cache: {model_cache_dir})...")
+
             # Force both model and tokenizer to use the specified cache directory
             self.reranker = CrossEncoder(
-                'cross-encoder/ms-marco-MiniLM-L-6-v2',
+                reranker_model,
                 automodel_args={'cache_dir': model_cache_dir},
                 tokenizer_args={'cache_dir': model_cache_dir}
             )
-            logger.info("Reranker model loaded successfully on demand")
+            logger.info(f"Reranker model {reranker_model} loaded successfully on demand")
         except Exception as e:
             logger.warning(f"Failed to load Reranker model on demand: {e}")
             self.reranker = None
@@ -408,6 +504,7 @@ class OpenRouterRAGService:
             scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
             payloads[key] = {
                 "text": point.payload["text"],
+                "parent_text": point.payload.get("parent_text"),
                 "source": point.payload.get("source", "unknown"),
                 "initial_score": point.score,
                 "metadata": point.payload.get("metadata", {})
@@ -419,6 +516,7 @@ class OpenRouterRAGService:
             if key not in payloads:
                 payloads[key] = {
                     "text": point.payload["text"],
+                    "parent_text": point.payload.get("parent_text"),
                     "source": point.payload.get("source", "unknown"),
                     "initial_score": 0.5,  # FTS hit, no cosine score
                     "metadata": point.payload.get("metadata", {})
@@ -545,11 +643,21 @@ Answer:"""
                 chunk.metadata["bot_id"] = bot_id
                 chunk.metadata["source"] = file.filename
                 chunk.metadata["ingested_at"] = datetime.utcnow().isoformat()
-            
-            # Generate embeddings for all chunks
+
+            # ── Contextual Retrieval: generate situating prefix per chunk ──────
+            chunk_texts = [chunk.page_content for chunk in chunks]
+            doc_text_full = "\n\n".join(doc.page_content for doc in documents)
+            logger.info(f"Generating contextual prefixes for {len(chunks)} chunks (Contextual Retrieval)")
+            context_prefixes = await self._generate_contextual_prefix_batch(doc_text_full, chunk_texts)
+            enriched_texts = [
+                f"{prefix}\n\n{text}" if prefix else text
+                for prefix, text in zip(context_prefixes, chunk_texts)
+            ]
+            # ─────────────────────────────────────────────────────────────────
+
+            # Generate embeddings for all chunks (using enriched text for better semantic match)
             logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter")
-            texts = [chunk.page_content for chunk in chunks]
-            embeddings = self.openrouter.embed_batch(texts, batch_size=100)
+            embeddings = self.openrouter.embed_batch(enriched_texts, batch_size=100)
             
             # Auto-detect embedding dimensions
             if embeddings:
@@ -577,7 +685,7 @@ Answer:"""
                 point_id = hashlib.md5(
                     f"{bot_id}_{file.filename}_{idx}_{chunk.page_content[:100]}".encode()
                 ).hexdigest()
-                
+
                 points.append(
                     PointStruct(
                         id=point_id,
@@ -586,6 +694,8 @@ Answer:"""
                             "bot_id": bot_id,
                             "source": file.filename,
                             "text": chunk.page_content,
+                            "parent_text": chunk.metadata.get("parent_text"),
+                            "context_prefix": context_prefixes[idx] if idx < len(context_prefixes) else None,
                             "metadata": chunk.metadata,
                         }
                     )
@@ -660,9 +770,21 @@ Answer:"""
             chunk.metadata["source"] = filename
             chunk.metadata["ingested_at"] = datetime.utcnow().isoformat()
 
+        # ── Contextual Retrieval + embedding (single async pass) ──────────────
+        async def _contextual_ingest_async() -> tuple:
+            doc_text_full = "\n\n".join(doc.page_content for doc in documents)
+            chunk_texts = [c.page_content for c in chunks]
+            logger.info(f"Generating contextual prefixes for {len(chunks)} chunks (Contextual Retrieval)")
+            prefixes = await self._generate_contextual_prefix_batch(doc_text_full, chunk_texts)
+            enriched = [
+                f"{p}\n\n{t}" if p else t for p, t in zip(prefixes, chunk_texts)
+            ]
+            embeddings = await self.openrouter.embed_batch_async(enriched, batch_size=100)
+            return prefixes, embeddings
+
         logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter (async)")
-        texts = [chunk.page_content for chunk in chunks]
-        embeddings = asyncio.run(self.openrouter.embed_batch_async(texts, batch_size=100))
+        context_prefixes, embeddings = asyncio.run(_contextual_ingest_async())
+        # ─────────────────────────────────────────────────────────────────────
 
         if embeddings:
             detected_dim = len(embeddings[0])
@@ -692,6 +814,8 @@ Answer:"""
                         "bot_id": bot_id,
                         "source": filename,
                         "text": chunk.page_content,
+                        "parent_text": chunk.metadata.get("parent_text"),
+                        "context_prefix": context_prefixes[idx] if idx < len(context_prefixes) else None,
                         "metadata": chunk.metadata,
                     }
                 )
@@ -763,6 +887,273 @@ Answer:"""
             logger.warning(f"Query rewriting failed: {e}. Using original query.")
             return query
 
+    async def _generate_hyde_hypothesis(self, query: str, domain: str = "general") -> str:
+        """
+        HyDE (Hypothetical Document Embedding):
+        Generate a hypothetical document passage that *would* answer the query,
+        then embed that passage instead of the raw query.
+
+        Doc-to-doc similarity >> query-to-doc similarity in embedding space,
+        so this significantly improves semantic retrieval precision.
+        Falls back to original query if LLM call fails.
+        """
+        domain_hints = {
+            "legal": (
+                "Viết một đoạn văn pháp lý ngắn (4-6 câu) như thể trích từ một văn bản "
+                "quy phạm pháp luật, hợp đồng hoặc hướng dẫn pháp lý có thể trả lời câu hỏi sau. "
+                "Dùng ngôn ngữ pháp lý chính thức, trích dẫn điều khoản nếu phù hợp."
+            ),
+            "education": (
+                "Viết một đoạn giải thích học thuật ngắn (4-6 câu) như thể trích từ sách giáo khoa "
+                "hoặc tài liệu giảng dạy có thể trả lời câu hỏi sau. "
+                "Dùng ngôn ngữ rõ ràng, có ví dụ minh họa nếu phù hợp."
+            ),
+            "sales": (
+                "Viết một đoạn mô tả sản phẩm/dịch vụ ngắn (4-6 câu) như thể trích từ tài liệu "
+                "kinh doanh, brochure hoặc catalog có thể trả lời câu hỏi sau. "
+                "Nhấn mạnh vào lợi ích và đặc điểm nổi bật."
+            ),
+            "general": (
+                "Viết một đoạn văn ngắn (4-6 câu) như thể trích từ tài liệu tham khảo "
+                "có thể trả lời câu hỏi sau."
+            ),
+        }
+
+        hint = domain_hints.get(domain, domain_hints["general"])
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Bạn là trợ lý tạo đoạn văn giả định để cải thiện tìm kiếm ngữ nghĩa (HyDE). "
+                    "Chỉ trả về đoạn văn thuần túy, không thêm giải thích, không thêm tiêu đề."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"{hint}\n\nCâu hỏi: {query}",
+            },
+        ]
+
+        try:
+            response = await asyncio.to_thread(
+                self.openrouter.chat_completion,
+                messages=messages,
+                model="openai/gpt-4o-mini",
+                temperature=0.5,
+                max_tokens=250,
+            )
+            hypothesis = response.get("content", "").strip()
+            if hypothesis:
+                logger.info(f"HyDE hypothesis ({domain}): {hypothesis[:120]}...")
+                return hypothesis
+        except Exception as e:
+            logger.warning(f"HyDE generation failed, falling back to original query: {e}")
+
+        return query
+
+    async def _crag_classify(self, query: str, chunks: list) -> str:
+        """
+        CRAG (Corrective RAG) relevance classifier.
+
+        Takes the top retrieved chunks and the search query, asks a fast LLM to
+        decide whether the knowledge base actually contains an answer.
+
+        Returns one of:
+          "relevant"   — KB has good information, proceed normally
+          "ambiguous"  — partial match, answer with caution
+          "no_context" — KB lacks relevant info; LLM should admit it doesn't know
+
+        Falls back to "relevant" on any failure so CRAG never silently breaks RAG.
+        """
+        if not chunks:
+            return "no_context"
+
+        # Build a compact snippet from the top 3 chunks (≤ 300 chars each)
+        snippet_lines = []
+        for i, chunk in enumerate(chunks[:3], 1):
+            text = chunk.get("text", "")[:300].replace("\n", " ")
+            snippet_lines.append(f"[{i}] {text}")
+        snippets = "\n".join(snippet_lines)
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a relevance judge for a RAG system. "
+                    "Given a user question and retrieved document snippets, "
+                    "classify the retrieval quality with a single word:\n"
+                    "- 'relevant'   → snippets directly answer the question\n"
+                    "- 'ambiguous'  → snippets are partially related but incomplete\n"
+                    "- 'no_context' → snippets are unrelated or the KB lacks this information\n"
+                    "Reply with ONLY one of those three words, nothing else."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"Question: {query}\n\nRetrieved snippets:\n{snippets}",
+            },
+        ]
+
+        try:
+            response = await asyncio.to_thread(
+                self.openrouter.chat_completion,
+                messages=messages,
+                model="openai/gpt-4o-mini",
+                temperature=0.0,
+                max_tokens=10,
+            )
+            verdict = response.get("content", "").strip().lower()
+            if verdict in ("relevant", "ambiguous", "no_context"):
+                logger.info(f"CRAG verdict: {verdict}")
+                return verdict
+        except Exception as e:
+            logger.warning(f"CRAG classification failed, defaulting to 'relevant': {e}")
+
+        return "relevant"
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Multi-Query Fusion
+    # ──────────────────────────────────────────────────────────────────────────
+
+    async def _generate_query_variants(self, query: str, n: int = 2) -> List[str]:
+        """
+        Multi-Query Fusion — step 1:
+        Generate N diverse reformulations of the query via LLM.
+        Different phrasings hit different embedding regions → broader recall.
+        Always includes the original query; returns [original, v1, v2, ...].
+        Falls back to [query] on failure.
+        """
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    f"Generate {n} diverse reformulations of the user's query to improve document retrieval. "
+                    "Each reformulation should approach the topic from a different angle or use different keywords. "
+                    f"Return exactly {n} queries, one per line, numbered 1. 2. etc. "
+                    "No explanations — only the queries."
+                ),
+            },
+            {"role": "user", "content": query},
+        ]
+        try:
+            response = await asyncio.to_thread(
+                self.openrouter.chat_completion,
+                messages=messages,
+                model="openai/gpt-4o-mini",
+                temperature=0.7,
+                max_tokens=150,
+            )
+            content = response.get("content", "").strip()
+            variants = []
+            for line in content.split("\n"):
+                line = re.sub(r"^\d+\.\s*", "", line.strip())
+                if line:
+                    variants.append(line)
+            return [query] + variants[:n]
+        except Exception as e:
+            logger.warning(f"Query variant generation failed: {e}")
+            return [query]
+
+    async def _multi_query_search(
+        self, bot_id: str, queries: List[str], top_k: int
+    ) -> List[Dict]:
+        """
+        Multi-Query Fusion — step 2:
+        Embed each query variant independently (HyDE already applied to first),
+        run _hybrid_search for each, then merge all results via RRF.
+        A document appearing in results for multiple query variants gets boosted.
+        """
+        async def _search_one(q: str) -> List[Dict]:
+            embedding = await asyncio.to_thread(self._embed_with_retry, q)
+            return await asyncio.to_thread(
+                self._hybrid_search, bot_id, q, embedding, top_k
+            )
+
+        results_per_query = await asyncio.gather(
+            *[_search_one(q) for q in queries], return_exceptions=True
+        )
+
+        k = 60  # standard RRF constant
+        rrf_scores: Dict[str, float] = {}
+        best_payload: Dict[str, Dict] = {}
+
+        for results in results_per_query:
+            if isinstance(results, BaseException):
+                continue
+            for rank, result in enumerate(results):
+                key = result.get("text", "")[:200]
+                rrf_scores[key] = rrf_scores.get(key, 0.0) + 1.0 / (k + rank + 1)
+                # Keep the payload with the highest individual hybrid_score
+                if key not in best_payload or result.get("hybrid_score", 0) > best_payload[key].get("hybrid_score", 0):
+                    best_payload[key] = result
+
+        if not best_payload:
+            return []
+
+        merged = []
+        for key, rrf_score in sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True):
+            item = best_payload[key].copy()
+            # Blend reranker score with cross-query agreement: 70% reranker + 30% normalized RRF
+            base = item.get("hybrid_score", 0.0)
+            item["hybrid_score"] = 0.7 * base + 0.3 * min(rrf_score * k, 1.0)
+            merged.append(item)
+
+        merged.sort(key=lambda x: x["hybrid_score"], reverse=True)
+        return merged[: top_k * 2]  # Return a generous pool; CRAG/threshold filter trims it
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Contextual Retrieval (Anthropic technique)
+    # ──────────────────────────────────────────────────────────────────────────
+
+    async def _generate_contextual_prefix_batch(
+        self, doc_text: str, chunk_texts: List[str], max_chunks: int = 50
+    ) -> List[str]:
+        """
+        Contextual Retrieval — generate a 1-2 sentence situating context for each chunk.
+        The prefix is prepended to the chunk *before* embedding so that the vector
+        captures where the chunk lives within the whole document (Anthropic technique).
+
+        Caps at max_chunks to bound indexing cost. Chunks beyond the cap get empty prefix.
+        Falls back gracefully on any individual failure.
+        """
+        # Truncate full doc text to keep prompts manageable
+        doc_summary = doc_text[:4000]
+
+        async def _prefix_one(chunk: str) -> str:
+            messages = [
+                {
+                    "role": "user",
+                    "content": (
+                        f"<document>\n{doc_summary}\n</document>\n\n"
+                        f"<chunk>\n{chunk[:600]}\n</chunk>\n\n"
+                        "Write 1-2 sentences that situate this chunk within the overall document "
+                        "(e.g. which section it belongs to, what topic it covers). "
+                        "This context will be prepended to the chunk to improve search retrieval. "
+                        "Reply with ONLY the context sentences, no labels or headings."
+                    ),
+                }
+            ]
+            try:
+                response = await asyncio.to_thread(
+                    self.openrouter.chat_completion,
+                    messages=messages,
+                    model="openai/gpt-4o-mini",
+                    temperature=0.1,
+                    max_tokens=80,
+                )
+                return response.get("content", "").strip()
+            except Exception:
+                return ""
+
+        active_chunks = chunk_texts[:max_chunks]
+        prefixes = await asyncio.gather(
+            *[_prefix_one(c) for c in active_chunks], return_exceptions=True
+        )
+        result = [p if isinstance(p, str) else "" for p in prefixes]
+        # Pad with empty strings for chunks beyond max_chunks
+        result += [""] * max(0, len(chunk_texts) - max_chunks)
+        return result
+
     async def chat(
         self,
         bot_id: str,
@@ -779,7 +1170,24 @@ Answer:"""
         start_time = time.time()
         session_id = session_id or str(uuid.uuid4())
         bot_config = bot_config or {}
-        
+
+        # Inject domain profile settings into bot_config (profile values are fallbacks;
+        # explicit bot_config values take precedence).
+        try:
+            from app.services.domain_config import get_domain_profile
+            domain = bot_config.get("domain", "general")
+            profile = get_domain_profile(domain)
+            # Only apply profile top_k if not overridden by caller arg or bot config
+            effective_top_k = bot_config.get("top_k", profile.retrieval_k)
+            # Propagate lightrag mode so _prepare_chat_context can use it
+            bot_config.setdefault("_lightrag_mode", profile.lightrag_mode)
+            # If KG is enabled but domain says don't use lightrag, honour the domain default
+            # (bot_config.enable_knowledge_graph remains the final gate)
+            domain_prompt_suffix = profile.system_prompt_suffix
+        except Exception:
+            effective_top_k = top_k
+            domain_prompt_suffix = ""
+
         # 1. Check Redis cache
         if use_cache and self.redis_client:
             cache_key = f"rag:chat:{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
@@ -796,12 +1204,13 @@ Answer:"""
                 logger.warning(f"Redis error: {e}")
         
         # Prepare context (retrieval, reranking, agent logs)
-        prep = await self._prepare_chat_context(bot_id, query, bot_config, top_k)
+        prep = await self._prepare_chat_context(bot_id, query, bot_config, effective_top_k)
         search_query = prep["search_query"]
         filtered_results = prep["filtered_results"]
         agent_logs = prep["agent_logs"]
         context = prep["context"]
         sources = prep["sources"]
+        crag_status = prep.get("crag_status", "relevant")
 
         # ── Memory: Retrieve user memories before generation ──────────────
         user_id = bot_config.get("user_id")
@@ -825,6 +1234,23 @@ Answer:"""
             })
 
             base_system_prompt = bot_config.get("system_prompt", "You are a helpful assistant.")
+            # Append domain-specific suffix if not already present
+            if domain_prompt_suffix and domain_prompt_suffix.strip() not in base_system_prompt:
+                base_system_prompt = base_system_prompt + domain_prompt_suffix
+            # ── CRAG: Inject relevance signal into system prompt ─────────
+            if crag_status == "no_context":
+                base_system_prompt += (
+                    "\n\n[CRAG SIGNAL: Knowledge base does not contain relevant information for this query. "
+                    "You MUST explicitly tell the user that you don't have this information in your knowledge base "
+                    "rather than guessing or fabricating an answer. Do NOT use any retrieved context below.]"
+                )
+            elif crag_status == "ambiguous":
+                base_system_prompt += (
+                    "\n\n[CRAG SIGNAL: Knowledge base only partially covers this topic. "
+                    "Answer based on what is available, but clearly indicate uncertainty and "
+                    "recommend the user verify with authoritative sources.]"
+                )
+            # ─────────────────────────────────────────────────────────────
             model = bot_config.get("model", "openai/gpt-4o-mini")
             temperature = bot_config.get("temperature", 0.7)
             max_tokens = bot_config.get("max_tokens", 1000)
@@ -979,46 +1405,63 @@ Answer:"""
         })
         search_query = await self._rewrite_query(query)
         
-        # 3. Generate embeddings
+        # 3. HyDE: generate hypothetical document + Multi-Query variants concurrently.
+        #    BM25/keyword search uses search_query; semantic uses the HyDE embedding.
         agent_logs.append({
             "step": "Vectorization",
-            "description": "Generating embeddings for the optimized search query.",
+            "description": "HyDE + Multi-Query: generating hypothetical passage and query variants.",
             "timestamp": datetime.utcnow().isoformat()
         })
-        query_embedding = self._embed_with_retry(search_query)
-        
+        domain = bot_config.get("domain", "general")
+        enable_multi_query = bot_config.get("enable_multi_query", True)
+
+        hyde_text, query_variants = await asyncio.gather(
+            self._generate_hyde_hypothesis(search_query, domain=domain),
+            self._generate_query_variants(search_query, n=2) if enable_multi_query else asyncio.sleep(0, result=[search_query]),
+        )
+        # The first variant is always the original; embed the HyDE text for it
+        query_embedding = self._embed_with_retry(hyde_text)
+
         # 4. Search & Rerank + LightRAG — run concurrently since they are independent
         agent_logs.append({
             "step": "Knowledge Retrieval",
-            "description": "Searching knowledge base and querying knowledge graph in parallel.",
+            "description": f"Multi-query fusion ({len(query_variants)} variants) + knowledge graph in parallel.",
             "timestamp": datetime.utcnow().isoformat()
         })
 
-        async def _run_lightrag(bid: str, q: str) -> str:
+        async def _run_lightrag(bid: str, q: str, mode: str = "hybrid") -> str:
             try:
                 from app.services.lightrag_service import get_lightrag_service
                 svc = get_lightrag_service(bot_id=bid)
-                result = await svc.query(q, mode="hybrid")
+                result = await svc.query(q, mode=mode)
                 return result or ""
             except Exception as exc:
                 logger.warning(f"LightRAG query failed: {exc}")
                 return ""
 
         use_kg = bot_config.get("enable_knowledge_graph", False)
+        lightrag_mode = bot_config.get("_lightrag_mode", "hybrid")
 
         async def _maybe_lightrag() -> str:
             if not use_kg:
                 return ""
-            return await _run_lightrag(bot_id, search_query)
+            return await _run_lightrag(bot_id, search_query, mode=lightrag_mode)
+
+        async def _run_search() -> List[Dict]:
+            if enable_multi_query and len(query_variants) > 1:
+                # Replace first variant embedding with HyDE embedding for the primary query
+                return await self._multi_query_search(bot_id, query_variants, top_k)
+            else:
+                return await asyncio.to_thread(
+                    self._hybrid_search,
+                    bot_id=bot_id,
+                    query=search_query,
+                    query_embedding=query_embedding,
+                    top_k=top_k,
+                )
 
         search_results, lightrag_raw = await asyncio.gather(
-            asyncio.to_thread(
-                self._hybrid_search,
-                bot_id=bot_id,
-                query=search_query,
-                query_embedding=query_embedding,
-                top_k=top_k
-            ),
+            _run_search(),
             _maybe_lightrag(),
             return_exceptions=True,
         )
@@ -1048,6 +1491,20 @@ Answer:"""
         if not filtered_results and search_results:
             filtered_results = search_results
 
+        # ── CRAG: Classify retrieval quality ─────────────────────────────
+        crag_status = await self._crag_classify(search_query, filtered_results)
+        agent_logs.append({
+            "step": "CRAG Relevance Check",
+            "description": (
+                "Knowledge base contains a relevant answer." if crag_status == "relevant"
+                else "Knowledge base partially matches — answering with caution." if crag_status == "ambiguous"
+                else "Knowledge base does not contain relevant information for this query."
+            ),
+            "status": crag_status,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+        # ─────────────────────────────────────────────────────────────────
+
         context_docs = []
         sources = []
 
@@ -1057,7 +1514,9 @@ Answer:"""
             # Add highlights to each result chunk
             result["highlights"] = self._extract_smart_highlights(search_query, result.get("text", ""))
 
-            context_docs.append(f"[[{doc_id}]] Source: {result.get('source', 'Unknown')}\n{result['text']}")
+            # Parent-Child: use the richer parent chunk for LLM context; child was used for matching
+            display_text = result.get("parent_text") or result["text"]
+            context_docs.append(f"[[{doc_id}]] Source: {result.get('source', 'Unknown')}\n{display_text}")
             source_name = result.get("source", "Unknown")
             if source_name not in sources:
                 sources.append(source_name)
@@ -1091,6 +1550,7 @@ Answer:"""
             "sources": sources,
             "reasoning": reasoning,
             "lightrag_entities": lightrag_entities,
+            "crag_status": crag_status,
         }
 
     def _extract_smart_highlights(self, query: str, text: str) -> List[str]:
@@ -1137,8 +1597,20 @@ Answer:"""
         start_time = time.time()
         session_id = session_id or str(uuid.uuid4())
         bot_config = bot_config or {}
-        
-        prep = await self._prepare_chat_context(bot_id, query, bot_config, top_k)
+
+        # Inject domain profile settings (same logic as chat())
+        try:
+            from app.services.domain_config import get_domain_profile
+            domain = bot_config.get("domain", "general")
+            profile = get_domain_profile(domain)
+            effective_top_k = bot_config.get("top_k", profile.retrieval_k)
+            bot_config.setdefault("_lightrag_mode", profile.lightrag_mode)
+            domain_prompt_suffix = profile.system_prompt_suffix
+        except Exception:
+            effective_top_k = top_k
+            domain_prompt_suffix = ""
+
+        prep = await self._prepare_chat_context(bot_id, query, bot_config, effective_top_k)
         search_query = prep["search_query"]
         filtered_results = prep["filtered_results"]
         agent_logs = prep["agent_logs"]
@@ -1146,6 +1618,7 @@ Answer:"""
         sources = prep["sources"]
         reasoning = prep["reasoning"]
         lightrag_entities = prep.get("lightrag_entities", [])
+        crag_status = prep.get("crag_status", "relevant")
 
         # ── Memory: Retrieve user memories before generation ──────────────
         user_id = bot_config.get("user_id")
@@ -1181,6 +1654,22 @@ Answer:"""
 
         # Setup LLM Generation
         base_system_prompt = bot_config.get("system_prompt", "You are a helpful assistant.")
+        if domain_prompt_suffix and domain_prompt_suffix.strip() not in base_system_prompt:
+            base_system_prompt = base_system_prompt + domain_prompt_suffix
+        # ── CRAG: Inject relevance signal ────────────────────────────────
+        if crag_status == "no_context":
+            base_system_prompt += (
+                "\n\n[CRAG SIGNAL: Knowledge base does not contain relevant information for this query. "
+                "You MUST explicitly tell the user that you don't have this information in your knowledge base "
+                "rather than guessing or fabricating an answer. Do NOT use any retrieved context below.]"
+            )
+        elif crag_status == "ambiguous":
+            base_system_prompt += (
+                "\n\n[CRAG SIGNAL: Knowledge base only partially covers this topic. "
+                "Answer based on what is available, but clearly indicate uncertainty and "
+                "recommend the user verify with authoritative sources.]"
+            )
+        # ─────────────────────────────────────────────────────────────────
         model = bot_config.get("model", "openai/gpt-4o-mini")
         temperature = bot_config.get("temperature", 0.7)
         max_tokens = bot_config.get("max_tokens", 1000)
