@@ -338,6 +338,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             onNewChat={handleNewChat}
             botName={bot?.name}
             botModel={bot?.config?.llm_model || bot?.config?.model}
+            botDomain={bot?.config?.domain}
             rightPanel={
                 <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
                     <KnowledgeGraphPanel

@@ -2,6 +2,7 @@ import { Panel as ResizablePanel, PanelGroup as ResizablePanelGroup, PanelResize
 import { Link, useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import React, { type ReactNode, useState } from "react";
+import { getDomainMeta } from "../../utils/domainHelpers";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
     Bot,
@@ -28,6 +29,7 @@ interface ChatLayoutProps {
     onNewChat?: () => void;
     botName?: string;
     botModel?: string;
+    botDomain?: string;
     embedded?: boolean;
 }
 
@@ -42,6 +44,7 @@ export default function ChatLayout({
     onNewChat,
     botName = "Bot Configuration",
     botModel = "GPT-4o",
+    botDomain,
     embedded = false
 }: ChatLayoutProps) {
     const { id } = useParams<{ id: string }>();
@@ -198,7 +201,18 @@ export default function ChatLayout({
                                             <Bot className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h1 className="font-semibold text-sm">{botName}</h1>
+                                            <div className="flex items-center gap-2">
+                                                <h1 className="font-semibold text-sm">{botName}</h1>
+                                                {botDomain && (() => {
+                                                    const dm = getDomainMeta(botDomain);
+                                                    return (
+                                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${dm.badge}`}>
+                                                            <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
+                                                            {dm.label}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
                                             <div className="flex items-center gap-1.5">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                                 <span className="text-xs text-muted-foreground">{botModel}</span>

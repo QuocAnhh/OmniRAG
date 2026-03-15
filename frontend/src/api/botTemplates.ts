@@ -3,7 +3,7 @@ import { apiClient } from './client';
 export interface BotTemplate {
     id: string;
     name: string;
-    domain: 'education' | 'sales' | 'legal' | 'other';
+    domain: 'education' | 'sales' | 'legal' | 'general' | 'other';
     description: string;
     icon: string;
     system_prompt: string;

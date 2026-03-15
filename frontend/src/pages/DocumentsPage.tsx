@@ -7,6 +7,7 @@ import type { Bot } from '../types/api';
 import { Button } from '../components/ui/Button';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
+import { getDomainMeta } from '../utils/domainHelpers';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -119,7 +120,9 @@ export default function DocumentsPage() {
     try {
       // Small artificial delay to show off the fancy SVG upload animation
       // and give Celery backend a moment to start the processing loop
-      const uploadPromise = documentsApi.upload(selectedBotId, file, 'recursive', enableKnowledgeGraph);
+      const selectedBot = bots.find(b => b.id === selectedBotId);
+      const effectiveStrategy = selectedBot?.config?.chunking_strategy || 'recursive';
+      const uploadPromise = documentsApi.upload(selectedBotId, file, effectiveStrategy, enableKnowledgeGraph);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
 
       await Promise.all([uploadPromise, delayPromise]);
@@ -172,7 +175,26 @@ export default function DocumentsPage() {
           <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-text-main dark:text-white">Knowledge Base</h1>
-              <p className="text-text-muted dark:text-gray-400 mt-1">Upload documents to train your RAG model</p>
+              {(() => {
+                const selectedBot = bots.find(b => b.id === selectedBotId);
+                if (!selectedBot) return (
+                  <p className="text-text-muted dark:text-gray-400 mt-1">Upload documents to train your RAG model</p>
+                );
+                const dm = getDomainMeta(selectedBot.config?.domain);
+                const chunkHint = selectedBot.config?.chunking_strategy
+                  ? `${selectedBot.config.chunking_strategy} chunking · ${selectedBot.config?.chunk_size ?? '—'} tokens`
+                  : dm.chunkingHint;
+                return (
+                  <p className="text-text-muted dark:text-gray-400 mt-1 flex items-center gap-2">
+                    Upload documents to train your RAG model
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${dm.badge}`}>
+                      <span className="material-symbols-outlined text-[12px]">{dm.icon}</span>
+                      {dm.label}
+                    </span>
+                    <span className="text-xs font-mono opacity-70">{chunkHint}</span>
+                  </p>
+                );
+              })()}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-[220px]">
