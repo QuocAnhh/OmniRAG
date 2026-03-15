@@ -35,6 +35,12 @@ export interface Bot {
     fallback_message?: string;
     top_k?: number;
     similarity_threshold?: number;
+    // Domain-aware RAG fields
+    domain?: 'general' | 'education' | 'legal' | 'sales';
+    chunking_strategy?: string;
+    chunk_size?: number;
+    chunk_overlap?: number;
+    enable_knowledge_graph?: boolean;
   };
   created_at: string;
   updated_at: string;
