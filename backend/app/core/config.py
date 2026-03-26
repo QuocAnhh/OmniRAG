@@ -85,8 +85,10 @@ class Settings(BaseSettings):
     USE_LOCAL_EMBEDDINGS: bool = False  # Set to True to use local model instead of API
     LOCAL_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 
-    # Reranker model (multilingual, supports Vietnamese)
-    RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    # Reranker model — MiniLM is fast on CPU (~0.5s/24 pairs).
+    # On native macOS (non-Docker), switch to BAAI/bge-reranker-v2-m3 for multilingual quality
+    # (requires PyTorch MPS: torch.backends.mps.is_available() on M1/M2/M3 Mac)
+    RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     
     # Qdrant Vector DB
     QDRANT_HOST: str = "qdrant"

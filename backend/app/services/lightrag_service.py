@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 #   google/gemini-2.0-flash-001          → fastest, very cheap
 #   openai/gpt-4o-mini                   → reliable, cheap
 #   meta-llama/llama-3.1-8b-instruct     → free tier available
-LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "minimax/minimax-m2.5")
+LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "openai/gpt-5.4-nano")
 LIGHTRAG_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 async def _global_embedding_func(texts: list[str]) -> np.ndarray:
@@ -69,9 +69,10 @@ class LightRAGService:
     - Entity/relationship extraction → OpenRouter API (fast, cheap)
     - Embeddings → OpenRouter (text-embedding-3-small, dim=1536)
     """
-    
+
     def __init__(self, bot_id: str = "default_bot"):
         self.bot_id = bot_id
+        self._storages_initialized = False  # Cache flag — initialize_storages() is expensive
         self.working_dir = f"./rag_storage/lightrag_{bot_id}"
         
         if not os.path.exists(self.working_dir):
@@ -103,7 +104,7 @@ class LightRAGService:
             # ── Extraction tuning ─────────────────────────────────────────────
             entity_extract_max_gleaning=0,  # single-pass, saves ~50% calls
             llm_model_max_async=16,         # OpenRouter handles high concurrency
-            chunk_token_size=1200,
+            chunk_token_size=800,
 
             # ── Embedding tuning ──────────────────────────────────────────────────────
             embedding_batch_num=32,         # embed 32 entities per call (default=10)
@@ -116,11 +117,26 @@ class LightRAGService:
             embedding_func=EmbeddingFunc(
                 embedding_dim=1536,
                 max_token_size=8192,
+                model_name="text-embedding-3-small",  # Required for proper Qdrant collection naming
                 func=_global_embedding_func
             ),
         )
         logger.info("LightRAG Core initialized successfully.")
-            
+
+    async def _ensure_initialized(self):
+        """Initialize Qdrant storages once per instance. Subsequent calls are no-ops.
+
+        initialize_storages() connects to Qdrant, creates/checks collections — expensive.
+        Calling it on every query adds 1-60s latency. Cache the result.
+        """
+        if not self._storages_initialized:
+            import time as _t
+            _ts = _t.time()
+            print(f"[LightRAG] initialize_storages() START for bot={self.bot_id}", flush=True)
+            await self.rag.initialize_storages()
+            self._storages_initialized = True
+            print(f"[LightRAG] initialize_storages() DONE in {_t.time()-_ts:.2f}s", flush=True)
+
     async def insert_text(self, text: str) -> Dict[str, Any]:
         """
         Extract Entities and Relationships from a raw text and insert to Graph.
@@ -128,7 +144,7 @@ class LightRAGService:
         start_time = asyncio.get_running_loop().time()
         logger.info("Starting LightRAG ingestion (Entity & Relationship Extraction)...")
 
-        await self.rag.initialize_storages()
+        await self._ensure_initialized()
         await self.rag.ainsert(text)
 
         elapsed = asyncio.get_running_loop().time() - start_time
@@ -150,7 +166,7 @@ class LightRAGService:
         """
         logger.info(f"Querying LightRAG Graph (context-only, no Ollama) mode='{mode}': {query_text}")
         try:
-            await self.rag.initialize_storages()
+            await self._ensure_initialized()
             # only_need_context=True → returns raw graph context, skips LLM call
             # Final answer synthesis is handled by OpenRouter (API)
             context = await self.rag.aquery(

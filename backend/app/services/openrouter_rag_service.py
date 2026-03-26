@@ -70,6 +70,10 @@ import re
 
 logger = logging.getLogger(__name__)
 
+# Fast model for internal pipeline calls (query rewriting, HyDE, CRAG, etc.)
+# User-facing answer generation uses the model configured per-bot in the UI.
+INTERNAL_LLM_MODEL = "openai/gpt-5.4-nano"
+
 
 def _sigmoid(x):
     """Sigmoid normalization: maps logit scores to 0..1 probability range."""
@@ -416,33 +420,45 @@ class OpenRouterRAGService:
             raise OpenRouterAPIError(f"Chat completion failed: {str(e)}")
     
     def _get_reranker(self):
-        """Lazy loader for the reranker model to speed up startup."""
+        """Lazy loader for the reranker model to speed up startup.
+
+        Device priority: CUDA → MPS (Apple Silicon, native macOS only) → CPU.
+        Note: MPS is unavailable inside Docker on Mac (Linux VM has no Metal access).
+        To use MPS/GPU on M1/M2/M3, run backend natively: uvicorn app.main:app --port 8000
+        """
         if self._reranker_attempted:
             return self.reranker
-            
+
         self._reranker_attempted = True
         try:
-            # Import here to avoid slow startup
+            import torch
             from sentence_transformers import CrossEncoder
-            
-            # Model cache directory (respects environment variable)
+
             model_cache_dir = os.getenv('HF_HOME', '/tmp/huggingface_cache')
             os.makedirs(model_cache_dir, exist_ok=True)
-            
-            reranker_model = getattr(settings, "RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
-            logger.info(f"Loading Reranker Model ({reranker_model}) on demand (cache: {model_cache_dir})...")
 
-            # Force both model and tokenizer to use the specified cache directory
+            reranker_model = getattr(settings, "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+
+            # Auto-detect best available device
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+
+            print(f"[Reranker] Loading {reranker_model} on {device.upper()}...", flush=True)
             self.reranker = CrossEncoder(
                 reranker_model,
+                device=device,
                 automodel_args={'cache_dir': model_cache_dir},
                 tokenizer_args={'cache_dir': model_cache_dir}
             )
-            logger.info(f"Reranker model {reranker_model} loaded successfully on demand")
+            print(f"[Reranker] Loaded on {device.upper()} ✓", flush=True)
         except Exception as e:
             logger.warning(f"Failed to load Reranker model on demand: {e}")
             self.reranker = None
-            
+
         return self.reranker
 
     def _hybrid_search(
@@ -450,14 +466,18 @@ class OpenRouterRAGService:
         bot_id: str,
         query: str,
         query_embedding: List[float],
-        top_k: int = 5
+        top_k: int = 5,
+        rerank: bool = True,
     ) -> List[Dict]:
         """
         True Hybrid retrieval: Vector (semantic) + Full-Text Search (Qdrant BM25-style)
         merged via RRF (Reciprocal Rank Fusion), then re-ranked with Cross-Encoder.
+
+        rerank=False skips the Cross-Encoder pass (used for multi-query variants where
+        the caller does one final rerank after merging all variant results).
         """
-        reranker = self._get_reranker()
-        initial_limit = top_k * 5 if reranker else top_k * 3
+        reranker = self._get_reranker() if rerank else None
+        initial_limit = top_k * 2
         
         bot_filter = Filter(
             must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
@@ -875,7 +895,7 @@ Answer:"""
             response = await asyncio.to_thread(
                 self.openrouter.chat_completion,
                 messages=messages,
-                model="openai/gpt-4o-mini", 
+                model=INTERNAL_LLM_MODEL,
                 temperature=0.1
             )
             
@@ -938,7 +958,7 @@ Answer:"""
             response = await asyncio.to_thread(
                 self.openrouter.chat_completion,
                 messages=messages,
-                model="openai/gpt-4o-mini",
+                model=INTERNAL_LLM_MODEL,
                 temperature=0.5,
                 max_tokens=250,
             )
@@ -998,9 +1018,9 @@ Answer:"""
             response = await asyncio.to_thread(
                 self.openrouter.chat_completion,
                 messages=messages,
-                model="openai/gpt-4o-mini",
+                model=INTERNAL_LLM_MODEL,
                 temperature=0.0,
-                max_tokens=10,
+                max_tokens=16,
             )
             verdict = response.get("content", "").strip().lower()
             if verdict in ("relevant", "ambiguous", "no_context"):
@@ -1039,7 +1059,7 @@ Answer:"""
             response = await asyncio.to_thread(
                 self.openrouter.chat_completion,
                 messages=messages,
-                model="openai/gpt-4o-mini",
+                model=INTERNAL_LLM_MODEL,
                 temperature=0.7,
                 max_tokens=150,
             )
@@ -1060,13 +1080,16 @@ Answer:"""
         """
         Multi-Query Fusion — step 2:
         Embed each query variant independently (HyDE already applied to first),
-        run _hybrid_search for each, then merge all results via RRF.
-        A document appearing in results for multiple query variants gets boosted.
+        run _hybrid_search (rerank=False) for each, merge via RRF, then do ONE
+        final Cross-Encoder rerank pass on the merged pool.
+
+        Skipping per-variant reranking saves ~(n_variants - 1) expensive CrossEncoder
+        calls (e.g., 3 calls → 1 call) while preserving quality via final rerank.
         """
         async def _search_one(q: str) -> List[Dict]:
             embedding = await asyncio.to_thread(self._embed_with_retry, q)
             return await asyncio.to_thread(
-                self._hybrid_search, bot_id, q, embedding, top_k
+                self._hybrid_search, bot_id, q, embedding, top_k, False  # rerank=False
             )
 
         results_per_query = await asyncio.gather(
@@ -1083,8 +1106,7 @@ Answer:"""
             for rank, result in enumerate(results):
                 key = result.get("text", "")[:200]
                 rrf_scores[key] = rrf_scores.get(key, 0.0) + 1.0 / (k + rank + 1)
-                # Keep the payload with the highest individual hybrid_score
-                if key not in best_payload or result.get("hybrid_score", 0) > best_payload[key].get("hybrid_score", 0):
+                if key not in best_payload or result.get("rrf_score", 0) > best_payload[key].get("rrf_score", 0):
                     best_payload[key] = result
 
         if not best_payload:
@@ -1093,13 +1115,32 @@ Answer:"""
         merged = []
         for key, rrf_score in sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True):
             item = best_payload[key].copy()
-            # Blend reranker score with cross-query agreement: 70% reranker + 30% normalized RRF
-            base = item.get("hybrid_score", 0.0)
-            item["hybrid_score"] = 0.7 * base + 0.3 * min(rrf_score * k, 1.0)
+            item["hybrid_score"] = min(rrf_score * k, 1.0)  # normalized cross-query RRF
             merged.append(item)
 
-        merged.sort(key=lambda x: x["hybrid_score"], reverse=True)
-        return merged[: top_k * 2]  # Return a generous pool; CRAG/threshold filter trims it
+        # ONE final rerank on the merged pool (replaces 3× per-variant reranks)
+        reranker = self._get_reranker()
+        if reranker and merged:
+            import numpy as np
+            try:
+                primary_query = queries[0]
+                pool = merged[: top_k * 2]
+                pairs = [[primary_query, item["text"]] for item in pool]
+                scores = reranker.predict(pairs, show_progress_bar=False)
+                if isinstance(scores, float):
+                    scores = [scores]
+                norm_scores = _sigmoid(np.array(scores))
+                for i, item in enumerate(pool):
+                    rrf_base = item.get("hybrid_score", 0.0)
+                    item["hybrid_score"] = 0.7 * float(norm_scores[i]) + 0.3 * rrf_base
+                merged = sorted(pool, key=lambda x: x["hybrid_score"], reverse=True)
+            except Exception as e:
+                logger.warning(f"Multi-query final rerank failed: {e}")
+                merged.sort(key=lambda x: x["hybrid_score"], reverse=True)
+        else:
+            merged.sort(key=lambda x: x["hybrid_score"], reverse=True)
+
+        return merged[: top_k * 2]
 
     # ──────────────────────────────────────────────────────────────────────────
     # Contextual Retrieval (Anthropic technique)
@@ -1137,7 +1178,7 @@ Answer:"""
                 response = await asyncio.to_thread(
                     self.openrouter.chat_completion,
                     messages=messages,
-                    model="openai/gpt-4o-mini",
+                    model=INTERNAL_LLM_MODEL,
                     temperature=0.1,
                     max_tokens=80,
                 )
@@ -1392,40 +1433,47 @@ Answer:"""
         bot_id: str,
         query: str,
         bot_config: Dict[str, Any],
-        top_k: int = 5
+        top_k: int = 5,
+        debug_mode: bool = False
     ) -> Dict[str, Any]:
-        """Helper to handle retrieval, reranking, and agent logging."""
-        agent_logs = []
-        
-        # 2. Agentic Query Rewriting
-        agent_logs.append({
+        """
+        Fast retrieval pipeline — optimized for minimum latency to first token.
+
+        Pipeline (all steps overlapped as much as possible):
+          t=0:   embed(query) + rewrite(query)       ← concurrent
+          t=0.4: embed done → search + lightrag start ← no waiting for rewrite
+          t=1.7: search done → CRAG starts immediately ← lightrag still running
+          t=1.5: rewrite done (overlaps with search)
+          t=2.8: CRAG + lightrag both done            ← concurrent with each other
+          t=2.8: → LLM streaming begins
+        """
+        import time as _time
+        _t0 = _time.time()
+
+        use_kg = bot_config.get("enable_knowledge_graph", False)
+        lightrag_mode = bot_config.get("_lightrag_mode", "hybrid")
+        similarity_threshold = bot_config.get("similarity_threshold", 0.15)
+
+        agent_logs = [{
             "step": "Analyzing Query",
-            "description": f"Rewriting question for optimal search: '{query[:40]}...'",
+            "description": f"Embedding + rewriting query: '{query[:50]}...'",
             "timestamp": datetime.utcnow().isoformat()
-        })
-        search_query = await self._rewrite_query(query)
-        
-        # 3. HyDE: generate hypothetical document + Multi-Query variants concurrently.
-        #    BM25/keyword search uses search_query; semantic uses the HyDE embedding.
-        agent_logs.append({
-            "step": "Vectorization",
-            "description": "HyDE + Multi-Query: generating hypothetical passage and query variants.",
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        domain = bot_config.get("domain", "general")
-        enable_multi_query = bot_config.get("enable_multi_query", True)
+        }]
 
-        hyde_text, query_variants = await asyncio.gather(
-            self._generate_hyde_hypothesis(search_query, domain=domain),
-            self._generate_query_variants(search_query, n=2) if enable_multi_query else asyncio.sleep(0, result=[search_query]),
-        )
-        # The first variant is always the original; embed the HyDE text for it
-        query_embedding = self._embed_with_retry(hyde_text)
+        # ── Step 1: embed(query) + rewrite(query) — CONCURRENT ─────────────
+        # Embed does NOT need the rewritten query — fire both immediately.
+        print(f"[PERF] embed+rewrite concurrent", flush=True)
+        embed_task = asyncio.ensure_future(asyncio.to_thread(self._embed_with_retry, query))
+        rewrite_task = asyncio.ensure_future(self._rewrite_query(query))
 
-        # 4. Search & Rerank + LightRAG — run concurrently since they are independent
+        # ── Step 2: search + lightrag — start as soon as embed is ready ────
+        # DO NOT await rewrite_task here — search uses original-query embedding.
+        query_embedding = await embed_task
+        print(f"[PERF] embed done in {_time.time()-_t0:.2f}s → starting search+lightrag", flush=True)
+
         agent_logs.append({
             "step": "Knowledge Retrieval",
-            "description": f"Multi-query fusion ({len(query_variants)} variants) + knowledge graph in parallel.",
+            "description": "Hybrid search" + (" + knowledge graph" if use_kg else "") + " in parallel.",
             "timestamp": datetime.utcnow().isoformat()
         })
 
@@ -1433,46 +1481,42 @@ Answer:"""
             try:
                 from app.services.lightrag_service import get_lightrag_service
                 svc = get_lightrag_service(bot_id=bid)
-                result = await svc.query(q, mode=mode)
+                result = await asyncio.wait_for(svc.query(q, mode=mode), timeout=10.0)
                 return result or ""
+            except asyncio.TimeoutError:
+                logger.warning(f"[PERF] LightRAG timed out (10s) for bot={bid}")
+                return ""
             except Exception as exc:
                 logger.warning(f"LightRAG query failed: {exc}")
                 return ""
 
-        use_kg = bot_config.get("enable_knowledge_graph", False)
-        lightrag_mode = bot_config.get("_lightrag_mode", "hybrid")
-
-        async def _maybe_lightrag() -> str:
-            if not use_kg:
-                return ""
-            return await _run_lightrag(bot_id, search_query, mode=lightrag_mode)
-
-        async def _run_search() -> List[Dict]:
-            if enable_multi_query and len(query_variants) > 1:
-                # Replace first variant embedding with HyDE embedding for the primary query
-                return await self._multi_query_search(bot_id, query_variants, top_k)
-            else:
-                return await asyncio.to_thread(
-                    self._hybrid_search,
-                    bot_id=bot_id,
-                    query=search_query,
-                    query_embedding=query_embedding,
-                    top_k=top_k,
-                )
-
-        search_results, lightrag_raw = await asyncio.gather(
-            _run_search(),
-            _maybe_lightrag(),
-            return_exceptions=True,
+        _t1 = _time.time()
+        # search uses original query embedding (not HyDE — saves 1 LLM call)
+        search_task = asyncio.ensure_future(asyncio.to_thread(
+            self._hybrid_search, bot_id, query, query_embedding, top_k
+        ))
+        # lightrag uses original query (rewrite not ready yet)
+        lightrag_task = asyncio.ensure_future(
+            _run_lightrag(bot_id, query, lightrag_mode) if use_kg
+            else asyncio.sleep(0, result="")
         )
 
-        # Handle exceptions from gather
+        # ── Step 3: CRAG starts as soon as search is done ──────────────────
+        # lightrag keeps running concurrently — we don't block on it here.
+        search_results = await search_task
+        print(f"[PERF] search done in {_time.time()-_t1:.2f}s → starting CRAG", flush=True)
+
         if isinstance(search_results, BaseException):
             logger.warning(f"Hybrid search failed: {search_results}")
             search_results = []
-        if isinstance(lightrag_raw, BaseException):
-            logger.warning(f"LightRAG gather error: {lightrag_raw}")
-            lightrag_raw = ""
+
+        similarity_threshold = bot_config.get("similarity_threshold", 0.15)
+        filtered_results = [
+            r for r in (search_results or [])
+            if r.get("hybrid_score", 0) >= similarity_threshold
+        ]
+        if not filtered_results and search_results:
+            filtered_results = search_results
 
         if self.reranker:
             agent_logs.append({
@@ -1482,17 +1526,22 @@ Answer:"""
                 "timestamp": datetime.utcnow().isoformat()
             })
 
-        similarity_threshold = bot_config.get("similarity_threshold", 0.15)
-        filtered_results = [
-            r for r in search_results
-            if r.get("hybrid_score", 0) >= similarity_threshold
-        ]
+        # Rewrite should be done by now (started at t=0, takes ~1.5s; search took ~1.3s from t=0.4)
+        search_query = await rewrite_task
 
-        if not filtered_results and search_results:
-            filtered_results = search_results
+        # CRAG + wait for lightrag — run concurrently
+        _t2 = _time.time()
+        crag_task = asyncio.ensure_future(self._crag_classify(search_query, filtered_results))
+        crag_status, lightrag_raw = await asyncio.gather(crag_task, lightrag_task, return_exceptions=True)
 
-        # ── CRAG: Classify retrieval quality ─────────────────────────────
-        crag_status = await self._crag_classify(search_query, filtered_results)
+        if isinstance(crag_status, BaseException):
+            logger.warning(f"CRAG failed: {crag_status}")
+            crag_status = "ambiguous"
+        if isinstance(lightrag_raw, BaseException):
+            logger.warning(f"LightRAG gather error: {lightrag_raw}")
+            lightrag_raw = ""
+
+        print(f"[PERF] CRAG+lightrag done in {_time.time()-_t2:.2f}s | total prep={_time.time()-_t0:.2f}s", flush=True)
         agent_logs.append({
             "step": "CRAG Relevance Check",
             "description": (
@@ -1508,11 +1557,13 @@ Answer:"""
         context_docs = []
         sources = []
 
-        # Smart highlights from Backend
+        # Smart highlights — only for top 5 (highlight extraction is regex-heavy, skip on tail)
         for idx, result in enumerate(filtered_results):
             doc_id = idx + 1
-            # Add highlights to each result chunk
-            result["highlights"] = self._extract_smart_highlights(search_query, result.get("text", ""))
+            result["highlights"] = (
+                self._extract_smart_highlights(search_query, result.get("text", ""))
+                if idx < 5 else []
+            )
 
             # Parent-Child: use the richer parent chunk for LLM context; child was used for matching
             display_text = result.get("parent_text") or result["text"]
@@ -1551,6 +1602,8 @@ Answer:"""
             "reasoning": reasoning,
             "lightrag_entities": lightrag_entities,
             "crag_status": crag_status,
+            "hyde_hypothesis": "",
+            "multi_query_variants": [],
         }
 
     def _extract_smart_highlights(self, query: str, text: str) -> List[str]:
@@ -1594,6 +1647,7 @@ Answer:"""
         top_k: int = 5,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Streaming version of chat using AsyncGenerator."""
+        logger.info(f"[CHAT_STREAM] Started for bot={bot_id}, query={query[:50]}")
         start_time = time.time()
         session_id = session_id or str(uuid.uuid4())
         bot_config = bot_config or {}
@@ -1610,7 +1664,24 @@ Answer:"""
             effective_top_k = top_k
             domain_prompt_suffix = ""
 
-        prep = await self._prepare_chat_context(bot_id, query, bot_config, effective_top_k)
+        # ── Memory search + RAG prep — run concurrently ──────────────────
+        user_id = bot_config.get("user_id")
+        enable_memory = bot_config.get("enable_memory", True)
+
+        async def _fetch_memories():
+            if not (enable_memory and user_id):
+                return []
+            return await memory_service.search(
+                query=query, user_id=user_id, bot_id=bot_id,
+                top_k=getattr(settings, "MEM0_TOP_K", 5),
+            )
+
+        prep, user_memories = await asyncio.gather(
+            self._prepare_chat_context(bot_id, query, bot_config, effective_top_k),
+            _fetch_memories(),
+        )
+        # ─────────────────────────────────────────────────────────────────
+
         search_query = prep["search_query"]
         filtered_results = prep["filtered_results"]
         agent_logs = prep["agent_logs"]
@@ -1620,20 +1691,8 @@ Answer:"""
         lightrag_entities = prep.get("lightrag_entities", [])
         crag_status = prep.get("crag_status", "relevant")
 
-        # ── Memory: Retrieve user memories before generation ──────────────
-        user_id = bot_config.get("user_id")
-        enable_memory = bot_config.get("enable_memory", True)
-        user_memories: list = []
-        if enable_memory and user_id:
-            user_memories = await memory_service.search(
-                query=query,
-                user_id=user_id,
-                bot_id=bot_id,
-                top_k=getattr(settings, "MEM0_TOP_K", 5),
-            )
-        # ─────────────────────────────────────────────────────────────────
-
         # Yield metadata (FINAL context results)
+        logger.info(f"[CHAT_STREAM] Yielding metadata, filtered_results count={len(filtered_results)}")
         yield {
             "type": "metadata",
             "sources": sources,
@@ -1644,6 +1703,7 @@ Answer:"""
             "session_id": session_id,
             "lightrag_entities": lightrag_entities,
         }
+        logger.info(f"[CHAT_STREAM] Metadata yielded, proceeding to LLM generation")
 
         # 5. Answer Synthesis Log
         agent_logs.append({
@@ -1707,9 +1767,10 @@ Answer:"""
         try:
             import queue
             q = queue.Queue()
-            
+
             def stream_worker():
                 try:
+                    logger.info(f"[STREAM_WORKER] Starting OpenRouter stream request")
                     stream_obj = self.openrouter.chat_completion(
                         messages=messages,
                         model=model,
@@ -1717,36 +1778,47 @@ Answer:"""
                         max_tokens=max_tokens,
                         stream=True
                     )
-                    
+
+                    stream_chunk_count = 0
                     for chk in stream_obj:
+                        stream_chunk_count += 1
                         q.put(("chunk", chk))
+                    logger.info(f"[STREAM_WORKER] Finished receiving {stream_chunk_count} chunks from OpenRouter")
                     q.put(("done", None))
                 except Exception as e:
-                    logger.error(f"Stream worker error: {e}")
+                    logger.error(f"[STREAM_WORKER] Stream worker error: {e}", exc_info=True)
                     q.put(("error", e))
 
             # Start worker thread
+            logger.info(f"[CHAT_STREAM] Starting worker thread for OpenRouter streaming")
             worker_thread = asyncio.get_running_loop().run_in_executor(None, stream_worker)
-            
+
             chunk_count = 0
             while True:
                 # Poll queue safely
                 try:
+                    logger.debug(f"[CHAT_STREAM] Polling queue... (chunk_count={chunk_count})")
                     item_type, item_data = await asyncio.to_thread(q.get)
+                    logger.debug(f"[CHAT_STREAM] Got item from queue: type={item_type}")
                 except Exception as e:
+                    logger.error(f"[CHAT_STREAM] Error polling queue: {e}")
                     break
-                    
+
                 if item_type == "done":
+                    logger.info(f"[CHAT_STREAM] Stream completed (done signal)")
                     break
                 elif item_type == "error":
+                    logger.error(f"[CHAT_STREAM] Stream error received: {item_data}")
                     break
                 elif item_type == "chunk":
                     chunk_count += 1
+                    logger.debug(f"[CHAT_STREAM] Processing chunk #{chunk_count}")
                     if getattr(item_data, "choices", None) and len(item_data.choices) > 0:
                         delta = getattr(item_data.choices[0], "delta", None)
                         if delta and getattr(delta, "content", None):
                             content = delta.content
                             full_response += content
+                            logger.debug(f"[CHAT_STREAM] Yielding content chunk: {len(content)} chars")
                             yield {"type": "content", "content": content}
                             
             logger.info(f"Finished streaming {chunk_count} chunks. Full response length: {len(full_response)}")
@@ -1877,7 +1949,7 @@ Answer:"""
             response = await asyncio.to_thread(
                 self.openrouter.chat_completion,
                 messages=prompt,
-                model="openai/gpt-4o-mini",
+                model=INTERNAL_LLM_MODEL,
                 temperature=0.3,
                 max_tokens=20
             )

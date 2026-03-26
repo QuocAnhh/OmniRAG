@@ -162,6 +162,22 @@ async def upload_document(
     # Use a UUID-based storage key to prevent path traversal; keep original name in DB
     safe_storage_name = f"{uuid.uuid4()}{suffix}"
 
+    # ── Deduplication Check: prevent re-processing same file ─────────────
+    existing_doc = db.query(DocumentModel).filter(
+        DocumentModel.bot_id == bot.id,
+        DocumentModel.filename == original_filename
+    ).first()
+
+    if existing_doc:
+        # If already processing or completed, return existing doc (idempotent)
+        if existing_doc.status in ["processing", "completed", "queued"]:
+            logger.info(f"Document {original_filename} already {existing_doc.status} for bot {bot_id}. Returning existing document.")
+            return existing_doc
+        # If failed, allow retry but log warning
+        else:
+            logger.warning(f"Document {original_filename} previously failed for bot {bot_id}. Re-processing...")
+    # ──────────────────────────────────────────────────────────────────────
+
     # Upload file to MinIO
     try:
         file_path = storage_service.upload_file(
@@ -176,7 +192,7 @@ async def upload_document(
     # Save to DB (processing)
     doc = DocumentModel(
         id=uuid.uuid4(),
-        bot_id=bot_uuid,
+        bot_id=bot.id,  # Use bot.id from the dependency injection
         filename=original_filename,
         file_type=file.content_type or "text/plain",
         file_size=file_size,
@@ -362,6 +378,7 @@ async def chat_with_bot_stream(
     
     async def event_generator():
         try:
+            logger.info(f"[STREAM] Starting stream for bot={bot_id}")
             async for chunk in rag_service.chat_stream(
                 bot_id=str(bot_id),
                 query=chat_in.message,
@@ -371,7 +388,7 @@ async def chat_with_bot_stream(
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
-            logger.error(f"Streaming error: {e}")
+            logger.error(f"[STREAM] Streaming error: {e}", exc_info=True)
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
@@ -584,6 +601,94 @@ async def test_retrieval(
     except Exception as e:
         logger.error(f"Retrieval test failed: {e}")
         raise HTTPException(status_code=500, detail="Retrieval failed. Please try again.")
+
+
+@router.get("/{bot_id}/debug-retrieval")
+async def debug_retrieval(
+    bot_id: str,
+    query: str = Query(..., description="Query to debug"),
+    top_k: int = Query(5, description="Number of chunks to retrieve"),
+    bot: BotModel = Depends(deps.get_current_bot),
+):
+    """
+    Retrieval Debugger — Returns full intermediate RAG pipeline results.
+
+    Response includes:
+    - query_rewritten: Query after rewriting
+    - hyde_hypothesis: Hypothetical document passage
+    - multi_query_variants: Alternative query reformulations
+    - retrieved_chunks: Full chunks with all scores (vector, bm25, rrf, reranker, hybrid)
+    - crag_verdict: CRAG relevance classification
+    - lightrag_context: Knowledge graph results
+    - agent_logs: Step-by-step pipeline logs
+    - total_latency_ms: Total processing time
+    """
+    import time
+    start_time = time.time()
+
+    try:
+        # Get bot config
+        bot_config = bot.config or {}
+        bot_config["user_id"] = str(bot.tenant_id)  # For logging
+
+        # Use the existing _prepare_chat_context with debug mode
+        prep = await rag_service._prepare_chat_context(
+            bot_id=str(bot_id),
+            query=query,
+            bot_config=bot_config,
+            top_k=top_k,
+            debug_mode=True  # Enable detailed scoring
+        )
+
+        # Extract intermediate results
+        search_query = prep.get("search_query", query)
+        filtered_results = prep.get("filtered_results", [])
+        agent_logs = prep.get("agent_logs", [])
+        crag_status = prep.get("crag_status", "relevant")
+        lightrag_entities = prep.get("lightrag_entities", [])
+
+        # Build response with full scoring details
+        chunks_with_scores = []
+        for idx, chunk in enumerate(filtered_results):
+            chunks_with_scores.append({
+                "rank": idx + 1,
+                "text": chunk.get("text", ""),
+                "source": chunk.get("source", "unknown"),
+                "parent_text": chunk.get("parent_text"),
+                "context_prefix": chunk.get("context_prefix"),
+                "metadata": chunk.get("metadata", {}),
+                # Individual scores
+                "vector_score": chunk.get("initial_score", 0),  # From semantic search
+                "bm25_score": chunk.get("rrf_score", 0),  # Approximate from FTS
+                "rrf_score": chunk.get("rrf_score", 0),  # Reciprocal Rank Fusion
+                "reranker_score": chunk.get("rerank_raw", 0),  # Cross-Encoder raw
+                "hybrid_score": chunk.get("hybrid_score", 0),  # Final blended score
+                "highlights": chunk.get("highlights", [])
+            })
+
+        latency_ms = round((time.time() - start_time) * 1000, 2)
+
+        return {
+            "query_original": query,
+            "query_rewritten": search_query,
+            "hyde_hypothesis": prep.get("hyde_hypothesis", ""),
+            "multi_query_variants": prep.get("multi_query_variants", []),
+            "retrieved_chunks": chunks_with_scores,
+            "crag_verdict": crag_status,
+            "lightrag_entities": lightrag_entities,
+            "agent_logs": agent_logs,
+            "total_latency_ms": latency_ms,
+            "bot_config": {
+                "domain": bot_config.get("domain", "general"),
+                "top_k": top_k,
+                "enable_multi_query": bot_config.get("enable_multi_query", True),
+                "enable_knowledge_graph": bot_config.get("enable_knowledge_graph", False),
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Debug retrieval failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Debug retrieval failed: {str(e)}")
 
 
 @router.post("/{bot_id}/chat/{message_id}/feedback", status_code=200)

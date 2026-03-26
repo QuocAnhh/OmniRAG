@@ -60,7 +60,7 @@ class MemoryService:
                     "config": {
                         "api_key": settings.OPENROUTER_API_KEY,
                         "openai_base_url": "https://openrouter.ai/api/v1",
-                        "model": getattr(settings, "MEM0_MEMORY_MODEL", "openai/gpt-4o-mini"),
+                        "model": getattr(settings, "MEM0_MEMORY_MODEL", "openai/gpt-5.4-nano"),
                     }
                 },
                 "embedder": {

@@ -34,3 +34,5 @@ spacy>=3.7.0
 mem0ai>=0.1.0
 lightrag-hku>=0.1.0
 networkx>=3.0
+openpyxl
+requests
