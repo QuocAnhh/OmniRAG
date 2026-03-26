@@ -1,5 +1,6 @@
 import tempfile
 import os
+import json
 from pathlib import Path
 from uuid import UUID
 import logging
@@ -137,6 +138,38 @@ def process_document_task(
         }
 
 
+def _sanitize_text_for_lightrag(text: str) -> str:
+    """
+    Sanitize text before LightRAG insertion to prevent JSONDecodeError.
+    - Remove/replace problematic characters
+    - Truncate extremely long lines
+    - Fix malformed JSON snippets
+    """
+    import re
+
+    if not text:
+        return ""
+
+    # Remove null bytes
+    text = text.replace('\x00', '')
+
+    # Remove control characters except newlines, tabs, carriage returns
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
+
+    # Truncate lines that are too long (can cause LLM output issues)
+    lines = text.split('\n')
+    max_line_length = 10000
+    truncated_lines = [line if len(line) <= max_line_length else line[:max_line_length] + '...[truncated]' for line in lines]
+    text = '\n'.join(truncated_lines)
+
+    # Limit total length (LightRAG works better with manageable chunks)
+    max_length = 500000  # 500K chars
+    if len(text) > max_length:
+        text = text[:max_length] + '\n\n...[Document truncated for knowledge graph processing]'
+
+    return text.strip()
+
+
 @celery_app.task(bind=True, name="build_knowledge_graph")
 def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str, document_id: str = ""):
     """
@@ -155,20 +188,37 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str,
 
         lightrag_service = get_lightrag_service(bot_id=bot_id)
 
+        # Sanitize text before LightRAG processing
+        sanitized_text = _sanitize_text_for_lightrag(full_text)
+        logger.info(f"[LightRAG] Text sanitized: {len(full_text)} -> {len(sanitized_text)} chars")
+
         # Running the insert operation
         logger.info(f"[LightRAG] Calling insert_text for {filename}...")
-        asyncio.run(lightrag_service.insert_text(full_text))
+        asyncio.run(lightrag_service.insert_text(sanitized_text))
 
         if document_id:
             _update_kg_status(document_id, "completed")
 
         logger.info(f"--- [SUCCESS] Knowledge graph completed: bot={bot_id}, file={filename} ---")
+
+    except json.JSONDecodeError as e:
+        # Specific handling for JSON parsing errors from LLM
+        import json
+        import traceback
+        error_stack = traceback.format_exc()
+        logger.error(f"[LightRAG] JSONDecodeError from LLM response for {filename}: {e}\n{error_stack}")
+
+        if document_id:
+            _update_kg_status(document_id, "failed",
+                            error_msg=f"LLM returned malformed JSON: {str(e)}")
+
     except Exception as e:
         import traceback
         error_stack = traceback.format_exc()
         logger.error(f"[LightRAG] Graph extraction CRITICAL ERROR for {filename}: {e}\n{error_stack}")
         if document_id:
-            _update_kg_status(document_id, "failed")
+            _update_kg_status(document_id, "failed",
+                            error_msg=f"{type(e).__name__}: {str(e)}")
 
 
 def _update_document_status(
@@ -194,7 +244,7 @@ def _update_document_status(
         db.close()
 
 
-def _update_kg_status(document_id: str, kg_status: str):
+def _update_kg_status(document_id: str, kg_status: str, error_msg: str | None = None):
     """Update only the kg_status field inside doc_metadata without touching the main status."""
     db = SessionLocal()
     try:
@@ -202,7 +252,10 @@ def _update_kg_status(document_id: str, kg_status: str):
         doc = db.query(DocumentModel).filter(DocumentModel.id == doc_uuid).first()
         if not doc:
             return
-        doc.doc_metadata = {**(doc.doc_metadata or {}), "kg_status": kg_status}
+        metadata = {**(doc.doc_metadata or {}), "kg_status": kg_status}
+        if error_msg:
+            metadata["kg_error"] = error_msg
+        doc.doc_metadata = metadata
         db.add(doc)
         db.commit()
     except Exception as e:
