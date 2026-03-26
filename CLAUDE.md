@@ -109,14 +109,25 @@ The main chat endpoints are:
 - `POST /api/v1/openrouter/rag/stream` — SSE streaming
 
 ### Pipeline Steps (per request)
-1. **Query Rewriting** — `_rewrite_query()`: rewrites user query to be search-optimized using `gpt-4o-mini`
-2. **HyDE** — `_generate_hyde_hypothesis()`: generates a hypothetical document passage matching the domain, embeds it instead of the raw query (doc-to-doc similarity >> query-to-doc)
-3. **Multi-Query Fusion** — `_generate_query_variants()` + `_multi_query_search()`: generates 2 additional query reformulations, searches each independently, merges all results via Reciprocal Rank Fusion (RRF). Final score = `0.7 × reranker score + 0.3 × cross-query RRF`
-4. **Hybrid Search** — `_hybrid_search()`: vector (semantic) + full-text search (Qdrant BM25-style), merged via RRF, re-ranked by Cross-Encoder
-5. **LightRAG** (optional) — entity/relationship graph query, runs concurrently with search
-6. **CRAG** — `_crag_classify()`: classifies retrieval quality as `relevant` / `ambiguous` / `no_context`. Injects signal into system prompt to prevent hallucination when KB has no answer
-7. **Context Assembly** — builds `[[n]]`-cited context blocks; uses `parent_text` if Parent-Child chunking was used
-8. **Answer Synthesis** — OpenRouter LLM call with domain-specific system prompt suffix + CRAG signal + memory block
+
+All steps are parallelised for minimum latency (~3.5s to first token):
+
+```
+t=0:    embed(query) + rewrite(query) + memory_search  ← all concurrent
+t=~0.4: embed done → hybrid_search + lightRAG start   ← no waiting for rewrite
+t=~1.5: search done → CRAG starts                     ← lightRAG still running
+t=~2.5: CRAG + lightRAG done → context assembled      ← concurrent
+t=~3.5: LLM streaming begins
+```
+
+1. **Embed + Rewrite** — concurrent at request start; embed uses original query (no HyDE), rewrite (`_rewrite_query()`) runs alongside for use in CRAG + LLM prompt. Model: `INTERNAL_LLM_MODEL = openai/gpt-5.4-nano`
+2. **Hybrid Search** — `_hybrid_search()`: vector (semantic) + full-text search (Qdrant BM25-style), merged via RRF, re-ranked by Cross-Encoder. Starts as soon as embedding is ready.
+3. **LightRAG** (optional) — entity/relationship graph query, runs concurrently with hybrid search, capped at 10s timeout
+4. **CRAG** — `_crag_classify()`: classifies retrieval quality as `relevant` / `ambiguous` / `no_context`. Starts immediately after search (not waiting for LightRAG). Model: `gpt-5.4-nano`
+5. **Context Assembly** — builds `[[n]]`-cited context blocks; uses `parent_text` if Parent-Child chunking was used
+6. **Answer Synthesis** — OpenRouter LLM call with domain-specific system prompt suffix + CRAG signal + memory block
+
+> **`INTERNAL_LLM_MODEL`** constant (`openai/gpt-5.4-nano`) is used for all internal pipeline calls (rewrite, CRAG, contextual prefix, session title). The user-facing answer model is set separately via `bot_config["model"]`.
 
 ### Domain Profiles (`backend/app/services/domain_config.py`)
 Each bot has a `domain` field (default: `general`). The domain profile controls chunking, retrieval, and LightRAG behavior:
@@ -139,7 +150,7 @@ Upload → MinIO storage → Celery task dispatched
   → domain profile resolved (chunk_size, chunk_overlap, strategy)
   → _chunk_documents() (recursive | sentence | article | parent_child)
   → Contextual Retrieval: _generate_contextual_prefix_batch()
-      generates 1-2 sentence situating context per chunk via gpt-4o-mini
+      generates 1-2 sentence situating context per chunk via gpt-5.4-nano
       enriched text (prefix + chunk) used for embedding; original stored for display
   → embed_batch_async() → Qdrant upsert
       payload: { text, parent_text, context_prefix, source, bot_id, metadata }
@@ -153,7 +164,6 @@ chunking_strategy: str | None        # override domain default
 chunk_size: int | None               # override domain default
 chunk_overlap: int | None            # override domain default
 enable_knowledge_graph: bool         # auto-true for education/legal
-enable_multi_query: bool = True      # can disable per-bot to reduce latency
 similarity_threshold: float = 0.15  # min hybrid_score to include in context
 top_k: int                           # overrides domain's retrieval_k
 ```
@@ -202,7 +212,7 @@ Backend config lives in `backend/.env`. Key variables in `backend/app/core/confi
 - `SECRET_KEY` — JWT signing key (required in production)
 - `MEM0_*` — Memory service configuration
 - `ZALO_*` — Zalo integration webhook credentials
-- `RERANKER_MODEL` — Cross-encoder model for reranking (default: `BAAI/bge-reranker-v2-m3`)
+- `RERANKER_MODEL` — Cross-encoder model for reranking (default: `cross-encoder/ms-marco-MiniLM-L-6-v2` — fast on CPU; set to `BAAI/bge-reranker-v2-m3` for multilingual quality when running natively on M1/M2 with MPS)
 
 ## Important Patterns
 

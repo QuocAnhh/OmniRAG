@@ -6,29 +6,27 @@ Chi tiết về pipeline RAG nâng cao trong OmniRAG và cách từng chiến th
 
 ## Pipeline Tổng Quan
 
+Pipeline được thiết kế để tối đa hoá parallelism — **~3.5s to first token** (từ 8.9s).
+
 ```
-User Query
-  │
-  ├─► 1. Query Rewriting        — search-optimized query via gpt-4o-mini
-  │
-  ├─► 2. HyDE                   — embed hypothetical doc passage (not raw query)
-  │       + Multi-Query Variants — 2 reformulations generated concurrently
-  │
-  ├─► 3. Multi-Query Fusion      — 3× parallel search → RRF merge
-  │
-  ├─► 4. Hybrid Search           — vector + BM25 → RRF → Cross-Encoder rerank
-  │       LightRAG (concurrent)  — entity/relationship graph traversal
-  │
-  ├─► 5. CRAG                    — classify retrieval quality → prevent hallucination
-  │
-  ├─► 6. Context Assembly        — [[n]]-cited blocks; parent_text if Parent-Child
-  │
-  ├─► 7. Memory Retrieval        — top-K Mem0 facts prepended to system prompt
-  │
-  ├─► 8. LLM Generation          — OpenRouter (400+ models), domain suffix + CRAG signal
-  │
-  └─► 9. Memory Update           — Mem0 fact extraction (non-blocking background task)
+t=0:    ┌─ embed(query)      ─────────────────┐
+        ├─ rewrite(query)    ────────────────┐ │
+        └─ memory_search()  ────────────────┘ │
+                                              ↓
+t=~0.4: ┌─ hybrid_search()  ─────────────┐   │ (embed done)
+        └─ lightrag_query() ───────────┐ │   │ (if KG bot)
+                                       │ ↓   │
+t=~1.5: └─ CRAG classify()  ────────┐  │ ↓   │ (search done)
+                                    ↓  ↓ ↓   ↓
+t=~2.5:   context assembled ← all tasks complete
+t=~3.5:   LLM streaming begins
 ```
+
+**Các bước:**
+1. **Embed + Rewrite + Memory** — tất cả concurrent từ t=0
+2. **Hybrid Search + LightRAG** — bắt đầu ngay khi embed xong
+3. **CRAG** — bắt đầu ngay khi search xong (LightRAG vẫn chạy song song)
+4. **Context Assembly + LLM** — khi tất cả tasks hoàn thành
 
 ---
 
@@ -43,78 +41,38 @@ User:    "cái app này đăng nhập không được, nó báo lỗi tùm lum"
 Rewrite: "lỗi không đăng nhập được ứng dụng mobile báo lỗi hệ thống"
 ```
 
-- Model: `openai/gpt-4o-mini`, temperature=0.1
+- Model: `openai/gpt-5.4-nano` (`INTERNAL_LLM_MODEL`), temperature=0.1
+- Chạy **concurrent** với embed — không nằm trên critical path
 - Fallback: dùng query gốc nếu LLM call thất bại
 
----
-
-## 2. HyDE — Hypothetical Document Embedding
-
-**Method:** `_generate_hyde_hypothesis()`
-
-Thay vì embed raw query (câu hỏi), HyDE:
-1. Dùng LLM generate một đoạn văn "giả định" như thể trích từ tài liệu và trả lời query đó
-2. Embed đoạn văn giả định này
-3. Tìm documents có vector gần với đoạn giả định
-
-**Tại sao hiệu quả:** similarity doc↔doc >> similarity query↔doc trong embedding space.
-
-**Domain-aware hints:**
-
-| Domain | Style của hypothesis |
-|--------|---------------------|
-| `legal` | Đoạn văn pháp lý chính thức, trích dẫn điều khoản |
-| `education` | Giải thích học thuật, có ví dụ minh hoạ |
-| `sales` | Mô tả sản phẩm, nhấn mạnh lợi ích |
-| `general` | Đoạn văn tham khảo tổng quát |
-
-- Model: `openai/gpt-4o-mini`, temperature=0.5, max_tokens=250
-- Fallback: dùng rewritten query để embed
+> **HyDE & Multi-Query đã bị loại bỏ** khỏi pipeline mặc định để giảm latency (~2s tiết kiệm).
+> - **HyDE** embed original query trực tiếp thay vì hypothesis text
+> - **Multi-Query Variants** thay bằng single hybrid search với RRF (vector + FTS)
 
 ---
 
-## 3. Multi-Query Fusion
-
-**Methods:** `_generate_query_variants()` → `_multi_query_search()`
-
-**Vấn đề:** Một query chỉ "bắt" được documents nằm gần một điểm trong embedding space.
-
-**Giải pháp:**
-1. Generate 2 reformulations bổ sung (3 queries tổng) — mỗi cái tiếp cận chủ đề từ góc độ khác
-2. Embed và search độc lập cho từng variant
-3. Merge tất cả kết quả bằng **Reciprocal Rank Fusion (RRF)**
-
-**RRF Scoring:**
-```
-rrf_score(doc) = Σ  1 / (60 + rank_i)   for each query result list i
-
-final_score = 0.7 × best_reranker_score + 0.3 × min(rrf_score × 60, 1.0)
-```
-
-- Document xuất hiện ở nhiều query lists → được boost điểm
-- Disable per-bot: `"enable_multi_query": false` (giảm latency)
-
----
-
-## 4. Hybrid Search + Reranking
+## 2. Hybrid Search + Reranking
 
 **Method:** `_hybrid_search()`
 
-### 4a. Vector Search (Semantic)
+### 2a. Vector Search (Semantic)
 - Qdrant HNSW index, cosine similarity
-- Query embedding: **HyDE** hypothetical passage
+- Query embedding: original query (embedded trực tiếp)
 
-### 4b. Full-Text Search (BM25-style)
+### 2b. Full-Text Search (BM25-style)
 - Qdrant `MatchText` filter trên field `text`
-- Query: rewritten query (keyword-based, không dùng HyDE)
+- Query: original query (keyword-based)
 
-### 4c. RRF Merge
-- Merge vector + FTS results, deduplicate theo content fingerprint
+### 2c. RRF Merge
+- `initial_limit = top_k * 2` candidates từ mỗi search type
+- Merge + deduplicate theo content fingerprint (200-char key)
 
-### 4d. Cross-Encoder Reranking
-- Model: `BAAI/bge-reranker-v2-m3` (multilingual) — configurable via `RERANKER_MODEL`
-- Input: pairs of `(query, candidate_text)`
+### 2d. Cross-Encoder Reranking
+- Model mặc định: `cross-encoder/ms-marco-MiniLM-L-6-v2` (88MB, ~0.5s CPU)
+- Multilingual (tiếng Việt): set `RERANKER_MODEL=BAAI/bge-reranker-v2-m3` và chạy backend native trên M1/M2 Mac (dùng MPS GPU)
+- Input: `top_k * 2` pairs của `(query, candidate_text)`
 - Output: normalized sigmoid scores 0→1
+- Auto-detect device: CUDA → MPS → CPU
 
 ---
 
@@ -176,8 +134,8 @@ AFTER embedding (enriched):
 - Qdrant payload: `text` (original) + `context_prefix` (generated)
 - Chạy parallel cho tất cả chunks via `asyncio.gather()`
 - Cap at **50 chunks/document** để kiểm soát API cost
-- Model: `openai/gpt-4o-mini`, temperature=0.1, max_tokens=80
-- Chạy tại **index time** — zero latency impact khi chat
+- Model: `openai/gpt-5.4-nano` (`INTERNAL_LLM_MODEL`), temperature=0.1, max_tokens=80
+- Chạy tại **index time** (Celery task) — zero latency impact khi chat
 
 ---
 
@@ -197,8 +155,9 @@ AFTER embedding (enriched):
 | `ambiguous` | Partial match, thiếu thông tin | LLM flag uncertainty, khuyến nghị verify |
 | `no_context` | KB không có thông tin | LLM phải thông báo, KHÔNG tự chế câu trả lời |
 
-- Model: `openai/gpt-4o-mini`, temperature=0.0, max_tokens=10
-- Fallback: `"relevant"` — CRAG không bao giờ break pipeline
+- Model: `openai/gpt-5.4-nano` (`INTERNAL_LLM_MODEL`), temperature=0.0, max_tokens=16
+- Chạy **concurrent** với LightRAG (không sequential sau search) — tiết kiệm ~1s
+- Fallback: `"ambiguous"` — CRAG không bao giờ break pipeline
 - Verdict xuất hiện trong `agent_logs` (visible trên frontend)
 
 ---
@@ -266,7 +225,7 @@ User: "Tôi phụ trách team 50 người, đang triển khai ERP SAP"
 ```env
 MEM0_ENABLED=true
 MEM0_TOP_K=5
-MEM0_MEMORY_MODEL=openai/gpt-4o-mini
+MEM0_MEMORY_MODEL=openai/gpt-5.4-nano
 ```
 
 ---
@@ -291,6 +250,7 @@ TTL       : 1 giờ
 | Tài liệu học thuật | Domain `education` → KG tự động bật |
 | Product catalog | Domain `sales` → `top_k=15` tự động |
 | Cần full context | `chunking_strategy=parent_child` |
-| Low latency | `enable_multi_query=false`, `top_k=3`, tắt KG |
-| Max accuracy | KG bật, `top_k=10+`, `parent_child` chunking |
-| Cost tối ưu | `llm_model=openai/gpt-4o-mini` |
+| Low latency | `top_k=3`, tắt KG — target ~2s first token |
+| Max accuracy | KG bật, `top_k=10+`, `parent_child` chunking, `RERANKER_MODEL=BAAI/bge-reranker-v2-m3` (native M1) |
+| Production default | ~3.5s first token với full pipeline (rewrite+search+CRAG+rerank) |
+| Cost tối ưu | Internal calls dùng `gpt-5.4-nano` tự động; chỉ answer model tốn chi phí chính |
