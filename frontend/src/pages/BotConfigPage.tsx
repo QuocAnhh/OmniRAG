@@ -308,6 +308,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     const file = e.target.files?.[0];
     if (!file || !id) return;
 
+    // Prevent double submission
+    if (uploading) {
+      console.log("Upload already in progress, ignoring duplicate submission");
+      e.target.value = ''; // Clear input to prevent re-submission on page reload
+      return;
+    }
+
     const abortController = new AbortController();
     uploadAbortControllerRef.current = abortController;
     clearUploadTimers();
@@ -326,6 +333,9 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       const uploadPromise = documentsApi.upload(id, file, effectiveStrategy, formData.enable_knowledge_graph, abortController.signal);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
       const [doc] = await Promise.all([uploadPromise, delayPromise]);
+
+      // Clear input value after successful upload to prevent F5 re-submission
+      e.target.value = '';
 
       clearUploadTimers();
 

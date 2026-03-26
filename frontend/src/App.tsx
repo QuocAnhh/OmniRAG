@@ -60,7 +60,7 @@ function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
   // Initialize security checks
-  useSecurity();
+  // useSecurity(); // F12 and devtools disabled - re-enable if needed
 
   // Initialize auth state on mount
   useEffect(() => {

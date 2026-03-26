@@ -108,4 +108,11 @@ export const chatApi = {
   clearHistory: async (botId: string): Promise<void> => {
     await apiClient.delete(`/api/v1/bots/${botId}/history`);
   },
+
+  debugRetrieval: async (botId: string, query: string, topK: number = 5): Promise<any> => {
+    const response = await apiClient.get(`/api/v1/bots/${botId}/debug-retrieval`, {
+      params: { query, top_k: topK }
+    });
+    return response.data;
+  },
 };

@@ -31,6 +31,7 @@ interface ChatLayoutProps {
     botModel?: string;
     botDomain?: string;
     embedded?: boolean;
+    headerActions?: ReactNode;
 }
 
 export default function ChatLayout({
@@ -45,7 +46,8 @@ export default function ChatLayout({
     botName = "Bot Configuration",
     botModel = "GPT-4o",
     botDomain,
-    embedded = false
+    embedded = false,
+    headerActions
 }: ChatLayoutProps) {
     const { id } = useParams<{ id: string }>();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -221,6 +223,7 @@ export default function ChatLayout({
                                     </div>
 
                                     <div className="flex items-center gap-2">
+                                        {headerActions}
                                         <button
                                             onClick={toggleRightPanel}
                                             className={cn("p-2 rounded-lg hover:bg-muted transition-colors", !isRightCollapsed && "bg-muted text-primary")}

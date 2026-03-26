@@ -2,90 +2,8 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { motion } from 'framer-motion';
-import { BrainCircuit, Shield, Zap, Sparkles, ChevronRight, Menu, X, Database, Globe, LineChart, Code2, ArrowRight } from 'lucide-react';
+import { BrainCircuit, Shield, Zap, ChevronRight, Menu, X, Database, LineChart, Code2, ArrowRight, Fingerprint, Network } from 'lucide-react';
 import { LogoIcon } from '../components/ui/LogoIcon';
-
-const ParticleBackground = () => {
-  useEffect(() => {
-    const canvas = document.getElementById('particle-canvas') as HTMLCanvasElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
-
-    let particles: { x: number, y: number, vx: number, vy: number, radius: number }[] = [];
-    const particleCount = Math.floor(width * height / 12000); // base density
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 1.5 + 0.5
-      });
-    }
-
-    let animationFrameId: number;
-
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-
-      particles.forEach((p, i) => {
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Connect particles
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-          }
-        }
-      });
-
-      animationFrameId = requestAnimationFrame(draw);
-    };
-
-    draw();
-
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-  return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#000000]">
-      <canvas id="particle-canvas" className="absolute inset-0 w-full h-full opacity-50"></canvas>
-      <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[150px] mix-blend-screen"></div>
-      <div className="absolute bottom-[20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-600/10 blur-[150px] mix-blend-screen"></div>
-    </div>
-  );
-};
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -94,336 +12,335 @@ export default function LandingPage() {
   const isLoggedIn = !!(token || localStorage.getItem('access_token'));
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const fadeUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } }
   };
 
-  const staggerContainer = {
+  const stagger = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
   };
 
   const features = [
     {
-      icon: <BrainCircuit className="w-6 h-6 text-blue-400" />,
-      title: "Semantic Understanding",
-      description: "Our core AI engine goes beyond keyword matching to comprehend the true intent and nuance behind every query."
+      icon: <BrainCircuit className="w-5 h-5" />,
+      title: "Semantic retrieval",
+      description: "Goes beyond keyword matching. The retrieval engine understands intent, context, and meaning — returning what's relevant, not just what matches.",
+      accent: "text-primary/80",
     },
     {
-      icon: <Zap className="w-6 h-6 text-orange-400" />,
-      title: "Real-time Processing",
-      description: "Experience lightning-fast document indexing and retrieval, powered by state-of-the-art vector databases."
+      icon: <Zap className="w-5 h-5" />,
+      title: "Sub-second indexing",
+      description: "Documents are chunked, embedded, and searchable within seconds of upload. No batch jobs, no waiting.",
+      accent: "text-amber-400/70",
     },
     {
-      icon: <Shield className="w-6 h-6 text-emerald-400" />,
-      title: "Enterprise Security",
-      description: "Bank-grade encryption and strict access controls ensure your organization's wisdom remains entirely private."
+      icon: <Fingerprint className="w-5 h-5" />,
+      title: "Access controls",
+      description: "Per-bot permissions, JWT-secured endpoints, and isolated knowledge bases keep your data where it belongs.",
+      accent: "text-emerald-400/70",
     },
     {
-      icon: <Database className="w-6 h-6 text-indigo-400" />,
-      title: "Unified Knowledge Base",
-      description: "Connect scattered data silos into a single, intelligent, and highly queryable central repository."
+      icon: <Network className="w-5 h-5" />,
+      title: "Knowledge graph",
+      description: "Entity and relationship extraction surfaces connections that vector search misses. Built on LightRAG — runs locally.",
+      accent: "text-violet-400/70",
     },
     {
-      icon: <LineChart className="w-6 h-6 text-rose-400" />,
-      title: "Actionable Analytics",
-      description: "Gain deep insights into how your team interacts with internal documents and identify knowledge gaps."
+      icon: <LineChart className="w-5 h-5" />,
+      title: "Usage analytics",
+      description: "See which questions get answered, which fall through, and where your knowledge base has gaps.",
+      accent: "text-rose-400/70",
     },
     {
-      icon: <Code2 className="w-6 h-6 text-cyan-400" />,
-      title: "Seamless Integration",
-      description: "Integrate OmniRAG securely into your existing workflow tools via our robust REST APIs."
-    }
+      icon: <Code2 className="w-5 h-5" />,
+      title: "REST API",
+      description: "Every feature is available via API. Drop OmniRAG into an existing product without rebuilding anything.",
+      accent: "text-cyan-400/70",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#020205] text-slate-50 font-sans overflow-x-hidden selection:bg-blue-500/30 selection:text-white">
-      <ParticleBackground />
+    <div className="min-h-screen bg-[#07070e] text-[#eef0f6] font-sans overflow-x-hidden selection:bg-primary/25 selection:text-white">
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-[15%] left-[25%] w-[800px] h-[600px] rounded-full opacity-[0.06]"
+          style={{ background: 'radial-gradient(ellipse, #4f8ef0, transparent 65%)', filter: 'blur(60px)' }} />
+        <div className="absolute bottom-0 -left-[5%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
+          style={{ background: 'radial-gradient(ellipse, #3a6fd4, transparent 65%)', filter: 'blur(80px)' }} />
+      </div>
 
       {/* Navbar */}
-      <div className="fixed top-0 inset-x-0 z-50 flex justify-center mt-6 px-4 pointer-events-none">
-        <nav className={`pointer-events-auto transition-all duration-300 rounded-full flex items-center justify-between px-6 py-3 w-full max-w-5xl ${isScrolled
-          ? 'bg-[#050510]/70 backdrop-blur-xl border border-white/10 shadow-lg shadow-black/50'
-          : 'bg-transparent border border-transparent mt-2'
-          }`}>
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-[1px]">
-              <div className="w-full h-full bg-[#020205] rounded-xl flex items-center justify-center overflow-hidden">
-                <LogoIcon className="w-6 h-6" />
-              </div>
+      <div className="fixed top-0 inset-x-0 z-50 flex justify-center mt-5 px-4 pointer-events-none">
+        <nav className={`pointer-events-auto transition-all duration-300 rounded-2xl flex items-center justify-between px-5 py-3 w-full max-w-5xl ${
+          isScrolled
+            ? 'bg-[#07070e]/80 backdrop-blur-xl border border-white/8 shadow-[0_4px_32px_rgba(4,4,20,0.5)]'
+            : 'bg-transparent border border-transparent'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <LogoIcon className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">OmniRAG</span>
+            <span className="text-sm font-semibold tracking-tight text-white/90">OmniRAG</span>
           </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8 relative z-10">
-            <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Ecosystem</a>
-            <a href="#solutions" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Solutions</a>
-            <Link to="/docs" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Developers</Link>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-sm text-white/45 hover:text-white/80 transition-colors">Features</a>
+            <a href="#solutions" className="text-sm text-white/45 hover:text-white/80 transition-colors">Solutions</a>
+            <Link to="/docs/zalo-bot" className="text-sm text-white/45 hover:text-white/80 transition-colors">Docs</Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 relative z-10">
+          <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
-              <Link to="/dashboard" className="px-5 py-2 bg-white text-black text-sm font-semibold rounded-full hover:bg-slate-200 transition-all">
+              <Link to="/dashboard" className="px-4 py-2 bg-white/8 hover:bg-white/12 border border-white/10 text-white/80 hover:text-white text-sm font-medium rounded-xl transition-all">
                 Dashboard
               </Link>
             ) : (
               <>
-                <Link to="/auth" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Log in</Link>
-                <Link to="/auth" className="px-5 py-2 bg-white text-black text-sm font-semibold rounded-full hover:scale-105 transition-transform flex items-center gap-2">
-                  Get Started <ArrowRight className="w-4 h-4" />
+                <Link to="/auth" className="text-sm text-white/45 hover:text-white/80 transition-colors">Sign in</Link>
+                <Link to="/auth" className="px-4 py-2 bg-primary hover:bg-primary/85 text-white text-sm font-medium rounded-xl transition-all active:scale-95 flex items-center gap-1.5">
+                  Get started <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button className="md:hidden text-slate-300 hover:text-white relative z-10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <button className="md:hidden text-white/40 hover:text-white/80 transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </nav>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="fixed top-24 inset-x-4 z-40 bg-[#050510]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col gap-4 md:hidden shadow-2xl">
-          <a href="#features" className="text-lg font-medium text-slate-300 hover:text-white" onClick={() => setMobileMenuOpen(false)}>Ecosystem</a>
-          <a href="#solutions" className="text-lg font-medium text-slate-300 hover:text-white" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
-          <Link to="/docs" className="text-lg font-medium text-slate-300 hover:text-white" onClick={() => setMobileMenuOpen(false)}>Developers</Link>
-          <div className="h-[1px] w-full bg-white/10 my-2"></div>
-          {isLoggedIn ? (
-            <Link to="/dashboard" className="w-full text-center px-5 py-3 bg-white text-black text-base font-semibold rounded-full" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-          ) : (
-            <Link to="/auth" className="w-full text-center px-5 py-3 bg-white text-black text-base font-semibold rounded-full" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-          )}
+        <div className="fixed top-20 inset-x-4 z-40 bg-[#0d0d1c]/95 backdrop-blur-xl border border-white/8 rounded-2xl p-5 flex flex-col gap-3 md:hidden shadow-2xl">
+          <a href="#features" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Features</a>
+          <a href="#solutions" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
+          <Link to="/docs/zalo-bot" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
+          <div className="h-px w-full bg-white/8 my-1" />
+          <Link to="/auth" className="w-full text-center px-5 py-3 bg-primary text-white text-sm font-medium rounded-xl" onClick={() => setMobileMenuOpen(false)}>Get started</Link>
         </div>
       )}
 
-      <main className="relative z-10 pt-32 lg:pt-48">
-        {/* Hero Section */}
-        <section className="mx-auto max-w-7xl px-6 lg:px-8 pb-32">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="flex flex-col items-center text-center max-w-4xl mx-auto"
-          >
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300 mb-8 backdrop-blur-sm">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <span>The Next Generation of Enterprise AI</span>
+      <main className="relative z-10">
+        {/* Hero — left-aligned, asymmetric */}
+        <section className="mx-auto max-w-7xl px-6 lg:px-8 pt-36 lg:pt-48 pb-24">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left — text */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={stagger}
+              className="flex flex-col gap-6"
+            >
+              <motion.div variants={fadeUp}>
+                <span className="inline-flex items-center gap-2 text-[11px] font-medium text-primary/70 border border-primary/20 bg-primary/6 rounded-full px-3 py-1.5 tracking-wide">
+                  <Database className="w-3 h-3" />
+                  RAG platform · Knowledge graph · Multi-domain
+                </span>
+              </motion.div>
+
+              <motion.h1
+                variants={fadeUp}
+                className="text-[clamp(2.6rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.04em] text-white"
+              >
+                Your knowledge base,<br />
+                <span className="text-primary/80">actually useful.</span>
+              </motion.h1>
+
+              <motion.p variants={fadeUp} className="text-white/45 text-lg leading-relaxed max-w-lg">
+                Upload documents, connect a knowledge graph, and deploy AI chatbots that give real answers — with citations.
+                Built for teams that can't afford hallucinations.
+              </motion.p>
+
+              <motion.div variants={fadeUp} className="flex items-center gap-3 pt-2">
+                {isLoggedIn ? (
+                  <Link to="/dashboard" className="px-6 py-3 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2">
+                    Go to dashboard <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <Link to="/auth" className="px-6 py-3 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md shadow-primary/20">
+                    Start building <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
+                <a href="#features" className="px-6 py-3 bg-white/5 hover:bg-white/8 border border-white/8 text-white/60 hover:text-white/90 text-sm font-medium rounded-xl transition-all">
+                  See features
+                </a>
+              </motion.div>
+
+              {/* Social proof strip */}
+              <motion.div variants={fadeUp} className="flex items-center gap-4 pt-4 border-t border-white/6">
+                <div className="text-xs text-white/25">Built with</div>
+                <div className="flex items-center gap-3">
+                  {['FastAPI', 'Qdrant', 'LightRAG', 'OpenRouter'].map(t => (
+                    <span key={t} className="text-[11px] text-white/30 font-mono">{t}</span>
+                  ))}
+                </div>
+              </motion.div>
             </motion.div>
 
-            <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[1.1] mb-8">
-              Intelligence <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-rose-400">
-                Reimagined.
-              </span>
-            </motion.h1>
-
-            <motion.p variants={fadeUp} className="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
-              Transform your scattered documents into a powerful, queryable knowledge base. Give your team the ultimate cognitive advantage with OmniRAG.
-            </motion.p>
-
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-              {isLoggedIn ? (
-                <Link to="/dashboard" className="w-full sm:w-auto px-8 py-4 bg-white text-black text-base font-bold rounded-full hover:scale-105 transition-transform flex items-center justify-center gap-2">
-                  Go to Dashboard <ArrowRight className="w-5 h-5" />
-                </Link>
-              ) : (
-                <Link to="/auth" className="w-full sm:w-auto px-8 py-4 bg-white text-black text-base font-bold rounded-full hover:scale-105 transition-transform flex items-center justify-center gap-2">
-                  Start Building <ArrowRight className="w-5 h-5" />
-                </Link>
-              )}
-              <a href="#features" className="w-full sm:w-auto px-8 py-4 bg-white/5 text-white border border-white/10 text-base font-semibold rounded-full hover:bg-white/10 transition-colors flex items-center justify-center gap-2 backdrop-blur-sm">
-                Explore Ecosystem
-              </a>
-            </motion.div>
-          </motion.div>
-
-          {/* Dashboard Preview / Mock */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-24 relative max-w-5xl mx-auto"
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-transparent blur-3xl -z-10 rounded-full opacity-50"></div>
-            <div className="rounded-2xl border border-white/10 bg-[#06060A]/80 backdrop-blur-xl shadow-2xl overflow-hidden shadow-blue-500/10">
-              <div className="flex items-center px-4 py-3 border-b border-white/5 bg-[#0A0A0F]">
-                <div className="flex gap-2 w-20">
-                  <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="px-4 py-1 text-xs font-mono text-slate-400 bg-white/5 rounded-md flex items-center gap-2">
-                    <Shield className="w-3 h-3" /> hub.omnirag.systems
+            {/* Right — chat mock */}
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="relative"
+            >
+              <div className="rounded-2xl border border-white/8 bg-[#0d0d1c]/90 backdrop-blur-xl shadow-[0_24px_80px_rgba(4,4,20,0.7)] overflow-hidden">
+                {/* Window bar */}
+                <div className="flex items-center px-4 py-3 border-b border-white/6 bg-[#0a0a18]">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
                   </div>
-                </div>
-                <div className="w-20"></div>
-              </div>
-              <div className="flex flex-col md:flex-row h-[400px] md:h-[500px] bg-gradient-to-br from-[#06060A] to-[#020205] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('/bg-grid.svg')] opacity-[0.02]"></div>
-
-                {/* Sidebar mock */}
-                <div className="hidden md:flex flex-col w-64 border-r border-white/5 p-4 gap-2 relative z-10">
-                  <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Playgrounds</div>
-                  <div className="px-3 py-2 rounded-lg bg-blue-500/10 text-blue-400 flex items-center gap-3 text-sm font-medium border border-blue-500/20">
-                    <Database className="w-4 h-4" /> HR Policies
-                  </div>
-                  <div className="px-3 py-2 rounded-lg text-slate-400 hover:bg-white/5 flex items-center gap-3 text-sm font-medium transition-colors">
-                    <Code2 className="w-4 h-4" /> API Docs
-                  </div>
-                  <div className="px-3 py-2 rounded-lg text-slate-400 hover:bg-white/5 flex items-center gap-3 text-sm font-medium transition-colors">
-                    <LineChart className="w-4 h-4" /> Q3 Reports
-                  </div>
-                </div>
-
-                {/* Chat mock */}
-                <div className="flex-1 flex flex-col p-6 relative z-10">
-                  <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                    {/* User Message */}
-                    <div className="flex gap-4 self-end max-w-[80%]">
-                      <div className="bg-white/10 p-4 rounded-2xl rounded-tr-sm text-sm text-slate-200 border border-white/5">
-                        What is our company policy on remote work equipment?
-                      </div>
+                  <div className="flex-1 flex justify-center">
+                    <div className="px-3 py-1 text-[11px] font-mono text-white/25 bg-white/4 rounded-md flex items-center gap-1.5">
+                      <Shield className="w-2.5 h-2.5" /> hub.omnirag.app
                     </div>
-                    {/* Bot Message */}
-                    <div className="flex gap-4 max-w-[85%]">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
-                        <BrainCircuit className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="w-14" />
+                </div>
+
+                {/* Chat content */}
+                <div className="p-6 flex flex-col gap-5 min-h-[360px]">
+                  {/* User message */}
+                  <div className="flex justify-end">
+                    <div className="bg-white/6 border border-white/8 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white/70 max-w-[80%]">
+                      What is our policy on remote work equipment?
+                    </div>
+                  </div>
+
+                  {/* Bot message */}
+                  <div className="flex gap-3 max-w-[90%]">
+                    <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <BrainCircuit className="w-3.5 h-3.5 text-primary/80" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-primary/6 border border-primary/12 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/75 leading-relaxed">
+                        Per <span className="text-primary/80 font-medium">Employee Handbook v2.4</span>, employees are eligible for a $500 stipend covering ergonomic furniture, monitors, headsets, and webcams.
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <div className="bg-blue-500/10 p-4 rounded-2xl rounded-tl-sm text-sm text-slate-200 border border-blue-500/20 leading-relaxed shadow-inner shadow-blue-500/10">
-                          According to the <strong>Employee Handbook v2.4</strong> updated last month, employees are eligible for a $500 stipend to set up their home office. This covers:
-                          <ul className="list-disc ml-5 mt-2 space-y-1 text-slate-300">
-                            <li>Ergonomic chairs & desks</li>
-                            <li>External monitors</li>
-                            <li>Headsets and webcams</li>
-                          </ul>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-[10px] uppercase font-bold text-blue-400/70 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">Sources</span>
-                          <span className="text-xs text-slate-500 flex items-center gap-1 hover:text-blue-400 cursor-pointer transition-colors"><Shield className="w-3 h-3" /> Employee_Handbook_v2.pdf</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-white/20 font-mono">Source</span>
+                        <span className="text-[11px] text-primary/40 hover:text-primary/60 cursor-pointer transition-colors">Employee_Handbook_v2.pdf · p.14</span>
                       </div>
                     </div>
                   </div>
-                  {/* Input mock */}
-                  <div className="mt-6 p-1 rounded-xl bg-white/5 border border-white/10 flex items-center pr-2">
-                    <div className="p-3 text-slate-500">
-                      <Sparkles className="w-5 h-5" />
+
+                  {/* Input bar */}
+                  <div className="mt-auto pt-4 border-t border-white/6 flex items-center gap-3">
+                    <div className="flex-1 text-sm text-white/20 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
+                      Ask anything about your documents...
                     </div>
-                    <div className="flex-1 text-sm text-slate-500 truncate">Ask OmniRAG anything about your documents...</div>
-                    <div className="p-2 bg-white/10 rounded-lg">
-                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    <div className="w-8 h-8 bg-primary/15 border border-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <ChevronRight className="w-4 h-4 text-primary/60" />
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+
+              {/* Floating stat cards */}
+              <div className="absolute -bottom-5 -left-8 hidden lg:flex items-center gap-2.5 bg-[#0d0d1c] border border-white/8 rounded-xl px-4 py-3 shadow-lg shadow-black/40">
+                <div className="w-2 h-2 rounded-full bg-emerald-400/70 animate-pulse" />
+                <span className="text-xs text-white/50 font-mono">47 docs · 12,384 chunks</span>
+              </div>
+            </motion.div>
+          </div>
         </section>
 
-        {/* Features / Ecosystem */}
-        <section id="features" className="py-32 relative border-t border-white/5 bg-[#020205]">
+        {/* Features — asymmetric grid */}
+        <section id="features" className="py-28 border-t border-white/5">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-80px" }}
               variants={fadeUp}
-              className="mb-20 md:text-center"
+              className="mb-16 max-w-xl"
             >
-              <h2 className="text-blue-400 font-semibold tracking-wide uppercase text-sm mb-3">Ecosystem</h2>
-              <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">Engineered for Scale.</h3>
-              <p className="text-slate-400 text-lg md:text-xl max-w-2xl md:mx-auto">
-                Discover the modular components that make OmniRAG the most robust knowledge engine for your enterprise.
+              <p className="text-[11px] font-semibold text-primary/60 tracking-[0.1em] uppercase mb-3">What's inside</p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.03em] text-white mb-4">
+                Built for accuracy,<br />not just speed.
+              </h2>
+              <p className="text-white/40 text-base leading-relaxed">
+                Every component in the pipeline was chosen to reduce hallucinations and improve answer quality in production.
               </p>
             </motion.div>
 
+            {/* 2+2+2 grid — left side slightly larger */}
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={staggerContainer}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={stagger}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5"
             >
               {features.map((feature, idx) => (
                 <motion.div
                   key={idx}
                   variants={fadeUp}
-                  className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-blue-500/30 transition-all duration-300 group relative overflow-hidden"
+                  className="p-7 bg-[#07070e] hover:bg-[#0d0d1c] transition-colors duration-300 group flex flex-col gap-4"
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 border border-white/10 group-hover:scale-110 transition-transform">
+                  <div className={`w-9 h-9 rounded-lg bg-white/4 border border-white/8 flex items-center justify-center ${feature.accent} group-hover:border-white/12 transition-colors`}>
                     {feature.icon}
                   </div>
-                  <h4 className="text-xl font-semibold mb-3 text-slate-200">{feature.title}</h4>
-                  <p className="text-slate-400 leading-relaxed text-sm">{feature.description}</p>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white/85 mb-1.5">{feature.title}</h3>
+                    <p className="text-sm text-white/35 leading-relaxed">{feature.description}</p>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-32 relative overflow-hidden border-t border-white/5">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 to-transparent -z-10"></div>
+        {/* CTA */}
+        <section id="solutions" className="py-28 border-t border-white/5">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
-            className="max-w-4xl mx-auto px-6 text-center"
+            className="max-w-2xl mx-auto px-6 text-center"
           >
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-              Ready to transcend the limits of traditional search?
+            <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] text-white mb-5">
+              Ready to put your<br />documents to work?
             </h2>
-            <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-              Join visionary companies leveraging OmniRAG to build the smartest organizations on Earth.
+            <p className="text-white/40 text-base mb-10 leading-relaxed">
+              Set up takes under ten minutes. No infrastructure to manage — everything runs in Docker.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/auth" className="px-8 py-4 bg-blue-600 text-white text-base font-bold rounded-full hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
-                Get Started Free <ChevronRight className="w-5 h-5" />
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Link to="/auth" className="px-7 py-3.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2">
+                Get started free <ChevronRight className="w-4 h-4" />
               </Link>
-              <button className="px-8 py-4 bg-white/5 text-white border border-white/10 text-base font-bold rounded-full hover:bg-white/10 transition-colors backdrop-blur-sm">
-                Contact Sales
-              </button>
+              <Link to="/docs/zalo-bot" className="px-7 py-3.5 bg-white/5 hover:bg-white/8 border border-white/8 text-white/60 hover:text-white/90 text-sm font-medium rounded-xl transition-all">
+                Read the docs
+              </Link>
             </div>
           </motion.div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#020205] py-12">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 p-[1px]">
-              <div className="w-full h-full bg-[#020205] rounded-lg flex items-center justify-center">
-                <LogoIcon className="w-5 h-5" />
-              </div>
+      <footer className="border-t border-white/5 py-10">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/15 flex items-center justify-center">
+              <LogoIcon className="w-3.5 h-3.5" />
             </div>
-            <span className="text-sm font-semibold tracking-tight text-white">OmniRAG® Systems</span>
+            <span className="text-xs font-medium text-white/30">OmniRAG</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Privacy Policy</a>
-            <a href="#" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Terms of Service</a>
+            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Privacy policy</a>
+            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Terms of service</a>
           </div>
-          <p className="text-sm text-slate-500">© 2026 OmniRAG. All rights reserved.</p>
+          <p className="text-xs text-white/20">© 2026 OmniRAG. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -16,14 +16,14 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0';
+  const baseStyles = 'inline-flex items-center justify-center rounded-xl font-medium tracking-[-0.01em] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none select-none';
 
   const variantStyles = {
-    primary: 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 hover:-translate-y-0.5 active:translate-y-0',
-    secondary: 'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80 hover:-translate-y-0.5 active:translate-y-0',
-    outline: 'bg-background border border-border text-foreground hover:bg-muted/40 hover:border-primary/30',
-    danger: 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20 hover:bg-destructive/90 hover:-translate-y-0.5',
-    ghost: 'bg-transparent text-foreground hover:bg-muted/50 hover:text-primary',
+    primary: 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/85 hover:-translate-y-px active:scale-[0.97] active:shadow-sm',
+    secondary: 'bg-secondary text-secondary-foreground border border-white/8 hover:bg-secondary/70 hover:border-white/12 hover:-translate-y-px active:scale-[0.97]',
+    outline: 'bg-transparent border border-white/10 text-foreground hover:bg-white/5 hover:border-primary/40 hover:-translate-y-px active:scale-[0.97]',
+    danger: 'bg-destructive text-destructive-foreground shadow-md shadow-destructive/20 hover:bg-destructive/85 hover:-translate-y-px active:scale-[0.97] active:shadow-sm',
+    ghost: 'bg-transparent text-muted-foreground hover:bg-white/6 hover:text-foreground active:scale-[0.97]',
   };
 
   const sizeStyles = {

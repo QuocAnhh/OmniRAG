@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ChatLayout from '../components/Layout/ChatLayout';
 import { ChatInput, ChatMessage, TypingIndicator } from '../components/chat/ChatInterface';
 import KnowledgeGraphPanel from '../components/chat/KnowledgeGraphPanel';
+import DebugPanel from '../components/chat/DebugPanel';
 import { chatApi } from '../api/chat';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
 import toast from 'react-hot-toast';
 import { cn } from '../lib/utils';
+import { Bug } from 'lucide-react';
 
 function HighlightedText({ text, highlights }: { text: string; highlights?: string[] }) {
     if (!highlights || highlights.length === 0) return <>{text}</>;
@@ -44,6 +46,9 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
     const [activeEntities,    setActiveEntities]    = useState<string[]>([]);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [sessions, setSessions] = useState<any[]>([]);
+    const [debugMode, setDebugMode] = useState(false);
+    const [debugData, setDebugData] = useState<any>(null);
+    const [debugLoading, setDebugLoading] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -250,6 +255,22 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
         setMessages(prev => [...prev, userMsg, initialAiMsg]);
         setIsTyping(true);
 
+        // Debug Mode: Fetch retrieval debug info
+        if (debugMode) {
+            setDebugLoading(true);
+            chatApi.debugRetrieval(id, text, 5)
+                .then(data => {
+                    setDebugData(data);
+                })
+                .catch(err => {
+                    console.error('Debug retrieval failed:', err);
+                    toast.error('Failed to load debug data');
+                })
+                .finally(() => {
+                    setDebugLoading(false);
+                });
+        }
+
         // Cancel any previous in-flight stream before starting a new one
         streamAbortRef.current?.abort();
         const controller = new AbortController();
@@ -266,6 +287,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 session_id: activeSessionId,
                 history: historyForStream
             }, (chunk) => {
+                console.log('[STREAM] Chunk received:', chunk.type, chunk);
                 if (chunk.type === 'metadata' && chunk.retrieved_chunks && chunk.retrieved_chunks.length > 0) {
                     setSelectedEvidence(chunk.retrieved_chunks);
                 }
@@ -287,9 +309,11 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                             search_query: chunk.search_query,
                         };
                     } else if (chunk.type === 'content') {
+                        const newContent = (msg.content || '') + chunk.content;
+                        console.log('[STREAM] Updating message content:', newContent.substring(0, 50) + '...');
                         return {
                             ...msg,
-                            content: (msg.content || '') + chunk.content
+                            content: newContent
                         };
                     } else if (chunk.type === 'done') {
                         return msg;
@@ -339,15 +363,35 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             botName={bot?.name}
             botModel={bot?.config?.llm_model || bot?.config?.model}
             botDomain={bot?.config?.domain}
+            headerActions={
+                <button
+                    onClick={() => setDebugMode(!debugMode)}
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                        debugMode
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                >
+                    <Bug className="w-4 h-4" />
+                    <span>Debug Mode</span>
+                </button>
+            }
             rightPanel={
                 <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
-                    <KnowledgeGraphPanel
-                        botId={id}
-                        chunks={selectedEvidence ?? undefined}
-                        activeEntities={activeEntities}
-                        onExpandClick={() => navigate(`/bots/${id}/graph`)}
-                        onAskAboutEntity={handleSendMessage}
-                    />
+                    {debugMode ? (
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            <DebugPanel data={debugData} loading={debugLoading} />
+                        </div>
+                    ) : (
+                        <KnowledgeGraphPanel
+                            botId={id}
+                            chunks={selectedEvidence ?? undefined}
+                            activeEntities={activeEntities}
+                            onExpandClick={() => navigate(`/bots/${id}/graph`)}
+                            onAskAboutEntity={handleSendMessage}
+                        />
+                    )}
                 </div>
             }
         >

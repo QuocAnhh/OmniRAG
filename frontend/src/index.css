@@ -8,17 +8,18 @@
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
-    --color-primary-50: #eff6ff;
-    --color-primary-100: #dbeafe;
-    --color-primary-200: #bfdbfe;
-    --color-primary-300: #93c5fd;
-    --color-primary-400: #60a5fa;
-    --color-primary-500: #3b82f6;
-    --color-primary-600: #2563eb;
-    --color-primary-700: #1d4ed8;
-    --color-primary-800: #1e40af;
-    --color-primary-900: #1e3a8a;
-    --color-primary-950: #172554;
+    /* Slightly desaturated blue spectrum — less intense, more premium */
+    --color-primary-50: #eef3fd;
+    --color-primary-100: #d6e4fb;
+    --color-primary-200: #adc8f7;
+    --color-primary-300: #7fa8f0;
+    --color-primary-400: #6397ec;
+    --color-primary-500: #4f8ef0;  /* primary */
+    --color-primary-600: #2e6cd9;
+    --color-primary-700: #2254b3;
+    --color-primary-800: #1d428a;
+    --color-primary-900: #162f63;
+    --color-primary-950: #0d1c3d;
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
 
@@ -58,45 +59,50 @@
         }
     }
 
-    --font-sans: Inter,
+    --font-sans: Geist,
     system-ui,
     sans-serif;
-    --font-mono: JetBrains Mono,
+    --font-mono: Geist Mono,
+    JetBrains Mono,
     monospace;
 }
 
 @layer base {
     :root {
-        /* Premium Tech / Enterprise AI - Dark Mode Native */
-        --background: #020205;       /* Deep space black */
-        --foreground: #f8fafc;       /* Slate 50 */
+        /* OmniRAG — Refined Dark, Navy-tinted */
+        --background: #07070e;       /* Off-black with subtle navy tint */
+        --foreground: #eef0f6;       /* Slightly warm white, easier on eyes */
 
-        --card: #0A0A0F;             /* Slightly lighter dark */
-        --card-foreground: #f8fafc;
+        --card: #0d0d1c;             /* Darker navy surface */
+        --card-foreground: #eef0f6;
 
-        --popover: #06060A;
-        --popover-foreground: #f8fafc;
+        --popover: #0a0a17;
+        --popover-foreground: #eef0f6;
 
-        --primary: #3b82f6;          /* Blue 500 */
+        --primary: #4f8ef0;          /* Desaturated blue — less screaming */
         --primary-foreground: #ffffff;
 
-        --secondary: #1e293b;        /* Slate 800 */
-        --secondary-foreground: #f8fafc;
+        --secondary: #151528;        /* Deep navy secondary */
+        --secondary-foreground: #eef0f6;
 
-        --muted: #0f172a;            /* Slate 900 */
-        --muted-foreground: #94a3b8; /* Slate 400 */
+        --muted: #0f0f1f;            /* Very dark navy */
+        --muted-foreground: #7e8aa8; /* Blue-tinted gray for muted text */
 
-        --accent: #1e293b;           /* Slate 800 */
-        --accent-foreground: #f8fafc;
+        --accent: #1a1a30;           /* Navy accent surface */
+        --accent-foreground: #eef0f6;
 
-        --destructive: #e11d48;      /* Rose 600 */
+        --destructive: #dc2e52;      /* Rose — slightly less saturated */
         --destructive-foreground: #ffffff;
 
-        --border: rgba(255, 255, 255, 0.05); /* Extremely subtle white border */
-        --input: rgba(255, 255, 255, 0.05);
-        --ring: rgba(59, 130, 246, 0.5);   /* Blue 500 w/ opacity */
+        --border: rgba(255, 255, 255, 0.06);
+        --input: rgba(255, 255, 255, 0.06);
+        --ring: rgba(79, 142, 240, 0.45);  /* Match new primary */
 
         --radius: 0.75rem;
+
+        /* Colored shadow tokens (navy-tinted, not pure black) */
+        --shadow-color: rgba(4, 4, 20, 0.6);
+        --shadow-primary: rgba(79, 142, 240, 0.15);
     }
 }
 
@@ -105,12 +111,48 @@
         border-color: var(--border);
     }
 
+    html {
+        scroll-behavior: smooth;
+    }
+
     body {
         background-color: var(--background);
         color: var(--foreground);
         font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-        background-image: radial-gradient(circle at top center, rgba(30, 58, 138, 0.05), transparent 80%);
+        font-variant-numeric: tabular-nums;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* Subtle radial ambient — much more restrained */
+        background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79, 142, 240, 0.06), transparent);
         background-attachment: fixed;
+    }
+
+    /* Grain overlay — break digital flatness */
+    body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        opacity: 0.022;
+        mix-blend-mode: overlay;
+    }
+
+    /* Headlines — presence and weight */
+    h1, h2, h3, h4, h5, h6 {
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+        text-wrap: balance;
+    }
+
+    h1 { letter-spacing: -0.035em; }
+    h2 { letter-spacing: -0.025em; }
+
+    /* Body text — readable measure */
+    p {
+        line-height: 1.7;
+        text-wrap: pretty;
     }
 }
 

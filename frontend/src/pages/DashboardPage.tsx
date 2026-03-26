@@ -9,7 +9,7 @@ import type { ConversationItem, AnalyticsStats } from '../api/analytics';
 import { useAuthStore } from '../store/authStore';
 import type { Bot } from '../types/api';
 import { getDomainMeta } from '../utils/domainHelpers';
-import { Plus, MessageSquare, Bot as BotIcon, ChevronRight, Settings, Zap, Clock, Users, Star } from 'lucide-react';
+import { Plus, MessageSquare, Bot as BotIcon, ChevronRight, Settings, Clock, Users, Star } from 'lucide-react';
 
 function formatTimeAgo(ts: string): string {
   const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
@@ -80,32 +80,24 @@ export default function DashboardPage() {
 
   const statTiles = [
     {
-      label: 'Total Messages',
+      label: 'Total messages',
       value: stats ? stats.total_messages.toLocaleString() : '—',
       icon: <MessageSquare className="w-4 h-4" />,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10 border-blue-500/20',
     },
     {
-      label: 'Avg Response',
+      label: 'Avg response',
       value: stats?.avg_response_time ?? '—',
       icon: <Clock className="w-4 h-4" />,
-      color: 'text-violet-400',
-      bg: 'bg-violet-500/10 border-violet-500/20',
     },
     {
-      label: 'Active Users',
+      label: 'Active users',
       value: stats ? stats.active_users.toLocaleString() : '—',
       icon: <Users className="w-4 h-4" />,
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/10 border-emerald-500/20',
     },
     {
       label: 'Satisfaction',
-      value: stats?.avg_csat_score ? `${(stats.avg_csat_score * 100).toFixed(0)}%` : '—',
+      value: stats?.avg_csat_score ? `${(stats.avg_csat_score * 100).toFixed(1)}%` : '—',
       icon: <Star className="w-4 h-4" />,
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/10 border-amber-500/20',
     },
   ];
 
@@ -127,29 +119,29 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 p-8 rounded-3xl bg-background/40 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 rounded-2xl bg-background/40 backdrop-blur-2xl border border-white/6 relative overflow-hidden"
         >
-          <div className="absolute top-0 right-0 w-72 h-72 bg-primary/8 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
           <div className="relative z-10">
-            <p className="text-muted-foreground text-sm mb-1">
+            <p className="text-white/25 text-xs mb-1.5 font-medium">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
-            <h1 className="text-3xl font-bold text-white">{greeting}, {firstName}</h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">{greeting}, {firstName}</h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-white/30">
               <span className="flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-emerald-400/70" />
                 {activeBots} active agent{activeBots !== 1 ? 's' : ''}
               </span>
-              <span className="hidden sm:inline">·</span>
+              <span className="hidden sm:inline opacity-40">·</span>
               <span>{totalDocs} docs indexed</span>
             </div>
           </div>
           <Link
             to="/bots/new"
-            className="relative z-10 inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] border border-primary/50"
+            className="relative z-10 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-md shadow-primary/20"
           >
             <Plus className="w-4 h-4" />
-            New Agent
+            New agent
           </Link>
         </motion.div>
 
@@ -163,14 +155,14 @@ export default function DashboardPage() {
           {statTiles.map((tile) => (
             <div
               key={tile.label}
-              className="flex items-center gap-4 p-5 rounded-2xl bg-background/40 backdrop-blur-xl border border-white/8 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+              className="flex flex-col gap-3 p-5 rounded-2xl bg-background/40 backdrop-blur-xl border border-white/6"
             >
-              <div className={`size-9 rounded-xl flex items-center justify-center border flex-shrink-0 ${tile.bg} ${tile.color}`}>
+              <div className="size-8 rounded-lg bg-white/4 border border-white/8 flex items-center justify-center text-white/40 flex-shrink-0">
                 {tile.icon}
               </div>
               <div className="min-w-0">
-                <div className="text-xl font-bold text-foreground tabular-nums">{tile.value}</div>
-                <div className="text-[11px] text-muted-foreground/60 uppercase tracking-wider font-medium">{tile.label}</div>
+                <div className="text-2xl font-semibold text-foreground/90 tabular-nums tracking-tight">{tile.value}</div>
+                <div className="text-[11px] text-white/25 mt-0.5 font-medium">{tile.label}</div>
               </div>
             </div>
           ))}

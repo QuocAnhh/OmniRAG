@@ -76,37 +76,24 @@ export default function BotsPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 p-8 rounded-3xl bg-background/40 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 rounded-2xl bg-background/40 backdrop-blur-2xl border border-white/6 relative overflow-hidden"
         >
-          {/* Subtle background glow for header */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
 
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-              <Cpu className="w-8 h-8 text-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] rounded-lg" /> AI Agents
+            <h2 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-2.5">
+              <Cpu className="w-5 h-5 text-primary/70" /> AI Agents
             </h2>
-            <p className="text-muted-foreground mt-2 text-base">
-              Manage and configure your intelligent RAG assistants.
+            <p className="text-white/30 mt-1.5 text-sm">
+              Manage and configure your RAG assistants.
             </p>
           </div>
           <Link
             to="/bots/new"
-            className="
-              relative z-10
-              inline-flex items-center justify-center gap-2
-              w-full sm:w-auto px-8 py-3.5
-              bg-primary text-primary-foreground
-              hover:bg-primary/90
-              font-semibold
-              rounded-xl
-              shadow-[0_0_20px_rgba(var(--primary),0.4)]
-              hover:shadow-[0_0_30px_rgba(var(--primary),0.6)]
-              hover:-translate-y-1
-              transition-all duration-300 border border-primary/50
-            "
+            className="relative z-10 inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-md shadow-primary/20"
           >
-            <Plus className="w-5 h-5" />
-            Create Agent
+            <Plus className="w-4 h-4" />
+            New agent
           </Link>
         </motion.div>
 
@@ -140,24 +127,22 @@ export default function BotsPage() {
 
           /* Empty State */
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 border-dashed p-16 text-center flex flex-col items-center justify-center gap-4 relative overflow-hidden"
+            className="bg-background/40 backdrop-blur-2xl rounded-2xl border border-white/6 border-dashed p-16 text-center flex flex-col items-center justify-center gap-3"
           >
-            <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
-
-            <div className="size-24 rounded-2xl bg-background/50 border border-white/10 flex items-center justify-center mb-2 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] relative z-10">
-              <BotIcon className="w-12 h-12 text-muted-foreground" />
+            <div className="size-14 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center mb-2">
+              <BotIcon className="w-6 h-6 text-white/20" />
             </div>
-            <div className="relative z-10">
-              <h3 className="text-2xl font-bold text-foreground mb-2">No agents deployed</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto leading-relaxed">Create your first intelligent RAG assistant to start querying your knowledge base.</p>
+            <div>
+              <h3 className="text-base font-semibold text-white/70 mb-1">No agents yet</h3>
+              <p className="text-sm text-white/30 max-w-xs mx-auto leading-relaxed">Create your first agent to start querying your knowledge base.</p>
             </div>
             <Link
               to="/bots/new"
-              className="mt-6 px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:-translate-y-1 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] border border-primary/50 relative z-10"
+              className="mt-3 px-5 py-2.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md shadow-primary/20"
             >
-              <Plus className="w-5 h-5" /> Create First Agent
+              <Plus className="w-4 h-4" /> Create agent
             </Link>
           </motion.div>
         ) : (
@@ -173,82 +158,64 @@ export default function BotsPage() {
               <motion.div
                 key={bot.id}
                 variants={itemVariants}
-                className="
-                  group
-                  bg-background/40 backdrop-blur-2xl
-                  rounded-2xl
-                  border border-white/10
-                  hover:border-primary/50
-                  shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(var(--primary),0.15)]
-                  transition-all duration-500 ease-out
-                  hover:-translate-y-2
-                  flex flex-col
-                  h-[260px] relative overflow-hidden
-                "
+                className="group bg-background/40 backdrop-blur-xl rounded-2xl border border-white/6 hover:border-white/10 transition-all duration-300 hover:-translate-y-px flex flex-col overflow-hidden"
               >
-                {/* Subtle top glow line on hover */}
-                <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                <div className="p-6 flex-1 flex flex-col relative z-10">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4">
-                      <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all duration-500 shrink-0">
-                        <BotIcon className="w-6 h-6 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">{bot.name}</h3>
-                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                          {bot.is_active ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              Active
+                <div className="p-5 flex-1 flex flex-col gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="size-10 rounded-xl bg-primary/8 border border-primary/15 flex items-center justify-center flex-shrink-0">
+                      <BotIcon className="w-5 h-5 text-primary/70" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-sm text-white/85 line-clamp-1 tracking-tight">{bot.name}</h3>
+                      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                        {bot.is_active ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/15">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/5 text-white/30 border border-white/8">
+                            Inactive
+                          </span>
+                        )}
+                        {(() => {
+                          const dm = getDomainMeta(bot.config?.domain);
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${dm.badge}`}>
+                              <span className="material-symbols-outlined text-[10px]">{dm.icon}</span>
+                              {dm.label}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 text-slate-400 border border-white/10">
-                              Inactive
-                            </span>
-                          )}
-                          {(() => {
-                            const dm = getDomainMeta(bot.config?.domain);
-                            return (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${dm.badge}`}>
-                                <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
-                                {dm.label}
-                              </span>
-                            );
-                          })()}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex-1 min-h-0 bg-background/50 backdrop-blur-sm p-4 rounded-xl border border-white/5 relative group-hover:bg-white/[0.05] group-hover:border-white/10 transition-all duration-500 shadow-inner">
-                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                      {bot.description || 'No description provided.'}
-                    </p>
-                  </div>
+                  <p className="text-xs text-white/30 line-clamp-3 leading-relaxed flex-1">
+                    {bot.description || 'No description provided.'}
+                  </p>
                 </div>
 
-                <div className="p-4 border-t border-white/5 bg-background/60 backdrop-blur-md flex items-center gap-2 relative z-10">
+                <div className="px-4 py-3 border-t border-white/6 flex items-center gap-2">
                   <Link
                     to={`/bots/${bot.id}/chat`}
-                    className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl text-sm transition-all text-center flex items-center justify-center gap-2 hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:-translate-y-0.5 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
+                    className="flex-1 px-3 py-2 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-xs font-medium rounded-lg transition-all text-center flex items-center justify-center gap-1.5"
                   >
-                    <Play className="w-4 h-4 fill-current" />
-                    Start Chat
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Chat
                   </Link>
                   <Link
                     to={`/bots/${bot.id}/config`}
-                    className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all bg-white/5 border border-white/10 hover:border-white/20 flex-shrink-0"
+                    className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/6 transition-all"
                     title="Configure"
                   >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                   </Link>
                   <button
                     onClick={(e) => handleDelete(bot.id, e)}
-                    className="p-2.5 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/20 hover:shadow-[0_0_15px_rgba(255,0,0,0.3)] transition-all bg-white/5 border border-transparent hover:border-destructive/30 flex-shrink-0"
-                    title="Delete Agent"
+                    className="p-2 rounded-lg text-white/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                    title="Delete agent"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </motion.div>
