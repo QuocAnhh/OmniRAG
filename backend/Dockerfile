@@ -6,7 +6,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev curl \
+RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev curl openjdk-21-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv - pip replacement, 10-100x faster dependency resolution
@@ -28,6 +28,10 @@ RUN uv pip install --no-cache -r requirements.txt
 FROM python:3.11-slim
 
 WORKDIR /app
+
+# Java runtime required by opendataloader-pdf (bundled JAR parser)
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user with a home directory
 RUN addgroup --system app && adduser --system --group --home /home/app app

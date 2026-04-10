@@ -53,7 +53,7 @@ import httpx
 from fastapi import UploadFile
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document as LangChainDocument
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_community.document_loaders import TextLoader
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, MatchText
@@ -251,13 +251,66 @@ class OpenRouterRAGService:
     def _load_document(self, file_path: str, filename: str) -> List[LangChainDocument]:
         """Load document based on file type."""
         if filename.endswith(".pdf"):
-            loader = PyPDFLoader(file_path)
+            return self._load_pdf_opendataloader(file_path, filename)
         elif filename.endswith(".txt"):
             loader = TextLoader(file_path)
+            return loader.load()
         else:
             raise ValueError(f"Unsupported file type: {filename}")
-        
-        return loader.load()
+
+    def _load_pdf_opendataloader(self, file_path: str, filename: str) -> List[LangChainDocument]:
+        """Parse PDF using opendataloader-pdf for higher quality extraction.
+
+        Falls back to PyPDFLoader if opendataloader-pdf is unavailable or
+        returns empty content (e.g. Java not installed).
+        """
+        try:
+            import opendataloader_pdf
+
+            with tempfile.TemporaryDirectory() as output_dir:
+                opendataloader_pdf.convert(
+                    input_path=[file_path],
+                    output_dir=output_dir,
+                    format="markdown",
+                    quiet=True,
+                )
+                # Locate the generated .md file
+                md_path = os.path.join(output_dir, Path(file_path).stem + ".md")
+                if not os.path.exists(md_path):
+                    md_files = list(Path(output_dir).glob("*.md"))
+                    if not md_files:
+                        raise RuntimeError(
+                            f"opendataloader-pdf produced no markdown output for {filename}"
+                        )
+                    md_path = str(md_files[0])
+
+                with open(md_path, "r", encoding="utf-8") as f:
+                    text = f.read()
+
+            if not text.strip():
+                logger.warning(
+                    f"opendataloader-pdf returned empty content for {filename}, "
+                    "falling back to PyPDFLoader"
+                )
+                from langchain_community.document_loaders import PyPDFLoader
+                return PyPDFLoader(file_path).load()
+
+            logger.info(
+                f"opendataloader-pdf parsed {filename}: {len(text)} chars"
+            )
+            return [
+                LangChainDocument(
+                    page_content=text,
+                    metadata={"source": filename, "page": 0},
+                )
+            ]
+
+        except (ImportError, FileNotFoundError, RuntimeError, Exception) as e:
+            logger.warning(
+                f"opendataloader-pdf unavailable ({e}), falling back to PyPDFLoader"
+            )
+            from langchain_community.document_loaders import PyPDFLoader
+            return PyPDFLoader(file_path).load()
     
     @staticmethod
     def _chunk_article(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
