@@ -11,7 +11,7 @@
 | Bot Templates | ✅ | Pre-built templates for common use-cases with domain badges |
 | Bot Wizard | ✅ | Multi-step creation: template → domain selector → config → review |
 | Domain Selection | ✅ | 4 domains: General / Education / Legal / Sales |
-| Document Upload | ✅ | PDF, DOCX, PPTX, TXT — async via Celery |
+| Document Upload | ✅ | PDF (opendataloader-pdf), TXT — async via Celery |
 | Dashboard | ✅ | Real-time stats, recent conversations, agent status panel |
 | User Management | ✅ | Invite/manage users per tenant |
 
@@ -26,6 +26,7 @@
 | HyDE | ✅ | Hypothetical Document Embedding — domain-aware, improves semantic recall |
 | Multi-Query Fusion | ✅ | 2 extra query variants → 3× parallel search → RRF merge |
 | Hybrid Search | ✅ | Vector (HyDE embed) + BM25 keyword → RRF → Cross-Encoder rerank |
+| PDF Parsing | ✅ | OpenDataLoader PDF — tables, headings, multi-column, bounding boxes (#1 benchmark) |
 | Contextual Retrieval | ✅ | Anthropic technique: situating prefix per chunk at index time |
 | Parent-Child Chunking | ✅ | Child chunks for matching, parent text returned to LLM |
 | CRAG | ✅ | Corrective RAG: classify retrieval quality, prevent hallucination |
@@ -45,7 +46,7 @@
 | Component | Technology | Port | Notes |
 |-----------|------------|------|-------|
 | API Gateway | Go 1.21 + Gin | 8080 | Rate limit 100 rps, Redis cache |
-| Backend API | Python 3.11 + FastAPI | 8000 | SQLAlchemy, Pydantic v2, Celery |
+| Backend API | Python 3.11 + FastAPI | 8000 | SQLAlchemy, Pydantic v2, Celery, Java 21 (PDF parsing) |
 | Frontend | React 19 + TypeScript 5.9 + Vite | 5173 | Tailwind CSS 4, Zustand, Framer Motion |
 | PostgreSQL | 15-alpine | 5433 | Primary relational store |
 | MongoDB | 7.0 | 27017 | Chat logs, conversation history |

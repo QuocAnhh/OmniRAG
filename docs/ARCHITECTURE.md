@@ -124,11 +124,15 @@ User Query
 ## Document Ingestion Pipeline
 
 ```
-File Upload (PDF/DOCX/PPTX/TXT)
+File Upload (PDF/TXT)
   │
   ├── MinIO storage
   │
   └── Celery task dispatched
+        │
+        ├── PDF parsing: _load_pdf_opendataloader()
+        │     opendataloader-pdf → structured Markdown (tables, headings, layout)
+        │     Fallback: PyPDFLoader if opendataloader-pdf unavailable
         │
         ├── domain profile resolved (chunk_size, strategy from bot.config.domain)
         │
@@ -148,6 +152,8 @@ File Upload (PDF/DOCX/PPTX/TXT)
         │
         └── LightRAG ingestion (if enable_knowledge_graph)
 ```
+
+> **PDF parsing chi tiết:** xem [PDF_PARSING.md](PDF_PARSING.md)
 
 ## Domain Profiles (`domain_config.py`)
 

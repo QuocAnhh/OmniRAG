@@ -147,6 +147,8 @@ Each bot has a `domain` field (default: `general`). The domain profile controls 
 ### Document Processing Pipeline
 ```
 Upload → MinIO storage → Celery task dispatched
+  → PDF parsing: opendataloader-pdf → structured Markdown (tables, headings, layout)
+    fallback: PyPDFLoader if opendataloader-pdf unavailable
   → domain profile resolved (chunk_size, chunk_overlap, strategy)
   → _chunk_documents() (recursive | sentence | article | parent_child)
   → Contextual Retrieval: _generate_contextual_prefix_batch()
@@ -156,6 +158,8 @@ Upload → MinIO storage → Celery task dispatched
       payload: { text, parent_text, context_prefix, source, bot_id, metadata }
   → LightRAG ingestion (if domain uses KG)
 ```
+
+> PDF parsing uses **opendataloader-pdf** (bundled Java JAR, requires Java 21+). See `docs/PDF_PARSING.md` for details.
 
 ### BotConfig Schema Fields (relevant to RAG)
 ```python
@@ -235,6 +239,6 @@ Use Celery tasks in `backend/app/tasks/` for long-running operations (document e
 LightRAG stores graph data in `backend/rag_storage/` (untracked, local). The `KnowledgeGraphPage` component visualizes entities/relationships using `@react-sigma/core` + `graphology`.
 
 ## Tech Stack Quick Reference
-- **Backend**: FastAPI, SQLAlchemy 2.0, Pydantic v2, LangChain, LightRAG-HKU, Mem0, sentence-transformers, Celery
+- **Backend**: FastAPI, SQLAlchemy 2.0, Pydantic v2, LangChain, LightRAG-HKU, Mem0, sentence-transformers, Celery, opendataloader-pdf (PDF parsing)
 - **Frontend**: React 19, TypeScript 5.9, Vite (rolldown-vite), Tailwind CSS 4, Zustand, TanStack Query, Framer Motion
 - **Gateway**: Go 1.21, Gin, go-redis, zap logger
