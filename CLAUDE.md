@@ -79,7 +79,8 @@ The gateway handles CORS, rate limiting (100 req/s dev / 200 prod), and Redis ca
 | MongoDB 7 | 27017 | Logs, events, conversation history |
 | Redis 7 | 6380 | Celery broker, gateway caching, rate limiting |
 | Qdrant | 6333 | Vector embeddings for semantic search |
-| MinIO | 9000/9001 | S3-compatible file storage (documents) |
+| MinIO | 9000/9001 | S3-compatible file storage (documents, extracted images, JSON) |
+| OpenDataLoader Hybrid | 5002 | PDF OCR, SmolVLM image descriptions, formula extraction |
 
 ### Backend Structure (`backend/app/`)
 - `api/v1/endpoints/` — FastAPI route handlers (auth, bots, documents, openrouter, analytics, integrations, channels)
@@ -147,8 +148,18 @@ Each bot has a `domain` field (default: `general`). The domain profile controls 
 ### Document Processing Pipeline
 ```
 Upload → MinIO storage → Celery task dispatched
-  → PDF parsing: opendataloader-pdf → structured Markdown (tables, headings, layout)
-    fallback: PyPDFLoader if opendataloader-pdf unavailable
+  → PDF parsing: opendataloader-pdf (FULL MODE)
+      format="markdown-with-images,json"
+      table_method="cluster" (border + cluster detection)
+      image_output="external" (extract PNG/JPEG files)
+      markdown_page_separator (preserve page boundaries)
+      hybrid="docling-fast" (OCR, SmolVLM image/chart descriptions, formulas)
+      fallback: hybrid → local → PyPDFLoader
+      │
+      ├── markdown-with-images → _chunk_documents() → contextual prefix → embed → Qdrant
+      │     (SINGLE FILE for LLM: text + image descriptions + page separators)
+      ├── JSON (structured tables, bounding boxes) → MinIO upload
+      └── Images (PNG/JPEG) → MinIO upload
   → domain profile resolved (chunk_size, chunk_overlap, strategy)
   → _chunk_documents() (recursive | sentence | article | parent_child)
   → Contextual Retrieval: _generate_contextual_prefix_batch()
@@ -159,7 +170,9 @@ Upload → MinIO storage → Celery task dispatched
   → LightRAG ingestion (if domain uses KG)
 ```
 
-> PDF parsing uses **opendataloader-pdf** (bundled Java JAR, requires Java 21+). See `docs/PDF_PARSING.md` for details.
+> PDF parsing uses **opendataloader-pdf** (bundled Java JAR, requires Java 21+). Hybrid mode requires the `opendataloader-hybrid` Docker service for OCR, SmolVLM image descriptions, and LaTeX formula extraction. See `docs/PDF_PARSING.md` for details.
+
+PDF config settings (in `core/config.py`): `PDF_TABLE_METHOD`, `PDF_IMAGE_OUTPUT`, `PDF_IMAGE_FORMAT`, `PDF_PAGE_SEPARATOR`, `PDF_HYBRID_MODE`, `PDF_HYBRID_URL`, `PDF_HYBRID_FALLBACK`, `PDF_ENRICH_PICTURE_DESCRIPTION`, `PDF_ENRICH_FORMULA`.
 
 ### BotConfig Schema Fields (relevant to RAG)
 ```python
@@ -168,6 +181,7 @@ chunking_strategy: str | None        # override domain default
 chunk_size: int | None               # override domain default
 chunk_overlap: int | None            # override domain default
 enable_knowledge_graph: bool         # auto-true for education/legal
+enrich_picture_description: bool     # SmolVLM image/chart descriptions via hybrid server (per-bot toggle)
 similarity_threshold: float = 0.15  # min hybrid_score to include in context
 top_k: int                           # overrides domain's retrieval_k
 ```
@@ -239,6 +253,6 @@ Use Celery tasks in `backend/app/tasks/` for long-running operations (document e
 LightRAG stores graph data in `backend/rag_storage/` (untracked, local). The `KnowledgeGraphPage` component visualizes entities/relationships using `@react-sigma/core` + `graphology`.
 
 ## Tech Stack Quick Reference
-- **Backend**: FastAPI, SQLAlchemy 2.0, Pydantic v2, LangChain, LightRAG-HKU, Mem0, sentence-transformers, Celery, opendataloader-pdf (PDF parsing)
+- **Backend**: FastAPI, SQLAlchemy 2.0, Pydantic v2, LangChain, LightRAG-HKU, Mem0, sentence-transformers, Celery, opendataloader-pdf[hybrid] (PDF parsing with OCR + SmolVLM image descriptions)
 - **Frontend**: React 19, TypeScript 5.9, Vite (rolldown-vite), Tailwind CSS 4, Zustand, TanStack Query, Framer Motion
 - **Gateway**: Go 1.21, Gin, go-redis, zap logger

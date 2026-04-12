@@ -216,6 +216,7 @@ async def upload_document(
     effective_chunk_overlap = bot_cfg.get("chunk_overlap") or domain_profile.chunk_overlap
 
     # Enqueue background processing
+    enrich_picture_description = bot_cfg.get("enrich_picture_description", False)
     process_document_task.delay(
         str(doc.id),
         str(bot_id),
@@ -225,6 +226,7 @@ async def upload_document(
         enable_knowledge_graph,
         effective_chunk_size,
         effective_chunk_overlap,
+        enrich_picture_description=enrich_picture_description,
     )
     
     return doc

@@ -22,6 +22,7 @@ class BotConfig(BaseModel):
     # Features
     enable_memory: bool = Field(default=True)
     enable_knowledge_graph: bool = Field(default=False, description="Whether a KG has been built for this bot")
+    enrich_picture_description: bool = Field(default=False, description="Use SmolVLM (via hybrid server) to generate text descriptions of images/charts in uploaded documents. Slower but much richer context for LLM.")
 
     # Domain
     domain: str = Field(default="general", description="RAG domain profile: general | education | legal | sales")

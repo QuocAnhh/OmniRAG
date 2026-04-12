@@ -1,21 +1,24 @@
-# OpenDataLoader PDF Integration
+# OpenDataLoader PDF — Full Integration
 
-OmniRAG sử dụng **[opendataloader-pdf](https://github.com/opendataloader-project/opendataloader-pdf)** để parse PDF — thay thế PyPDFLoader cũ. Parser này cho chất lượng extract cao hơn đáng kể: table, heading hierarchy, multi-column layout, và bounding boxes.
+OmniRAG sử dụng **[opendataloader-pdf](https://github.com/opendataloader-project/opendataloader-pdf)** với **tất cả tính năng** để parse PDF — cluster table detection, image extraction, SmolVLM AI image descriptions, dual markdown+JSON output, page separators, và optional OCR/formula extraction.
 
 ---
 
-## Tại sao thay đổi?
+## Tại sao full integration?
 
-| | PyPDFLoader (cũ) | OpenDataLoader PDF (hiện tại) |
-|--|------------------|-------------------------------|
-| **Text extraction** | Basic, dễ lỗi reading order | XY-Cut++ deterministic, đúng thứ tự |
-| **Tables** | Mất structure, chỉ raw text | #1 benchmark (0.928 accuracy) |
-| **Heading hierarchy** | Không detect | H1/H2/H3... đầy đủ |
-| **Multi-column** | Lộn xộn | Đúng reading order |
-| **Bounding boxes** | Không có | Mỗi element có coordinates |
-| **OCR (scanned PDF)** | Không hỗ trợ | Hybrid mode: 80+ ngôn ngữ |
-| **Formula extraction** | Không | LaTeX qua Hybrid mode |
-| **Tốc độ** | Nhanh | 0.015s/page (local mode) |
+| | PyPDFLoader (cũ) | Basic MD (trước) | **Full Integration (hiện tại)** |
+|--|------------------|-------------------|----------------------------------|
+| **Text extraction** | Basic, lỗi reading order | XY-Cut++ đúng thứ tự | XY-Cut++ + page separators |
+| **Tables** | Mất structure | Border detection | **Cluster detection** (border + cluster) |
+| **Images** | Mất hoàn toàn | Mất | **Extract PNG/JPEG + AI descriptions** |
+| **Image descriptions** | Không | Không | **SmolVLM 256M — mô tả charts, figures** |
+| **Heading hierarchy** | Không | Có | Có |
+| **Bounding boxes** | Không | Không | **JSON output — mỗi element có coordinates** |
+| **Structured tables** | Không | Không | **JSON — rows, cells, row/column spans** |
+| **OCR (scanned PDF)** | Không | Không | **80+ ngôn ngữ via hybrid mode** |
+| **Formula extraction** | Không | Không | **LaTeX via hybrid mode** |
+| **Page boundaries** | Không | Không | **PAGE separator trong markdown** |
+| **Tốc độ** | Nhanh | 0.015s/page | 0.015s/page (local) / ~0.5s/page (hybrid) |
 
 ---
 
@@ -25,119 +28,172 @@ OmniRAG sử dụng **[opendataloader-pdf](https://github.com/opendataloader-pro
 PDF Upload
   │
   ↓
-_load_document()                        ← openrouter_rag_service.py:254
+_load_pdf_opendataloader()              ← openrouter_rag_service.py
   │
-  ├── filename.endswith(".pdf")
-  │     └── _load_pdf_opendataloader()  ← gọi opendataloader-pdf
-  │           │
-  │           ├── opendataloader_pdf.convert()
-  │           │     input_path=[file], output_dir=tmp, format="markdown"
-  │           │     ↓ Java JAR (bundled) chạy subprocess
-  │           │     ↓ Output: structured Markdown file
-  │           │
-  │           ├── Success → trả về LangChainDocument
-  │           │
-  │           └── Fail → fallback PyPDFLoader (log warning)
+  ├── opendataloader_pdf.convert()
+  │     format="markdown-with-images,json"
+  │     table_method="cluster"
+  │     image_output="external"
+  │     markdown_page_separator
+  │     hybrid="docling-fast" (nếu enabled)
+  │     enrich_picture_description=True
+  │     ↓ Java JAR (bundled) + Hybrid AI server
   │
-  └── filename.endswith(".txt")
-        └── TextLoader (không đổi)
+  ├── Output 1: markdown-with-images   ← SINGLE FILE cho LLM
+  │     Text + heading hierarchy + tables
+  │     + image references inline
+  │     + SmolVLM image/chart descriptions (hybrid)
+  │     + LaTeX formulas (hybrid)
+  │     + page separators
+  │     ↓
+  │     → _chunk_documents() → contextual prefix → embed → Qdrant
+  │     → LLM nhận MỘT file markdown đầy đủ text + mô tả ảnh
+  │
+  ├── Output 2: JSON                   ← Structured data
+  │     Tables: rows → cells, row/column spans
+  │     Headings: level hierarchy
+  │     Images: source path, format, bounding box
+  │     All elements: type, id, page number, bbox
+  │     ↓
+  │     → Upload MinIO (dùng cho table QA, structured search)
+  │
+  └── Output 3: Images/                ← Extracted image files
+        figure_1.png, chart_2.png, ...
+        ↓
+        → Upload MinIO (dùng cho frontend display)
 ```
 
-### Fallback mechanism
+### Lưu ý quan trọng
 
-Nếu `opendataloader-pdf` không khả dụng (thiếu Java, import lỗi, output rỗng), system tự động fallback về `PyPDFLoader` — không crash, chỉ log warning.
+- **Markdown-with-images** là SINGLE FILE duy nhất ném cho LLM qua RAG pipeline
+- SmolVLM tự động tạo **mô tả text** cho mỗi hình/charts → LLM "nhìn thấy" ảnh qua text
+- JSON và image files lưu MinIO cho future use (frontend, structured search, table QA)
+- Fallback chain: hybrid → local → PyPDFLoader
 
-```python
-except (ImportError, FileNotFoundError, RuntimeError, Exception) as e:
-    logger.warning(f"opendataloader-pdf unavailable ({e}), falling back to PyPDFLoader")
-    return PyPDFLoader(file_path).load()
+---
+
+## Configuration
+
+Tất cả config trong `backend/app/core/config.py` (hoặc `.env`):
+
+| Setting | Default | Mô tả |
+|---------|---------|-------|
+| `PDF_TABLE_METHOD` | `cluster` | `default` (border-only) \| `cluster` (border + cluster detection) |
+| `PDF_IMAGE_OUTPUT` | `external` | `off` \| `embedded` (base64) \| `external` (file references) |
+| `PDF_IMAGE_FORMAT` | `png` | `png` \| `jpeg` |
+| `PDF_PAGE_SEPARATOR` | `\n\n--- PAGE %page-number% ---\n\n` | Separator giữa các page trong markdown |
+| `PDF_HYBRID_MODE` | `docling-fast` | `off` \| `docling-fast` (AI-powered) |
+| `PDF_HYBRID_URL` | `http://opendataloader-hybrid:5002` | Hybrid server URL |
+| `PDF_HYBRID_FALLBACK` | `True` | Fall back to local mode nếu hybrid unavailable |
+| `PDF_ENRICH_PICTURE_DESCRIPTION` | `True` | SmolVLM AI descriptions cho images/charts |
+| `PDF_ENRICH_FORMULA` | `False` | LaTeX formula extraction (cần hybrid_mode=full) |
+
+### Override per-bot
+
+```
+# Trong .env hoặc docker-compose.yml environment
+PDF_HYBRID_MODE=off              # Tắt hybrid, chỉ dùng local deterministic
+PDF_TABLE_METHOD=default          # Dùng border-only (nhanh hơn cluster)
+PDF_ENRICH_PICTURE_DESCRIPTION=False  # Không generate image descriptions
 ```
 
 ---
 
-## Dependencies
+## Hybrid Mode
 
-### Python package
+### Khi nào cần?
+
+| Tình huống | Hybrid? | Lý do |
+|------------|---------|-------|
+| Digital PDF (bình thường) | Optional | Local mode đã tốt, hybrid thêm image descriptions |
+| Complex/borderless tables | Recommended | Cluster detection + AI table structure |
+| Scanned PDF (ảnh scan) | **Bắt buộc** | OCR không hoạt động ở local mode |
+| Non-English scanned PDF | **Bắt buộc** | OCR + `--ocr-lang "vi,en"` |
+| Công thức toán học | Recommended | LaTeX formula extraction |
+| Charts/figures cần mô tả | Recommended | SmolVLM AI descriptions |
+
+### Setup Hybrid Server
+
+Docker Compose đã có sẵn service `opendataloader-hybrid`:
+
+```yaml
+# docker-compose.yml
+opendataloader-hybrid:
+  image: opendataloader/pdf-hybrid:latest
+  ports:
+    - "5002:5002"
+  restart: unless-stopped
 ```
-opendataloader-pdf>=2.0.0    # trong backend/requirements.txt
+
+Backend + Celery worker tự động kết nối đến `http://opendataloader-hybrid:5002`.
+
+Nếu hybrid server unavailable, system tự fallback sang local mode (`PDF_HYBRID_FALLBACK=True`).
+
+### Hybrid with GPU
+
+```yaml
+opendataloader-hybrid:
+  image: opendataloader/pdf-hybrid:latest
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            capabilities: [gpu]
 ```
 
-### System requirement
-- **Java 21 JRE** — cài trong Docker image (`openjdk-21-jre-headless`)
-- opendataloader-pdf bundled JAR gọi `java -jar` internally
-
-### Docker image
-
-`backend/Dockerfile` đã thêm Java vào cả builder và runtime stage:
-
-```dockerfile
-# Builder stage
-RUN apt-get install -y openjdk-21-jre-headless
-
-# Final stage
-RUN apt-get install -y openjdk-21-jre-headless
-```
+GPU tăng tốc OCR + SmolVLM chart description đáng kể.
 
 ---
 
-## Output format
+## JSON Output Schema
 
-OpenDataLoader output **Markdown** — format tốt nhất cho RAG chunking:
-- Heading hierarchy preserved (`#`, `##`, `###`)
-- Tables giữ nguyên structure
-- Đúng reading order (multi-column, sidebar)
-- Lists (numbered, bulleted, nested)
+Mỗi PDF element có cấu trúc:
 
-Markdown output → fed vào `_chunk_documents()` → existing chunking strategies xử lý bình thường.
-
-### So sánh output thực tế
-
-**PyPDFLoader (cũ):**
+```json
+{
+  "type": "table",
+  "id": "table_1",
+  "page": 3,
+  "bbox": [72.0, 450.2, 520.0, 620.5],
+  "rows": [
+    {
+      "cells": [
+        {"content": "Header 1", "row_span": 1, "column_span": 1},
+        {"content": "Header 2", "row_span": 1, "column_span": 2}
+      ]
+    }
+  ]
+}
 ```
-Episodic memory in AI agents poses risks that should be studied and mitigated
-Chad DeChant
-Department of Computer Science ...
-1. Introduction ...
+
+```json
+{
+  "type": "image",
+  "id": "image_5",
+  "page": 7,
+  "bbox": [100.0, 200.0, 400.0, 500.0],
+  "source": "images/figure_5.png",
+  "format": "png"
+}
 ```
-→ Text dính liền, không phân biệt heading/paragraph/table
 
-**OpenDataLoader PDF:**
-```markdown
-# Episodic memory in AI agents poses risks that should be studied and mitigated
-
-Chad DeChant
-
-Department of Computer Science ...
-
-## 1. Introduction
-
-...
+```json
+{
+  "type": "heading",
+  "id": "heading_2",
+  "page": 1,
+  "bbox": [72.0, 700.0, 400.0, 720.0],
+  "heading_level": 2,
+  "content": "1. Introduction"
+}
 ```
-→ Structure rõ ràng, chunking quality cao hơn
-
----
-
-## Modes (hiện tại và tương lai)
-
-### Local mode (đang dùng)
-- Deterministic, không cần GPU
-- 0.015s/page, chạy trên CPU
-- Quality đã vượt trội so với PyPDFLoader
-- Không cần thêm Docker service
-
-### Hybrid mode (tương lai, optional)
-- OCR cho scanned PDFs (80+ languages)
-- Complex/borderless table extraction
-- Formula extraction (LaTeX)
-- Chart & image AI description
-- Cần chạy Docling server riêng (port 5002)
-- Enable: thêm service vào `docker-compose.yml` và set `hybrid="docling-fast"`
 
 ---
 
 ## Testing
 
-### Chạy test trong Docker container
+### Direct parser test (no backend needed)
 
 ```bash
 # Start services
@@ -146,34 +202,39 @@ docker compose up -d
 # Copy PDF test vào container
 docker cp test.pdf $(docker compose ps -q backend):/tmp/test.pdf
 
-# Copy test script vào container (nằm ngoài backend/ volume)
+# Copy test script
 docker cp scripts/test_pdf_parsing.py $(docker compose ps -q backend):/tmp/test_pdf_parsing.py
 
-# Chạy test
+# Run test
 docker compose exec backend python /tmp/test_pdf_parsing.py /tmp/test.pdf
 ```
 
-### Test E2E (cần backend chạy)
+### E2E test (requires backend)
 
 ```bash
 docker compose exec backend python /tmp/test_pdf_parsing.py --e2e /tmp/test.pdf
 ```
 
-### Test script chạy 3 bài kiểm tra:
-1. **Direct parser** — convert PDF → Markdown, verify content
-2. **Fallback** — verify PyPDFLoader vẫn hoạt động khi opendataloader-pdf lỗi
-3. **E2E** (optional `--e2e` flag) — upload → ingest → chat
+### Test suite covers:
+
+1. **Direct parser** — cluster tables, dual markdown+json, image extraction, page separators
+2. **Fallback** — PyPDFLoader works when opendataloader-pdf unavailable
+3. **Hybrid fallback** — graceful degradation when hybrid server unreachable
+4. **E2E** (optional) — upload → ingest → chat
 
 ---
 
-## Files đã thay đổi
+## Files
 
-| File | Thay đổi |
-|------|----------|
-| `backend/requirements.txt` | `pypdf` → `opendataloader-pdf>=2.0.0` |
-| `backend/Dockerfile` | Thêm `openjdk-21-jre-headless` (builder + final stage) |
-| `backend/app/services/openrouter_rag_service.py` | `_load_document()` → `_load_pdf_opendataloader()` + fallback |
-| `scripts/test_pdf_parsing.py` | Integration test script mới |
+| File | Vai trò |
+|------|---------|
+| `backend/app/core/config.py` | PDF settings (table method, hybrid, image output) |
+| `backend/app/services/openrouter_rag_service.py` | `_load_pdf_opendataloader()` + MinIO upload helpers |
+| `backend/app/tasks/document_tasks.py` | Celery task, passes `has_structured_json` metadata |
+| `docker-compose.yml` | Hybrid server service + PDF env vars |
+| `backend/requirements.txt` | `opendataloader-pdf[hybrid]>=2.0.0` |
+| `backend/Dockerfile` | Java 21 JRE for opendataloader-pdf JAR |
+| `scripts/test_pdf_parsing.py` | Integration test |
 
 ---
 
@@ -182,9 +243,13 @@ docker compose exec backend python /tmp/test_pdf_parsing.py --e2e /tmp/test.pdf
 | Lỗi | Nguyên nhân | Fix |
 |-----|-------------|-----|
 | `java: command not found` | Java chưa cài | `apt-get install openjdk-21-jre-headless` |
-| `opendataloader-pdf produced no markdown` | PDF corrupt hoặc empty | Check file, fallback tự động trigger |
-| Docker build fail `openjdk-17 not available` | Debian Bookworm không có JDK 17 | Dùng `openjdk-21-jre-headless` |
+| `opendataloader-pdf produced no markdown` | PDF corrupt/empty | Check file, fallback tự trigger |
+| Hybrid server connection refused | Server chưa start | `docker compose up -d opendataloader-hybrid` |
+| Images không được extract | `PDF_IMAGE_OUTPUT=off` | Set `PDF_IMAGE_OUTPUT=external` |
+| Table structure sai | Border-only detection | Set `PDF_TABLE_METHOD=cluster` |
+| Scanned PDF không có text | Cần OCR | Set `PDF_HYBRID_MODE=docling-fast` |
 | Slow first parse (~2-3s) | JVM startup cost | Normal — subsequent parses nhanh hơn |
+| `opendataloader-pdf[hybrid]` install fail | Missing build deps | `pip install torch` trước hoặc dùng CPU wheel |
 
 ---
 

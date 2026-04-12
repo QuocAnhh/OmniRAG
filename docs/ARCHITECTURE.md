@@ -130,9 +130,18 @@ File Upload (PDF/TXT)
   │
   └── Celery task dispatched
         │
-        ├── PDF parsing: _load_pdf_opendataloader()
-        │     opendataloader-pdf → structured Markdown (tables, headings, layout)
-        │     Fallback: PyPDFLoader if opendataloader-pdf unavailable
+        ├── PDF parsing: _load_pdf_opendataloader()  ← FULL MODE
+        │     opendataloader-pdf with:
+        │       format="markdown-with-images,json"
+        │       table_method="cluster" (border + cluster detection)
+        │       image_output="external" (extract PNG/JPEG)
+        │       markdown_page_separator (preserve page boundaries)
+        │       hybrid="docling-fast" (OCR, SmolVLM image descriptions, formulas)
+        │     Fallback: hybrid→local→PyPDFLoader
+        │     │
+        │     ├── Markdown-with-images  → chunking pipeline (see below)
+        │     ├── JSON (tables, bbox)   → MinIO upload
+        │     └── Images (PNG/JPEG)     → MinIO upload
         │
         ├── domain profile resolved (chunk_size, strategy from bot.config.domain)
         │

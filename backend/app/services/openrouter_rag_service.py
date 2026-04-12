@@ -62,6 +62,7 @@ from app.core.config import settings
 from app.db.mongodb import get_mongodb
 from app.services.openrouter_service import get_openrouter_service
 from app.services.memory_service import memory_service
+from pathlib import Path
 import tempfile
 import shutil
 import hashlib
@@ -248,44 +249,100 @@ class OpenRouterRAGService:
             )
             logger.info(f"Collection '{self.collection_name}' created successfully with indexes")
     
-    def _load_document(self, file_path: str, filename: str) -> List[LangChainDocument]:
+    def _load_document(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
         """Load document based on file type."""
         if filename.endswith(".pdf"):
-            return self._load_pdf_opendataloader(file_path, filename)
+            return self._load_pdf_opendataloader(file_path, filename, enrich_picture_description=enrich_picture_description)
         elif filename.endswith(".txt"):
             loader = TextLoader(file_path)
             return loader.load()
         else:
             raise ValueError(f"Unsupported file type: {filename}")
 
-    def _load_pdf_opendataloader(self, file_path: str, filename: str) -> List[LangChainDocument]:
-        """Parse PDF using opendataloader-pdf for higher quality extraction.
+    def _load_pdf_opendataloader(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
+        """Parse PDF using opendataloader-pdf with full feature set.
 
-        Falls back to PyPDFLoader if opendataloader-pdf is unavailable or
-        returns empty content (e.g. Java not installed).
+        Features:
+          - table_method="cluster" → border + cluster detection (better complex tables)
+          - format="markdown-with-images,json" → dual: enriched MD + structured JSON
+          - image_output="external" → extract images as PNG/JPEG → upload to MinIO
+          - markdown_page_separator → preserve page boundaries
+          - hybrid mode (when enrich_picture_description=True) → OCR + SmolVLM image descriptions
+          - JSON → structured tables with bounding boxes → upload to MinIO
+
+        Fallback chain: hybrid → local → PyPDFLoader
         """
         try:
             import opendataloader_pdf
+        except ImportError:
+            logger.warning("opendataloader-pdf not installed, falling back to PyPDFLoader")
+            from langchain_community.document_loaders import PyPDFLoader
+            return PyPDFLoader(file_path).load()
 
-            with tempfile.TemporaryDirectory() as output_dir:
-                opendataloader_pdf.convert(
-                    input_path=[file_path],
-                    output_dir=output_dir,
-                    format="markdown",
-                    quiet=True,
-                )
-                # Locate the generated .md file
-                md_path = os.path.join(output_dir, Path(file_path).stem + ".md")
-                if not os.path.exists(md_path):
-                    md_files = list(Path(output_dir).glob("*.md"))
-                    if not md_files:
-                        raise RuntimeError(
-                            f"opendataloader-pdf produced no markdown output for {filename}"
-                        )
-                    md_path = str(md_files[0])
+        with tempfile.TemporaryDirectory() as output_dir:
+            image_dir = os.path.join(output_dir, "images")
+            os.makedirs(image_dir, exist_ok=True)
 
-                with open(md_path, "r", encoding="utf-8") as f:
-                    text = f.read()
+            output_format = "markdown-with-images,json"
+
+            convert_kwargs = {
+                "input_path": [file_path],
+                "output_dir": output_dir,
+                "format": output_format,
+                "table_method": settings.PDF_TABLE_METHOD,
+                "image_output": settings.PDF_IMAGE_OUTPUT,
+                "image_format": settings.PDF_IMAGE_FORMAT,
+                "image_dir": image_dir,
+                "markdown_page_separator": settings.PDF_PAGE_SEPARATOR,
+                "quiet": True,
+            }
+
+            # Hybrid mode: only enabled when enrich_picture_description is True (per-bot setting)
+            # Hybrid server provides OCR + SmolVLM image/chart descriptions
+            use_hybrid = enrich_picture_description and settings.PDF_HYBRID_MODE != "off"
+            if use_hybrid:
+                convert_kwargs["hybrid"] = settings.PDF_HYBRID_MODE
+                convert_kwargs["hybrid_url"] = settings.PDF_HYBRID_URL
+                convert_kwargs["hybrid_fallback"] = settings.PDF_HYBRID_FALLBACK
+                if settings.PDF_ENRICH_FORMULA:
+                    convert_kwargs["hybrid_mode"] = "full"
+                logger.info(f"Hybrid mode enabled for {filename} (enrich_picture_description=True, server={settings.PDF_HYBRID_URL})")
+            else:
+                logger.info(f"Local parsing mode for {filename} (enrich_picture_description={enrich_picture_description})")
+
+            try:
+                opendataloader_pdf.convert(**convert_kwargs)
+            except Exception as convert_err:
+                if use_hybrid and settings.PDF_HYBRID_FALLBACK:
+                    logger.warning(f"Hybrid mode failed ({convert_err}), retrying local mode")
+                    convert_kwargs.pop("hybrid", None)
+                    convert_kwargs.pop("hybrid_url", None)
+                    convert_kwargs.pop("hybrid_fallback", None)
+                    convert_kwargs.pop("enrich_picture_description", None)
+                    convert_kwargs.pop("enrich_formula", None)
+                    convert_kwargs.pop("hybrid_mode", None)
+                    try:
+                        opendataloader_pdf.convert(**convert_kwargs)
+                    except Exception as local_err:
+                        logger.warning(f"Local mode also failed ({local_err}), PyPDFLoader fallback")
+                        from langchain_community.document_loaders import PyPDFLoader
+                        return PyPDFLoader(file_path).load()
+                else:
+                    raise
+
+            # --- Read Markdown output ---
+            stem = Path(file_path).stem
+            md_path = os.path.join(output_dir, stem + ".md")
+            if not os.path.exists(md_path):
+                md_files = list(Path(output_dir).glob("*.md"))
+                if not md_files:
+                    raise RuntimeError(
+                        f"opendataloader-pdf produced no markdown output for {filename}"
+                    )
+                md_path = str(md_files[0])
+
+            with open(md_path, "r", encoding="utf-8") as f:
+                text = f.read()
 
             if not text.strip():
                 logger.warning(
@@ -295,22 +352,70 @@ class OpenRouterRAGService:
                 from langchain_community.document_loaders import PyPDFLoader
                 return PyPDFLoader(file_path).load()
 
-            logger.info(
-                f"opendataloader-pdf parsed {filename}: {len(text)} chars"
-            )
+            logger.info(f"opendataloader-pdf parsed {filename}: {len(text)} chars")
+
+            # --- Upload extracted Markdown to MinIO ---
+            self._save_extracted_markdown(md_path, filename)
+
+            # --- Upload extracted images to MinIO ---
+            self._upload_extracted_images(image_dir, filename)
+
+            # --- Upload structured JSON to MinIO ---
+            doc_metadata = {"source": filename, "page": 0}
+            json_path = os.path.join(output_dir, stem + ".json")
+            if os.path.exists(json_path):
+                doc_metadata["has_structured_json"] = True
+                self._save_extracted_json(json_path, filename)
+
             return [
                 LangChainDocument(
                     page_content=text,
-                    metadata={"source": filename, "page": 0},
+                    metadata=doc_metadata,
                 )
             ]
 
-        except (ImportError, FileNotFoundError, RuntimeError, Exception) as e:
-            logger.warning(
-                f"opendataloader-pdf unavailable ({e}), falling back to PyPDFLoader"
-            )
-            from langchain_community.document_loaders import PyPDFLoader
-            return PyPDFLoader(file_path).load()
+    def _save_extracted_markdown(self, md_path: str, original_filename: str):
+        """Upload extracted Markdown file to MinIO alongside the original document."""
+        try:
+            from app.services.storage_service import storage_service
+            md_filename = Path(original_filename).stem + ".md"
+            with open(md_path, "rb") as f:
+                object_path = storage_service.upload_file(
+                    f, md_filename, content_type="text/markdown"
+                )
+            logger.info(f"Saved extracted Markdown to MinIO: {object_path}")
+        except Exception as e:
+            logger.warning(f"Failed to save extracted Markdown to MinIO: {e}")
+
+    def _upload_extracted_images(self, image_dir: str, original_filename: str):
+        """Upload extracted images (charts, figures, diagrams) to MinIO."""
+        try:
+            from app.services.storage_service import storage_service
+            image_files = list(Path(image_dir).glob("*.*"))
+            if not image_files:
+                return
+            uploaded = []
+            for img_path in image_files:
+                if img_path.suffix.lower() not in (".png", ".jpeg", ".jpg"):
+                    continue
+                content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
+                with open(img_path, "rb") as f:
+                    object_path = storage_service.upload_file(f, img_path.name, content_type=content_type)
+                uploaded.append(object_path)
+            logger.info(f"Uploaded {len(uploaded)} extracted images to MinIO for {original_filename}")
+        except Exception as e:
+            logger.warning(f"Failed to upload extracted images to MinIO: {e}")
+
+    def _save_extracted_json(self, json_path: str, original_filename: str):
+        """Upload structured JSON (tables, bounding boxes) to MinIO."""
+        try:
+            from app.services.storage_service import storage_service
+            json_filename = Path(original_filename).stem + ".json"
+            with open(json_path, "rb") as f:
+                object_path = storage_service.upload_file(f, json_filename, content_type="application/json")
+            logger.info(f"Saved structured JSON to MinIO: {object_path}")
+        except Exception as e:
+            logger.warning(f"Failed to save structured JSON to MinIO: {e}")
     
     @staticmethod
     def _chunk_article(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:

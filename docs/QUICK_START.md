@@ -112,7 +112,7 @@ curl -X POST http://localhost:8080/api/v1/bots/$BOT_ID/documents \
   -F "chunking_strategy=recursive"
 ```
 
-PDF được parse bằng **opendataloader-pdf** — extract tables, headings, multi-column layout với chất lượng #1 benchmark. Xem chi tiết tại [PDF_PARSING.md](PDF_PARSING.md).
+PDF được parse bằng **opendataloader-pdf** — extract tables (cluster detection), images (SmolVLM AI descriptions), headings, formulas, page separators với chất lượng #1 benchmark. Xem chi tiết tại [PDF_PARSING.md](PDF_PARSING.md).
 
 Chờ `status: "completed"` — Celery sẽ xử lý async (thường 10–60 giây tuỳ file size).
 

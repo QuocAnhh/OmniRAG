@@ -29,6 +29,7 @@ def process_document_task(
     enable_knowledge_graph: bool = False,
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
+    enrich_picture_description: bool = False,
 ):
     """
     Background task to process document:
@@ -61,7 +62,10 @@ def process_document_task(
 
             # Load document ONCE — reuse for both Qdrant indexing and LightRAG
             # to avoid parsing the file twice when knowledge graph is enabled.
-            loaded_documents = rag_service._load_document(tmp_file_path, filename)
+            loaded_documents = rag_service._load_document(
+                tmp_file_path, filename,
+                enrich_picture_description=enrich_picture_description,
+            )
 
             # Extract full text now (cheap, in-memory) if KG will need it later
             full_text = (
@@ -90,9 +94,11 @@ def process_document_task(
                 doc_metadata={
                     "num_chunks": num_chunks,
                     "chunking_strategy": chunking_strategy,
+                    "enrich_picture_description": enrich_picture_description,
                     "processing_time": ingest_result.get("processing_time"),
                     "preview": ingest_result.get("preview"),
-                    "model": ingest_result.get("model_used")
+                    "model": ingest_result.get("model_used"),
+                    "has_structured_json": loaded_documents[0].metadata.get("has_structured_json", False) if loaded_documents else False,
                 },
                 error_message=None
             )

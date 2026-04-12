@@ -26,7 +26,8 @@
 | HyDE | ✅ | Hypothetical Document Embedding — domain-aware, improves semantic recall |
 | Multi-Query Fusion | ✅ | 2 extra query variants → 3× parallel search → RRF merge |
 | Hybrid Search | ✅ | Vector (HyDE embed) + BM25 keyword → RRF → Cross-Encoder rerank |
-| PDF Parsing | ✅ | OpenDataLoader PDF — tables, headings, multi-column, bounding boxes (#1 benchmark) |
+| PDF Parsing | ✅ | OpenDataLoader PDF — cluster tables, dual MD+JSON, image extraction, page separators, bounding boxes (#1 benchmark) |
+| PDF Hybrid Mode | ✅ | Optional OCR (80+ langs), SmolVLM image/chart descriptions, LaTeX formula extraction via docling server |
 | Contextual Retrieval | ✅ | Anthropic technique: situating prefix per chunk at index time |
 | Parent-Child Chunking | ✅ | Child chunks for matching, parent text returned to LLM |
 | CRAG | ✅ | Corrective RAG: classify retrieval quality, prevent hallucination |
@@ -54,6 +55,7 @@
 | Qdrant | latest | 6333 | Vector DB with HNSW indexing |
 | MinIO | latest | 9000/9001 | S3-compatible document storage |
 | Celery | — | — | Async document processing worker |
+| OpenDataLoader Hybrid | opendataloader/pdf-hybrid | 5002 | PDF OCR, SmolVLM image descriptions, formula extraction |
 
 ## Integrations & Channels
 

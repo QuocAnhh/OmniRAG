@@ -1,0 +1,24 @@
+# Lightweight image for OpenDataLoader Hybrid Server
+# Only installs opendataloader-pdf[hybrid] — no torch, no backend deps
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Java 21 required by opendataloader-pdf JAR + docling dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast pip
+RUN pip install --no-cache-dir uv
+
+# Install ONLY opendataloader-pdf with hybrid extras
+# This pulls in docling + SmolVLM for image/chart descriptions + OCR
+RUN uv pip install --system --no-cache "opendataloader-pdf[hybrid]>=2.0.0"
+
+# Default port
+EXPOSE 5002
+
+CMD ["opendataloader-pdf-hybrid", "--port", "5002", "--force-ocr", "--enrich-picture-description"]

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   gateway:
     build: ./gateway
@@ -12,6 +10,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - RATE_LIMIT_ENABLED=true
       - RATE_LIMIT_RPS=100
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,https://2hlx32dn-5173.asse.devtunnels.ms
     depends_on:
       - backend
       - redis
@@ -65,6 +64,7 @@ services:
 
   backend:
     build: ./backend
+    image: omnirag-backend
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
       - ./backend:/app
@@ -85,6 +85,10 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - HF_HOME=/app/.cache/huggingface
       - LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
+      - PDF_TABLE_METHOD=cluster
+      - PDF_IMAGE_OUTPUT=external
+      - PDF_HYBRID_MODE=docling-fast
+      - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
     depends_on:
       db:
         condition: service_healthy
@@ -96,9 +100,11 @@ services:
         condition: service_started
       qdrant:
         condition: service_started
+      opendataloader-hybrid:
+        condition: service_started
 
   celery_worker:
-    build: ./backend
+    image: omnirag-backend
     command: celery -A app.worker worker --loglevel=info --concurrency=4
     volumes:
       - ./backend:/app
@@ -117,12 +123,17 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - HF_HOME=/app/.cache/huggingface
       - LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
+      - PDF_TABLE_METHOD=cluster
+      - PDF_IMAGE_OUTPUT=external
+      - PDF_HYBRID_MODE=docling-fast
+      - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
     depends_on:
       - db
       - mongodb
       - redis
       - minio
       - qdrant
+      - opendataloader-hybrid
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -152,6 +163,18 @@ services:
   #   #       devices:
   #   #         - driver: nvidia
   #   #           capabilities: [gpu]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #   OpenDataLoader Hybrid Server (OCR, formulas, SmolVLM image descriptions)
+  #   Enable: uncomment below + set PDF_HYBRID_MODE=docling-fast in env
+  # ─────────────────────────────────────────────────────────────────────────
+  opendataloader-hybrid:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.hybrid
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
 
   frontend:
     build: ./frontend

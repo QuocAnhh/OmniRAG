@@ -15,7 +15,7 @@ import { getDomainMeta } from '../utils/domainHelpers';
 
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
 
-type UploadPhase = 'uploading' | 'done' | 'kg_processing' | 'kg_done' | 'failed' | 'cancelled';
+type UploadPhase = 'uploading' | 'processing' | 'done' | 'kg_processing' | 'kg_done' | 'failed' | 'cancelled';
 interface UploadStatusState {
   phase: UploadPhase;
   filename: string;
@@ -29,6 +29,14 @@ const KG_STEPS = [
   'Extracting entities and relationships from document',
   'Building graph structure',
   'Saving and indexing graph',
+];
+const PROCESSING_STEPS = [
+  'Downloading file from storage',
+  'Parsing PDF (tables, images, layout)',
+  'Chunking document',
+  'Generating contextual prefixes',
+  'Creating embeddings',
+  'Indexing into vector database',
 ];
 const getKgActiveStep = (elapsed: number) => {
   if (elapsed < 45) return 0;
@@ -64,6 +72,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const kgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const kgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const kgDocIdRef = useRef<string>('');
+  const processingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [error, setError] = useState('');
 
   // Zalo Bot connect state
@@ -83,6 +92,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     top_k: 5,
     similarity_threshold: 0,
     enable_knowledge_graph: false,
+    enrich_picture_description: false,
     domain: 'general' as 'general' | 'education' | 'legal' | 'sales',
     zalo_integration: {
       account_id: '',
@@ -109,6 +119,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         domain: (botData.config?.domain as 'general' | 'education' | 'legal' | 'sales') || 'general',
         enable_knowledge_graph: botData.config?.enable_knowledge_graph
           || ['education', 'legal'].includes(botData.config?.domain ?? ''),
+        enrich_picture_description: botData.config?.enrich_picture_description || false,
         zalo_integration: botData.config?.zalo_integration || {
           account_id: '',
           is_active: false
@@ -277,6 +288,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           top_k: formData.top_k,
           similarity_threshold: formData.similarity_threshold,
           enable_knowledge_graph: formData.enable_knowledge_graph,
+          enrich_picture_description: formData.enrich_picture_description,
           domain: formData.domain,
           zalo_integration: formData.zalo_integration,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {})
@@ -298,6 +310,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
     if (kgTimerRef.current) { clearInterval(kgTimerRef.current); kgTimerRef.current = null; }
     if (kgPollRef.current) { clearInterval(kgPollRef.current); kgPollRef.current = null; }
+    if (processingPollRef.current) { clearInterval(processingPollRef.current); processingPollRef.current = null; }
   };
 
   const handleCancelUpload = () => {
@@ -337,49 +350,73 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       // Clear input value after successful upload to prevent F5 re-submission
       e.target.value = '';
 
-      clearUploadTimers();
+      // HTTP upload done → now wait for Celery processing to finish
+      setUploading(false);
+      setUploadStatus({
+        phase: 'processing',
+        filename: file.name,
+        elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
+        kgElapsedSeconds: 0,
+      });
 
-      if (!formData.enable_knowledge_graph) {
-        setUploading(false);
-        setUploadStatus({
-          phase: 'done',
-          filename: file.name,
-          elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
-          kgElapsedSeconds: 0,
-        });
-        await loadDocuments(id);
-      } else {
-        // HTTP upload done → chat available. Now wait for KG to finish.
-        kgDocIdRef.current = doc.id;
-        const kgStart = Date.now();
-        setUploading(false);
-        setUploadStatus(prev => prev ? {
-          ...prev,
-          phase: 'kg_processing',
-          docId: doc.id,
-          kgElapsedSeconds: 0,
-        } : prev);
+      // Poll document status until Celery task completes
+      const uploadedDocId = doc.id;
+      processingPollRef.current = setInterval(async () => {
+        try {
+          const docs = await documentsApi.list(id!);
+          const updatedDoc = docs.find(d => d.id === uploadedDocId);
+          if (updatedDoc?.status === 'completed') {
+            clearInterval(processingPollRef.current!);
+            processingPollRef.current = null;
+            clearUploadTimers();
+            await loadDocuments(id!);
 
-        kgTimerRef.current = setInterval(() => {
-          setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-        }, 1000);
+            if (!formData.enable_knowledge_graph) {
+              setUploadStatus({
+                phase: 'done',
+                filename: file.name,
+                elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
+                kgElapsedSeconds: 0,
+              });
+            } else {
+              // Document vectorized → now wait for KG to finish
+              kgDocIdRef.current = uploadedDocId;
+              const kgStart = Date.now();
+              setUploadStatus(prev => prev ? {
+                ...prev,
+                phase: 'kg_processing',
+                docId: uploadedDocId,
+                kgElapsedSeconds: 0,
+              } : prev);
 
-        kgPollRef.current = setInterval(async () => {
-          try {
-            const docs = await documentsApi.list(id);
-            const updated = docs.find(d => d.id === kgDocIdRef.current);
-            const kgStatus = updated?.doc_metadata?.kg_status;
-            if (kgStatus === 'completed') {
-              clearUploadTimers();
-              setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-              await loadDocuments(id);
-            } else if (kgStatus === 'failed') {
-              clearUploadTimers();
-              setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
+              kgTimerRef.current = setInterval(() => {
+                setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+              }, 1000);
+
+              kgPollRef.current = setInterval(async () => {
+                try {
+                  const docs2 = await documentsApi.list(id!);
+                  const updated2 = docs2.find(d => d.id === kgDocIdRef.current);
+                  const kgStatus = updated2?.doc_metadata?.kg_status;
+                  if (kgStatus === 'completed') {
+                    clearUploadTimers();
+                    setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
+                    await loadDocuments(id!);
+                  } else if (kgStatus === 'failed') {
+                    clearUploadTimers();
+                    setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
+                  }
+                } catch { /* ignore poll errors */ }
+              }, 4000);
             }
-          } catch { /* ignore poll errors */ }
-        }, 4000);
-      }
+          } else if (updatedDoc?.status === 'failed') {
+            clearInterval(processingPollRef.current!);
+            processingPollRef.current = null;
+            clearUploadTimers();
+            setUploadStatus({ phase: 'failed', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0, errorMsg: `Processing failed: "${file.name}"` });
+          }
+        } catch { /* ignore poll errors */ }
+      }, 2000);
     } catch (err: any) {
       clearUploadTimers();
       setUploading(false);
@@ -812,6 +849,42 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 <span className="text-xs text-muted-foreground">(cho tài liệu phức tạp, dài — tốn thêm thời gian xử lý)</span>
               </div>
 
+              {/* SmolVLM Picture Description Toggle */}
+              <div className="rounded-xl border border-white/10 bg-background/40 backdrop-blur-xl px-4 py-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, enrich_picture_description: !prev.enrich_picture_description }))}
+                    className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.enrich_picture_description ? 'bg-violet-600' : 'bg-muted-foreground/30'}`}
+                    role="switch"
+                    aria-checked={formData.enrich_picture_description}
+                  >
+                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.enrich_picture_description ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                  <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <span className="material-symbols-outlined text-violet-500 text-[18px]">image_search</span>
+                    Enrich Picture Descriptions
+                    <span className="text-[10px] font-semibold uppercase tracking-wider bg-violet-500/10 text-violet-500 px-1.5 py-0.5 rounded">SmolVLM</span>
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed pl-12">
+                  Dùng AI (SmolVLM) để tự động mô tả hình ảnh, biểu đồ, sơ đồ trong PDF bằng text — giúp LLM hiểu được nội dung ảnh.
+                  <strong className="text-foreground"> Phù hợp:</strong> tài liệu nhiều biểu đồ, sơ đồ, ảnh minh hoạ (academic papers, báo cáo).
+                  <strong className="text-foreground"> Lưu ý:</strong> xử lý chậm hơn (~30-60s thêm mỗi tài liệu) vì cần AI phân tích từng hình ảnh.
+                </p>
+                <div className="flex items-center gap-3 pl-12 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSaveBasicSettings}
+                    disabled={loading}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : 'Save Settings'}
+                  </button>
+                  <span className="text-[10px] text-muted-foreground italic">Cần Save trước khi upload để áp dụng</span>
+                </div>
+              </div>
+
               {/* Upload Zone */}
               <label className={`group relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed transition-all py-12 overflow-hidden ${isLocked ? 'border-primary/50 bg-primary/5 cursor-wait' : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/30 cursor-pointer'}`}>
                 <input
@@ -937,6 +1010,36 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       <div className="w-full h-1 bg-muted/30 rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full animate-pulse w-3/5" />
                       </div>
+                    </>
+                  )}
+
+                  {/* --- PROCESSING (Celery task running) --- */}
+                  {uploadStatus.phase === 'processing' && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-foreground">Processing "{uploadStatus.filename}"</span>
+                        <span className="text-xs text-muted-foreground font-mono">Elapsed: {formatElapsed(uploadStatus.elapsedSeconds)}</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {PROCESSING_STEPS.map((step, i) => {
+                          const activeStep = Math.min(Math.floor(uploadStatus.elapsedSeconds / 5), PROCESSING_STEPS.length - 1);
+                          const isDone = i < activeStep;
+                          const isActive = i === activeStep;
+                          return (
+                            <div key={i} className={`flex items-center gap-2.5 text-xs ${isActive ? 'text-foreground' : isDone ? 'text-muted-foreground/60' : 'text-muted-foreground/30'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-primary animate-pulse' : isDone ? 'bg-primary/40' : 'bg-muted/30'}`} />
+                              <span>{step}</span>
+                              {isActive && <span className="text-primary/70 ml-1">running...</span>}
+                              {isDone && <span className="text-muted-foreground/50 ml-1">done</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="w-full h-1 bg-muted/30 rounded-full overflow-hidden mt-2">
+                        <div className="h-full bg-primary rounded-full transition-all duration-1000"
+                          style={{ width: `${Math.min(90, (uploadStatus.elapsedSeconds / (PROCESSING_STEPS.length * 5)) * 100)}%` }} />
+                      </div>
+                      <p className="text-xs text-muted-foreground pt-1">Estimated: 10 to 60 seconds depending on file size</p>
                     </>
                   )}
 
