@@ -31,11 +31,11 @@ export const ChatMessage = React.memo(function ChatMessage({ message, onFeedback
     return (
         <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'} group animate-in fade-in slide-in-from-bottom-2 duration-300`}>
             <div className={`flex max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
-                <div className={`flex-shrink-0 size-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-transform active:scale-90 ${isUser ? 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.4)] border border-primary/50' : 'bg-background/40 backdrop-blur-md text-primary border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]'}`}>
+                <div className={`flex-shrink-0 size-8 rounded-full flex items-center justify-center text-xs font-bold shadow-ring ${isUser ? 'bg-[#c96442] text-[#faf9f5]' : 'bg-[#f0eee6] text-[#c96442] border border-[#e8e6dc]'}`}>
                     {isUser ? <span className="material-symbols-outlined text-[16px]">person</span> : <span className="material-symbols-outlined text-[16px]">smart_toy</span>}
                 </div>
                 <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                    <div className={`relative px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed transition-all ${isUser ? 'bg-primary/80 backdrop-blur-md text-primary-foreground rounded-br-none shadow-[0_0_15px_rgba(var(--primary),0.2)] border border-primary/30' : 'bg-background/40 backdrop-blur-xl border border-white/10 text-foreground rounded-bl-none hover:border-primary/50 shadow-lg'}`}>
+                    <div className={`relative px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed transition-all ${isUser ? 'bg-[#c96442] text-[#faf9f5] rounded-br-none shadow-ring-primary' : 'bg-white border border-[#e8e6dc] text-[#141413] rounded-bl-none shadow-whisper hover:border-[#d1cfc5]'}`}>
                         <div className="markdown-content">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
@@ -43,35 +43,35 @@ export const ChatMessage = React.memo(function ChatMessage({ message, onFeedback
                                     p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                                     ul: ({ ...props }) => <ul className="list-disc ml-4 mb-2 space-y-1" {...props} />,
                                     ol: ({ ...props }) => <ol className="list-decimal ml-4 mb-2 space-y-1" {...props} />,
-                                    li: ({ ...props }) => <li className="marker:text-primary/50" {...props} />,
-                                    strong: ({ ...props }) => <strong className="font-bold text-primary-600 dark:text-primary-400" {...props} />,
+                                    li: ({ ...props }) => <li className="marker:text-[#c96442]/50" {...props} />,
+                                    strong: ({ ...props }) => <strong className="font-bold text-[#c96442]" {...props} />,
                                     code: ({ ...props }) => (
-                                        <code className="bg-muted px-1.5 py-0.5 rounded text-[12px] font-mono border border-border/50" {...props} />
+                                        <code className="bg-[#f0eee6] px-1.5 py-0.5 rounded text-[12px] font-mono border border-[#e8e6dc]" {...props} />
                                     ),
                                     pre: ({ ...props }) => (
-                                        <div className="bg-muted/50 p-3 rounded-xl border border-border my-2 overflow-x-auto">
+                                        <div className="bg-[#f0eee6] p-3 rounded-lg border border-[#e8e6dc] my-2 overflow-x-auto">
                                             <pre className="text-[12px] font-mono" {...props} />
                                         </div>
                                     ),
                                     table: ({ ...props }) => (
-                                        <div className="overflow-x-auto my-3 rounded-lg border border-border">
-                                            <table className="min-w-full divide-y divide-border" {...props} />
+                                        <div className="overflow-x-auto my-3 rounded-lg border border-[#e8e6dc]">
+                                            <table className="min-w-full divide-y divide-[#e8e6dc]" {...props} />
                                         </div>
                                     ),
-                                    th: ({ ...props }) => <th className="px-3 py-2 bg-muted text-left font-bold text-xs" {...props} />,
-                                    td: ({ ...props }) => <td className="px-3 py-2 border-t border-border text-xs" {...props} />,
+                                    th: ({ ...props }) => <th className="px-3 py-2 bg-[#f0eee6] text-left font-bold text-xs" {...props} />,
+                                    td: ({ ...props }) => <td className="px-3 py-2 border-t border-[#e8e6dc] text-xs" {...props} />,
                                 }}
                             >
                                 {message.content}
                             </ReactMarkdown>
                         </div>
                     </div>
-                    <div className={`flex items-center gap-2 mt-1 text-[10px] opacity-70 ${isUser ? 'text-primary-foreground/80 flex-row-reverse' : 'text-muted-foreground'}`}>
+                    <div className={`flex items-center gap-2 mt-1 text-[10px] opacity-70 ${isUser ? 'text-[#87867f] flex-row-reverse' : 'text-[#87867f]'}`}>
                         <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         {!isUser && message.message_id && onFeedback && (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleFeedback(1)} className={`p-1 rounded hover:bg-muted/50 transition-colors ${feedbackState === 'like' ? 'text-green-600' : 'text-muted-foreground'}`} title="Good response"><span className={`material-symbols-outlined text-[14px] ${feedbackState === 'like' ? 'filled' : ''}`}>thumb_up</span></button>
-                                <button onClick={() => handleFeedback(-1)} className={`p-1 rounded hover:bg-muted/50 transition-colors ${feedbackState === 'dislike' ? 'text-red-500' : 'text-muted-foreground'}`} title="Bad response"><span className={`material-symbols-outlined text-[14px] ${feedbackState === 'dislike' ? 'filled' : ''}`}>thumb_down</span></button>
+                                <button onClick={() => handleFeedback(1)} className={`p-1 rounded hover:bg-[#f0eee6] transition-colors ${feedbackState === 'like' ? 'text-green-600' : 'text-[#87867f]'}`} title="Good response"><span className={`material-symbols-outlined text-[14px] ${feedbackState === 'like' ? 'filled' : ''}`}>thumb_up</span></button>
+                                <button onClick={() => handleFeedback(-1)} className={`p-1 rounded hover:bg-[#f0eee6] transition-colors ${feedbackState === 'dislike' ? 'text-[#b53333]' : 'text-[#87867f]'}`} title="Bad response"><span className={`material-symbols-outlined text-[14px] ${feedbackState === 'dislike' ? 'filled' : ''}`}>thumb_down</span></button>
                             </div>
                         )}
                     </div>
@@ -99,10 +99,10 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full bg-background/40 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-lg focus-within:border-primary/50 focus-within:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all">
+        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full bg-white p-2 rounded-2xl border border-[#e8e6dc] shadow-whisper focus-within:border-[#c96442]/40 focus-within:shadow-ring-primary transition-all">
             <button
                 type="button"
-                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                className="p-2 text-[#87867f] hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                 title="Attach file"
                 disabled={disabled}
             >
@@ -112,7 +112,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
             <input
                 ref={inputRef}
                 type="text"
-                className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 px-2"
+                className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-[#141413] placeholder:text-[#b0aea5] px-2"
                 placeholder={placeholder}
                 disabled={disabled}
             />
@@ -120,7 +120,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
             <button
                 type="submit"
                 disabled={disabled}
-                className="p-2 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5 active:translate-y-0"
+                className="p-2 bg-[#c96442] text-[#faf9f5] rounded-lg shadow-ring-primary hover:bg-[#d97757] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 <span className="material-symbols-outlined text-[20px]">send</span>
             </button>
@@ -132,18 +132,15 @@ export function TypingIndicator() {
     return (
         <div className="flex w-full mb-4 justify-start group animate-in fade-in duration-300">
             <div className="flex max-w-[80%] flex-row items-end gap-2">
-                <div className="flex-shrink-0 size-8 rounded-full flex items-center justify-center bg-background/40 backdrop-blur-md text-primary border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">
+                <div className="flex-shrink-0 size-8 rounded-full flex items-center justify-center bg-[#f0eee6] text-[#c96442] border border-[#e8e6dc] shadow-ring">
                     <span className="material-symbols-outlined text-[16px]">smart_toy</span>
                 </div>
-                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-background/40 backdrop-blur-xl border border-white/10 shadow-lg flex items-center gap-2 min-h-[44px] relative overflow-hidden">
-                    {/* Background glow effect */}
-                    <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-2xl"></div>
-
-                    {/* Bouncing dots */}
+                <div className="px-5 py-3 rounded-2xl rounded-bl-none bg-white border border-[#e8e6dc] shadow-whisper flex items-center gap-2 min-h-[44px] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-primary/5 animate-pulse rounded-2xl"></div>
                     <div className="flex space-x-1.5 z-10 py-1 px-1">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-2 h-2 bg-[#c96442] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-[#c96442] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-[#c96442] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                 </div>
             </div>

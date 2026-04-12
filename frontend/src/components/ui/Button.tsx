@@ -16,14 +16,14 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-xl font-medium tracking-[-0.01em] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none select-none';
+  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none select-none';
 
   const variantStyles = {
-    primary: 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/85 hover:-translate-y-px active:scale-[0.97] active:shadow-sm',
-    secondary: 'bg-secondary text-secondary-foreground border border-white/8 hover:bg-secondary/70 hover:border-white/12 hover:-translate-y-px active:scale-[0.97]',
-    outline: 'bg-transparent border border-white/10 text-foreground hover:bg-white/5 hover:border-primary/40 hover:-translate-y-px active:scale-[0.97]',
-    danger: 'bg-destructive text-destructive-foreground shadow-md shadow-destructive/20 hover:bg-destructive/85 hover:-translate-y-px active:scale-[0.97] active:shadow-sm',
-    ghost: 'bg-transparent text-muted-foreground hover:bg-white/6 hover:text-foreground active:scale-[0.97]',
+    primary: 'bg-[#c96442] text-[#faf9f5] shadow-[0px_0px_0px_1px_#c96442] hover:bg-[#d97757] active:shadow-[inset_0px_0px_0px_1px_rgba(0,0,0,0.15)]',
+    secondary: 'bg-[#e8e6dc] text-[#4d4c48] shadow-[0px_0px_0px_1px_#d1cfc5] hover:bg-[#d1cfc5] active:shadow-[inset_0px_0px_0px_1px_rgba(0,0,0,0.1)]',
+    outline: 'bg-transparent border border-[#e8e6dc] text-[#4d4c48] hover:border-[#c96442] hover:text-[#c96442] active:bg-[#f0eee6]',
+    danger: 'bg-[#b53333] text-white shadow-[0px_0px_0px_1px_#b53333] hover:bg-[#c93d3d] active:shadow-[inset_0px_0px_0px_1px_rgba(0,0,0,0.15)]',
+    ghost: 'bg-transparent text-[#87867f] hover:bg-[#f0eee6] hover:text-[#4d4c48] active:bg-[#e8e6dc]',
   };
 
   const sizeStyles = {

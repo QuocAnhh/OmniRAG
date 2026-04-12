@@ -12,7 +12,7 @@ export const GradientText: React.FC<GradientTextProps> = ({
   as: Component = 'span'
 }) => {
   return (
-    <Component className={`bg-clip-text text-transparent bg-gradient-to-br from-[#7eb3f5] via-[#4f8ef0] to-[#3a6fd4] ${className}`}>
+    <Component className={`text-primary font-serif font-medium ${className}`}>
       {children}
     </Component>
   );

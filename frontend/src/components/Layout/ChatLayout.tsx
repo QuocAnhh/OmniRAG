@@ -16,7 +16,6 @@ import {
     Trash2
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import ParticleBackground from "../ui/ParticleBackground";
 
 interface ChatLayoutProps {
     children: ReactNode;
@@ -66,25 +65,21 @@ export default function ChatLayout({
 
     return (
         <div className="h-screen w-full bg-background overflow-hidden flex flex-col font-sans relative">
-            <div className="absolute inset-0 pointer-events-none z-0">
-                <ParticleBackground />
-            </div>
-
-            <div className="flex flex-col h-full w-full relative z-10">
+            <div className="flex flex-col h-full w-full relative">
                 {/* Mobile Header */}
                 {!isDesktop && !embedded && (
-                    <div className="h-14 border-b flex items-center px-4 justify-between bg-card">
+                    <div className="h-14 border-b border-[#e8e6dc] flex items-center px-4 justify-between bg-white">
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                            <Menu className="h-5 w-5" />
+                            <Menu className="h-5 w-5 text-[#4d4c48]" />
                         </button>
-                        <span className="font-semibold">OmniRAG Chat</span>
-                        <div className="w-5" /> {/* Spacer */}
+                        <span className="font-semibold text-[#141413]">OmniRAG Chat</span>
+                        <div className="w-5" />
                     </div>
                 )}
 
                 {/* Main Layout */}
                 <div className="flex-1 h-full overflow-hidden relative">
-                    <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border">
+                    <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border border-[#e8e6dc]">
 
                         {/* Left Panel: Sidebar / History */}
                         {!embedded && (isDesktop || isMobileMenuOpen) && (
@@ -93,21 +88,21 @@ export default function ChatLayout({
                                 minSize={15}
                                 maxSize={30}
                                 className={cn(
-                                    "bg-background/40 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-all duration-300",
-                                    !isDesktop && "absolute inset-0 z-50 bg-background/95 w-3/4 shadow-2xl"
+                                    "bg-[#faf9f5] border-r border-[#e8e6dc] flex flex-col transition-all duration-300",
+                                    !isDesktop && "absolute inset-0 z-50 bg-white w-3/4 shadow-whisper"
                                 )}
                                 onResize={setLeftSize}
                             >
                                 <div className="flex flex-col h-full">
                                     {/* Sidebar Header */}
-                                    <div className="h-14 px-4 border-b flex items-center justify-between">
-                                        <Link to="/bots" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                                    <div className="h-14 px-4 border-b border-[#e8e6dc] flex items-center justify-between">
+                                        <Link to="/bots" className="flex items-center gap-2 text-[#87867f] hover:text-primary transition-colors">
                                             <ChevronLeft className="h-4 w-4" />
                                             <span className="font-medium text-sm">Back to Bots</span>
                                         </Link>
                                         {!isDesktop && (
                                             <button onClick={() => setIsMobileMenuOpen(false)}>
-                                                <X className="h-5 w-5" />
+                                                <X className="h-5 w-5 text-[#4d4c48]" />
                                             </button>
                                         )}
                                     </div>
@@ -116,7 +111,7 @@ export default function ChatLayout({
                                     <div className="p-4">
                                         <button
                                             onClick={onNewChat}
-                                            className="w-full flex items-center gap-2 justify-center bg-primary text-primary-foreground py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md transition-all active:scale-95"
+                                            className="w-full flex items-center gap-2 justify-center bg-primary text-primary-foreground py-2.5 rounded-lg font-medium shadow-ring hover:bg-[#d97757] transition-all active:scale-95"
                                         >
                                             <Plus className="h-4 w-4" />
                                             <span>New Chat</span>
@@ -128,14 +123,14 @@ export default function ChatLayout({
                                         {sessions.length > 0 ? (
                                             <>
                                                 <div className="px-3 py-2 flex items-center justify-between group/header">
-                                                    <div className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">History</div>
+                                                    <div className="text-xs font-semibold text-[#87867f] uppercase tracking-wider">History</div>
                                                     {onClearHistory && (
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onClearHistory();
                                                             }}
-                                                            className="opacity-0 group-hover/header:opacity-100 text-[10px] font-bold text-red-500 hover:underline uppercase transition-opacity"
+                                                            className="opacity-0 group-hover/header:opacity-100 text-[10px] font-bold text-[#b53333] hover:underline uppercase transition-opacity"
                                                         >
                                                             Clear All
                                                         </button>
@@ -149,7 +144,7 @@ export default function ChatLayout({
                                                                 "w-full text-left px-3 py-2.5 rounded-lg text-sm truncate transition-colors flex items-center gap-2 pr-8",
                                                                 currentSessionId === session.id
                                                                     ? "bg-primary/10 text-primary font-medium"
-                                                                    : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                                                                    : "hover:bg-[#f0eee6] text-[#5e5d59] hover:text-[#141413]"
                                                             )}
                                                         >
                                                             <span className="truncate">{session.title}</span>
@@ -160,7 +155,7 @@ export default function ChatLayout({
                                                                     e.stopPropagation();
                                                                     onDeleteSession(session.id);
                                                                 }}
-                                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover/item:opacity-100 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground transition-all"
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover/item:opacity-100 hover:bg-[#b53333]/10 hover:text-[#b53333] text-[#87867f] transition-all"
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                             </button>
@@ -169,21 +164,21 @@ export default function ChatLayout({
                                                 ))}
                                             </>
                                         ) : (
-                                            <div className="px-3 py-8 text-center text-xs text-muted-foreground italic">
+                                            <div className="px-3 py-8 text-center text-xs text-[#87867f] italic">
                                                 No conversations yet
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Bottom User Profile */}
-                                    <div className="p-4 border-t border-white/5 bg-background/20 backdrop-blur-md">
+                                    <div className="p-4 border-t border-[#e8e6dc] bg-[#f0eee6]">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-xs font-bold ring-2 ring-background shadow-sm">
+                                            <div className="h-8 w-8 rounded-full bg-[#e8e6dc] flex items-center justify-center text-xs font-bold text-[#4d4c48] ring-2 ring-white shadow-sm">
                                                 {user?.full_name?.charAt(0) || 'U'}
                                             </div>
                                             <div className="flex flex-col overflow-hidden">
-                                                <span className="text-sm font-medium truncate">{user?.full_name || 'User'}</span>
-                                                <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                                                <span className="text-sm font-medium truncate text-[#141413]">{user?.full_name || 'User'}</span>
+                                                <span className="text-xs text-[#87867f] truncate">{user?.email}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -195,16 +190,16 @@ export default function ChatLayout({
 
                         {/* Center Panel: Chat Interface */}
                         <ResizablePanel defaultSize={100 - leftSize - (isRightCollapsed ? 0 : rightSize)} minSize={30}>
-                            <div className="h-full flex flex-col bg-transparent relative">
+                            <div className="h-full flex flex-col bg-white relative">
                                 {/* Chat Header */}
-                                <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-background/40 backdrop-blur-xl sticky top-0 z-10 shadow-sm">
+                                <div className="h-14 border-b border-[#e8e6dc] flex items-center justify-between px-6 bg-white sticky top-0 z-10 shadow-ring">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]">
+                                        <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                                             <Bot className="h-5 w-5" />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <h1 className="font-semibold text-sm">{botName}</h1>
+                                                <h1 className="font-semibold text-sm text-[#141413]">{botName}</h1>
                                                 {botDomain && (() => {
                                                     const dm = getDomainMeta(botDomain);
                                                     return (
@@ -217,7 +212,7 @@ export default function ChatLayout({
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                                                <span className="text-xs text-muted-foreground">{botModel}</span>
+                                                <span className="text-xs text-[#87867f]">{botModel}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -226,12 +221,12 @@ export default function ChatLayout({
                                         {headerActions}
                                         <button
                                             onClick={toggleRightPanel}
-                                            className={cn("p-2 rounded-lg hover:bg-muted transition-colors", !isRightCollapsed && "bg-muted text-primary")}
+                                            className={cn("p-2 rounded-lg hover:bg-[#f0eee6] transition-colors", !isRightCollapsed && "bg-[#f0eee6] text-primary")}
                                             title="Toggle Evidence Panel"
                                         >
                                             <Database className="h-5 w-5" />
                                         </button>
-                                        <Link to={`/bots/${id}/config`} className="p-2 rounded-lg hover:bg-muted transition-colors" title="Settings">
+                                        <Link to={`/bots/${id}/config`} className="p-2 rounded-lg hover:bg-[#f0eee6] transition-colors text-[#5e5d59]" title="Settings">
                                             <Settings className="h-5 w-5" />
                                         </Link>
                                     </div>
@@ -253,25 +248,25 @@ export default function ChatLayout({
                                     minSize={20}
                                     maxSize={45}
                                     onResize={setRightSize}
-                                    className="bg-background/40 backdrop-blur-2xl border-l border-white/5"
+                                    className="bg-[#faf9f5] border-l border-[#e8e6dc]"
                                 >
-                                    <div className="h-full flex flex-col relative overflow-hidden bg-background/30">
+                                    <div className="h-full flex flex-col relative overflow-hidden bg-[#faf9f5]">
                                         {rightPanel ? (
                                             <div className="absolute inset-0 z-0 flex flex-col">
                                                 {rightPanel}
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="h-14 border-b border-white/5 flex items-center px-4 bg-background/30 backdrop-blur-md relative z-10">
+                                                <div className="h-14 border-b border-[#e8e6dc] flex items-center px-4 bg-white relative z-10">
                                                     <span className="font-semibold text-sm text-primary uppercase tracking-widest text-[11px]">Knowledge Graph</span>
                                                 </div>
-                                                <div className="flex-1 bg-grid-white/[0.02] flex items-center justify-center p-4 relative z-10">
-                                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 text-center">
+                                                <div className="flex-1 flex items-center justify-center p-4 relative z-10">
+                                                    <div className="flex flex-col items-center justify-center h-full text-[#87867f] text-center">
                                                         <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                                                             <Search className="h-8 w-8 text-primary" strokeWidth={1.5} />
                                                         </div>
-                                                        <p className="font-medium text-foreground tracking-wide">Analysis Engine Standby</p>
-                                                        <p className="text-xs max-w-[200px] mt-2 leading-relaxed">System will map documents when a query is processed.</p>
+                                                        <p className="font-medium text-[#141413] tracking-wide">Analysis Engine Standby</p>
+                                                        <p className="text-xs max-w-[200px] mt-2 leading-relaxed text-[#87867f]">System will map documents when a query is processed.</p>
                                                     </div>
                                                 </div>
                                             </>

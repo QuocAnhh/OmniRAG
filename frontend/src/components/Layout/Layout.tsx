@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
-import ParticleBackground from '../ui/ParticleBackground';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,8 +11,7 @@ interface LayoutProps {
 export default function Layout({ children, breadcrumbs, hideSidebar = false }: LayoutProps) {
   if (hideSidebar) {
     return (
-      <div className="flex h-screen w-full overflow-hidden bg-[#020205] relative font-sans text-slate-50 selection:bg-blue-500/30 selection:text-white">
-        <ParticleBackground />
+      <div className="flex h-screen w-full overflow-hidden bg-background relative font-sans text-foreground selection:bg-primary/20 selection:text-foreground">
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
             {children}
@@ -24,9 +22,7 @@ export default function Layout({ children, breadcrumbs, hideSidebar = false }: L
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#020205] text-slate-50 font-sans selection:bg-blue-500/30 selection:text-white">
-      <ParticleBackground />
-
+    <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 selection:text-foreground">
       <Sidebar />
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <TopHeader breadcrumbs={breadcrumbs} />

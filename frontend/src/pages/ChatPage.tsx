@@ -378,7 +378,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 </button>
             }
             rightPanel={
-                <div className="flex-1 w-full h-full min-h-[500px] bg-background/50 backdrop-blur-3xl relative overflow-hidden flex flex-col">
+                <div className="flex-1 w-full h-full min-h-[500px] bg-white border-l border-[#e8e6dc] relative overflow-hidden flex flex-col">
                     {debugMode ? (
                         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                             <DebugPanel data={debugData} loading={debugLoading} />

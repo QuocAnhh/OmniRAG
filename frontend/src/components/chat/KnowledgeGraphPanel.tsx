@@ -281,7 +281,7 @@ const SIGMA_SETTINGS = {
     labelRenderedSizeThreshold: 8,
     labelGridCellSize:  60,
     labelSize:          12,
-    labelColor:         { color: '#ffffff' },
+    labelColor:         { color: '#141413' },
     edgeLabelSize:      8,
     defaultDrawNodeHover: (
         ctx:      CanvasRenderingContext2D,
@@ -314,7 +314,7 @@ const SIGMA_SETTINGS = {
             const rw  = tw + pad * 2;
             const rh  = fs + pad;
             const r   = 4;
-            ctx.fillStyle = 'rgba(10,12,18,0.90)';
+            ctx.fillStyle = 'rgba(20,20,19,0.90)';
             ctx.beginPath();
             ctx.moveTo(rx + r, ry);
             ctx.lineTo(rx + rw - r, ry);
@@ -486,12 +486,12 @@ export default function KnowledgeGraphPanel({
     const isFocused   = focusedNodeId === selectedId && selectedId !== null;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0d0f14', color: '#e2e8f0', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#faf9f5', color: '#141413', overflow: 'hidden' }}>
 
             {/* Toolbar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', flex: 1 }}>Knowledge Graph</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #e8e6dc', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c96442" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#87867f', flex: 1 }}>Knowledge Graph</span>
                 {focusedNodeId && (
                     <button onClick={() => setFocusedNodeId(null)} title="Exit focus mode" style={{
                         display: 'flex', alignItems: 'center', gap: 4,
@@ -509,14 +509,14 @@ export default function KnowledgeGraphPanel({
                     </span>
                 )}
                 {onExpandClick && (
-                    <button onClick={onExpandClick} title="Full screen" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 2 }}>
+                    <button onClick={onExpandClick} title="Full screen" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#87867f', padding: 2 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                     </button>
                 )}
             </div>
 
             {/* Search bar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid #e8e6dc', flexShrink: 0 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input
                     type="text"
@@ -525,7 +525,7 @@ export default function KnowledgeGraphPanel({
                     onChange={e => setSearchQuery(e.target.value)}
                     style={{
                         flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                        fontSize: 11, color: '#e2e8f0', placeholder: '#4b5563',
+                        fontSize: 11, color: '#141413', placeholder: '#4b5563',
                     }}
                 />
                 {searchHighlights.size > 0 && (
@@ -534,20 +534,20 @@ export default function KnowledgeGraphPanel({
                     </span>
                 )}
                 {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0, lineHeight: 1, fontSize: 12 }}>
+                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#87867f', padding: 0, lineHeight: 1, fontSize: 12 }}>
                         ✕
                     </button>
                 )}
             </div>
 
             {/* Density slider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap' }}>Density</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: '1px solid #e8e6dc', flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: '#87867f', whiteSpace: 'nowrap' }}>Density</span>
                 <input type="range" min={1} max={maxSlider} value={topN}
                     onChange={e => setTopN(+e.target.value)}
-                    style={{ flex: 1, accentColor: '#6366f1', cursor: 'pointer' }}
+                    style={{ flex: 1, accentColor: '#c96442', cursor: 'pointer' }}
                 />
-                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 11, color: '#87867f', whiteSpace: 'nowrap' }}>
                     {graph.order}n / {graph.size}e
                 </span>
                 {hoveredLabel && (
@@ -559,7 +559,7 @@ export default function KnowledgeGraphPanel({
 
             {/* Type filter pills */}
             {Object.keys(typeCounts).length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '6px 10px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '6px 10px', borderBottom: '1px solid #e8e6dc', flexShrink: 0 }}>
                     {Object.entries(typeCounts)
                         .sort((a, b) => b[1] - a[1])
                         .map(([type, count]) => {
@@ -571,7 +571,7 @@ export default function KnowledgeGraphPanel({
                                     display: 'flex', alignItems: 'center', gap: 4,
                                     padding: '2px 7px', borderRadius: 12, border: 'none',
                                     cursor: 'pointer', fontSize: 10, fontWeight: 600,
-                                    background: hidden ? '#1e2330' : `${color}22`,
+                                    background: hidden ? '#e8e6dc' : `${color}22`,
                                     color:      hidden ? '#4b5563' : color,
                                     opacity:    hidden ? 0.55 : 1,
                                     transition: 'all 0.15s',
@@ -587,8 +587,8 @@ export default function KnowledgeGraphPanel({
             {/* Graph summary */}
             {graphSummary && !selectedAttrs && !selectedEdge && (
                 <div style={{
-                    padding: '5px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0,
-                    fontSize: 10, color: '#4b5563', lineHeight: 1.5,
+                    padding: '5px 12px', borderBottom: '1px solid #e8e6dc', flexShrink: 0,
+                    fontSize: 10, color: '#5e5d59', lineHeight: 1.5,
                 }}>
                     {graphSummary}
                 </div>
@@ -597,25 +597,25 @@ export default function KnowledgeGraphPanel({
             {/* Graph canvas */}
             <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
                 {isLoading && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d0f14', zIndex: 10 }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#faf9f5', zIndex: 10 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 28, height: 28, border: '3px solid #1e2330', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'kgspin 0.8s linear infinite' }} />
-                            <span style={{ fontSize: 12, color: '#6b7280' }}>Loading graph…</span>
+                            <div style={{ width: 28, height: 28, border: '3px solid #e8e6dc', borderTopColor: '#c96442', borderRadius: '50%', animation: 'kgspin 0.8s linear infinite' }} />
+                            <span style={{ fontSize: 12, color: '#87867f' }}>Loading graph…</span>
                         </div>
                     </div>
                 )}
                 {!isLoading && rawNodes.length === 0 && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2d3748" strokeWidth="1.5"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
-                        <span style={{ fontSize: 12, color: '#4b5563' }}>No graph data</span>
-                        <span style={{ fontSize: 11, color: '#374151' }}>Upload documents to build the graph</span>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1cfc5" strokeWidth="1.5"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
+                        <span style={{ fontSize: 12, color: '#5e5d59' }}>No graph data</span>
+                        <span style={{ fontSize: 11, color: '#87867f' }}>Upload documents to build the graph</span>
                     </div>
                 )}
                 {!isLoading && graph.order > 0 && (
                     <SigmaContainer
                         key={`sigma-${botId}`}
                         settings={SIGMA_SETTINGS as any}
-                        style={{ width: '100%', height: '100%', background: '#0d0f14' }}
+                        style={{ width: '100%', height: '100%', background: '#faf9f5' }}
                     >
                         <GraphController
                             graph={graph}
@@ -634,21 +634,21 @@ export default function KnowledgeGraphPanel({
 
             {/* Selected node panel */}
             {selectedAttrs && (
-                <div style={{ borderTop: '1px solid #1e2330', padding: '10px 12px', flexShrink: 0, maxHeight: 200, overflowY: 'auto', background: '#0a0c10' }}>
+                <div style={{ borderTop: '1px solid #e8e6dc', padding: '10px 12px', flexShrink: 0, maxHeight: 200, overflowY: 'auto', background: '#f0eee6' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                         <span style={{ width: 10, height: 10, borderRadius: '50%', background: selColor, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#141413', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {selName}
                         </span>
                         <span style={{ fontSize: 10, background: `${selColor}22`, color: selColor, borderRadius: 8, padding: '1px 6px' }}>
                             {typeLabel(selType)}
                         </span>
-                        <button onClick={() => handleNodeClick(null, null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
+                        <button onClick={() => handleNodeClick(null, null)} style={{ background: 'none', border: 'none', color: '#87867f', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
                             ✕
                         </button>
                     </div>
-                    {selDesc && <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px', lineHeight: 1.5 }}>{selDesc}</p>}
-                    {selFileName && <p style={{ fontSize: 10, color: '#4b5563', margin: '0 0 8px' }}>Src: {selFileName}</p>}
+                    {selDesc && <p style={{ fontSize: 11, color: '#87867f', margin: '0 0 8px', lineHeight: 1.5 }}>{selDesc}</p>}
+                    {selFileName && <p style={{ fontSize: 10, color: '#5e5d59', margin: '0 0 8px' }}>Src: {selFileName}</p>}
 
                     {/* Action buttons */}
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -657,8 +657,8 @@ export default function KnowledgeGraphPanel({
                             display: 'flex', alignItems: 'center', gap: 4,
                             fontSize: 10, fontWeight: 600,
                             color: isFocused ? '#f97316' : '#94a3b8',
-                            background: isFocused ? '#f9731620' : '#1e2330',
-                            border: isFocused ? '1px solid #f9731640' : '1px solid #2d3748',
+                            background: isFocused ? '#f9731620' : '#f0eee6',
+                            border: isFocused ? '1px solid #f9731640' : '1px solid #e8e6dc',
                             borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
                             transition: 'all 0.15s',
                         }}>
@@ -676,9 +676,9 @@ export default function KnowledgeGraphPanel({
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 4,
                                     fontSize: 10, fontWeight: 600,
-                                    color: '#a5b4fc',
-                                    background: '#6366f120',
-                                    border: '1px solid #6366f140',
+                                    color: '#c96442',
+                                    background: '#c9644220',
+                                    border: '1px solid #c9644240',
                                     borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
                                     transition: 'all 0.15s',
                                 }}
@@ -693,14 +693,14 @@ export default function KnowledgeGraphPanel({
 
             {/* Selected edge panel */}
             {selectedEdge && (
-                <div style={{ borderTop: '1px solid #1e2330', padding: '10px 12px', flexShrink: 0, maxHeight: 120, overflowY: 'auto', background: '#0a0c10' }}>
+                <div style={{ borderTop: '1px solid #e8e6dc', padding: '10px 12px', flexShrink: 0, maxHeight: 120, overflowY: 'auto', background: '#f0eee6' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#f97316' }}>{selectedEdge.label || 'relation'}</span>
-                        <button onClick={() => setSelectedEdge(null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, lineHeight: 1, marginLeft: 'auto' }}>✕</button>
+                        <button onClick={() => setSelectedEdge(null)} style={{ background: 'none', border: 'none', color: '#87867f', cursor: 'pointer', padding: 0, lineHeight: 1, marginLeft: 'auto' }}>✕</button>
                     </div>
                     {selectedEdge.description?.split('\n')[0] && (
-                        <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                        <p style={{ fontSize: 11, color: '#87867f', margin: 0, lineHeight: 1.5 }}>
                             {selectedEdge.description.split('\n')[0]}
                         </p>
                     )}

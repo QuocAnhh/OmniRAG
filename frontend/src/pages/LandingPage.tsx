@@ -38,80 +38,72 @@ export default function LandingPage() {
       icon: <Zap className="w-5 h-5" />,
       title: "Sub-second indexing",
       description: "Documents are chunked, embedded, and searchable within seconds of upload. No batch jobs, no waiting.",
-      accent: "text-amber-400/70",
+      accent: "text-amber-600",
     },
     {
       icon: <Fingerprint className="w-5 h-5" />,
       title: "Access controls",
       description: "Per-bot permissions, JWT-secured endpoints, and isolated knowledge bases keep your data where it belongs.",
-      accent: "text-emerald-400/70",
+      accent: "text-emerald-600",
     },
     {
       icon: <Network className="w-5 h-5" />,
       title: "Knowledge graph",
       description: "Entity and relationship extraction surfaces connections that vector search misses. Built on LightRAG — runs locally.",
-      accent: "text-violet-400/70",
+      accent: "text-violet-600",
     },
     {
       icon: <LineChart className="w-5 h-5" />,
       title: "Usage analytics",
       description: "See which questions get answered, which fall through, and where your knowledge base has gaps.",
-      accent: "text-rose-400/70",
+      accent: "text-rose-600",
     },
     {
       icon: <Code2 className="w-5 h-5" />,
       title: "REST API",
       description: "Every feature is available via API. Drop OmniRAG into an existing product without rebuilding anything.",
-      accent: "text-cyan-400/70",
+      accent: "text-cyan-600",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#07070e] text-[#eef0f6] font-sans overflow-x-hidden selection:bg-primary/25 selection:text-white">
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-[15%] left-[25%] w-[800px] h-[600px] rounded-full opacity-[0.06]"
-          style={{ background: 'radial-gradient(ellipse, #4f8ef0, transparent 65%)', filter: 'blur(60px)' }} />
-        <div className="absolute bottom-0 -left-[5%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
-          style={{ background: 'radial-gradient(ellipse, #3a6fd4, transparent 65%)', filter: 'blur(80px)' }} />
-      </div>
-
+    <div className="min-h-screen bg-[#f5f4ed] text-[#141413] font-sans overflow-x-hidden selection:bg-primary/20 selection:text-foreground">
       {/* Navbar */}
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center mt-5 px-4 pointer-events-none">
         <nav className={`pointer-events-auto transition-all duration-300 rounded-2xl flex items-center justify-between px-5 py-3 w-full max-w-5xl ${
           isScrolled
-            ? 'bg-[#07070e]/80 backdrop-blur-xl border border-white/8 shadow-[0_4px_32px_rgba(4,4,20,0.5)]'
+            ? 'bg-white/90 backdrop-blur-md border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px]'
             : 'bg-transparent border border-transparent'
         }`}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
               <LogoIcon className="w-4 h-4" />
             </div>
-            <span className="text-sm font-semibold tracking-tight text-white/90">OmniRAG</span>
+            <span className="text-sm font-semibold tracking-tight text-[#141413]">OmniRAG</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-white/45 hover:text-white/80 transition-colors">Features</a>
-            <a href="#solutions" className="text-sm text-white/45 hover:text-white/80 transition-colors">Solutions</a>
-            <Link to="/docs/zalo-bot" className="text-sm text-white/45 hover:text-white/80 transition-colors">Docs</Link>
+            <a href="#features" className="text-sm text-[#87867f] hover:text-[#141413] transition-colors">Features</a>
+            <a href="#solutions" className="text-sm text-[#87867f] hover:text-[#141413] transition-colors">Solutions</a>
+            <Link to="/docs/zalo-bot" className="text-sm text-[#87867f] hover:text-[#141413] transition-colors">Docs</Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
-              <Link to="/dashboard" className="px-4 py-2 bg-white/8 hover:bg-white/12 border border-white/10 text-white/80 hover:text-white text-sm font-medium rounded-xl transition-all">
+              <Link to="/dashboard" className="px-4 py-2 bg-[#f0eee6] hover:bg-[#e8e6dc] border border-[#e8e6dc] text-[#4d4c48] hover:text-[#141413] text-sm font-medium rounded-xl transition-all">
                 Dashboard
               </Link>
             ) : (
               <>
-                <Link to="/auth" className="text-sm text-white/45 hover:text-white/80 transition-colors">Sign in</Link>
-                <Link to="/auth" className="px-4 py-2 bg-primary hover:bg-primary/85 text-white text-sm font-medium rounded-xl transition-all active:scale-95 flex items-center gap-1.5">
+                <Link to="/auth" className="text-sm text-[#87867f] hover:text-[#141413] transition-colors">Sign in</Link>
+                <Link to="/auth" className="px-4 py-2 bg-primary hover:bg-primary/85 text-white text-sm font-medium rounded-xl transition-all flex items-center gap-1.5">
                   Get started <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </>
             )}
           </div>
 
-          <button className="md:hidden text-white/40 hover:text-white/80 transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className="md:hidden text-[#87867f] hover:text-[#141413] transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </nav>
@@ -119,11 +111,11 @@ export default function LandingPage() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="fixed top-20 inset-x-4 z-40 bg-[#0d0d1c]/95 backdrop-blur-xl border border-white/8 rounded-2xl p-5 flex flex-col gap-3 md:hidden shadow-2xl">
-          <a href="#features" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Features</a>
-          <a href="#solutions" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
-          <Link to="/docs/zalo-bot" className="text-sm font-medium text-white/60 hover:text-white py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
-          <div className="h-px w-full bg-white/8 my-1" />
+        <div className="fixed top-20 inset-x-4 z-40 bg-white border border-[#e8e6dc] rounded-2xl p-5 flex flex-col gap-3 md:hidden shadow-[rgba(0,0,0,0.05)_0px_4px_24px]">
+          <a href="#features" className="text-sm font-medium text-[#5e5d59] hover:text-[#141413] py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Features</a>
+          <a href="#solutions" className="text-sm font-medium text-[#5e5d59] hover:text-[#141413] py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
+          <Link to="/docs/zalo-bot" className="text-sm font-medium text-[#5e5d59] hover:text-[#141413] py-2 transition-colors" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
+          <div className="h-px w-full bg-[#e8e6dc] my-1" />
           <Link to="/auth" className="w-full text-center px-5 py-3 bg-primary text-white text-sm font-medium rounded-xl" onClick={() => setMobileMenuOpen(false)}>Get started</Link>
         </div>
       )}
@@ -148,13 +140,13 @@ export default function LandingPage() {
 
               <motion.h1
                 variants={fadeUp}
-                className="text-[clamp(2.6rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.04em] text-white"
+                className="text-[clamp(2.6rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.04em] text-[#141413] font-serif"
               >
                 Your knowledge base,<br />
                 <span className="text-primary/80">actually useful.</span>
               </motion.h1>
 
-              <motion.p variants={fadeUp} className="text-white/45 text-lg leading-relaxed max-w-lg">
+              <motion.p variants={fadeUp} className="text-[#87867f] text-lg leading-relaxed max-w-lg">
                 Upload documents, connect a knowledge graph, and deploy AI chatbots that give real answers — with citations.
                 Built for teams that can't afford hallucinations.
               </motion.p>
@@ -169,17 +161,17 @@ export default function LandingPage() {
                     Start building <ArrowRight className="w-4 h-4" />
                   </Link>
                 )}
-                <a href="#features" className="px-6 py-3 bg-white/5 hover:bg-white/8 border border-white/8 text-white/60 hover:text-white/90 text-sm font-medium rounded-xl transition-all">
+                <a href="#features" className="px-6 py-3 bg-[#f0eee6] hover:bg-[#e8e6dc] border border-[#e8e6dc] text-[#5e5d59] hover:text-[#141413] text-sm font-medium rounded-xl transition-all">
                   See features
                 </a>
               </motion.div>
 
               {/* Social proof strip */}
-              <motion.div variants={fadeUp} className="flex items-center gap-4 pt-4 border-t border-white/6">
-                <div className="text-xs text-white/25">Built with</div>
+              <motion.div variants={fadeUp} className="flex items-center gap-4 pt-4 border-t border-[#e8e6dc]">
+                <div className="text-xs text-[#b0aea5]">Built with</div>
                 <div className="flex items-center gap-3">
                   {['FastAPI', 'Qdrant', 'LightRAG', 'OpenRouter'].map(t => (
-                    <span key={t} className="text-[11px] text-white/30 font-mono">{t}</span>
+                    <span key={t} className="text-[11px] text-[#87867f] font-mono">{t}</span>
                   ))}
                 </div>
               </motion.div>
@@ -192,16 +184,16 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="relative"
             >
-              <div className="rounded-2xl border border-white/8 bg-[#0d0d1c]/90 backdrop-blur-xl shadow-[0_24px_80px_rgba(4,4,20,0.7)] overflow-hidden">
+              <div className="rounded-2xl border border-[#e8e6dc] bg-white shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden">
                 {/* Window bar */}
-                <div className="flex items-center px-4 py-3 border-b border-white/6 bg-[#0a0a18]">
+                <div className="flex items-center px-4 py-3 border-b border-[#e8e6dc] bg-[#faf9f5]">
                   <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#d1cfc5]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#d1cfc5]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#d1cfc5]" />
                   </div>
                   <div className="flex-1 flex justify-center">
-                    <div className="px-3 py-1 text-[11px] font-mono text-white/25 bg-white/4 rounded-md flex items-center gap-1.5">
+                    <div className="px-3 py-1 text-[11px] font-mono text-[#87867f] bg-[#f0eee6] rounded-md flex items-center gap-1.5">
                       <Shield className="w-2.5 h-2.5" /> hub.omnirag.app
                     </div>
                   </div>
@@ -212,7 +204,7 @@ export default function LandingPage() {
                 <div className="p-6 flex flex-col gap-5 min-h-[360px]">
                   {/* User message */}
                   <div className="flex justify-end">
-                    <div className="bg-white/6 border border-white/8 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white/70 max-w-[80%]">
+                    <div className="bg-[#c96442] text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-[80%]">
                       What is our policy on remote work equipment?
                     </div>
                   </div>
@@ -223,19 +215,19 @@ export default function LandingPage() {
                       <BrainCircuit className="w-3.5 h-3.5 text-primary/80" />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <div className="bg-primary/6 border border-primary/12 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/75 leading-relaxed">
+                      <div className="bg-[#faf9f5] border border-[#e8e6dc] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-[#141413] leading-relaxed">
                         Per <span className="text-primary/80 font-medium">Employee Handbook v2.4</span>, employees are eligible for a $500 stipend covering ergonomic furniture, monitors, headsets, and webcams.
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-white/20 font-mono">Source</span>
-                        <span className="text-[11px] text-primary/40 hover:text-primary/60 cursor-pointer transition-colors">Employee_Handbook_v2.pdf · p.14</span>
+                        <span className="text-[10px] text-[#b0aea5] font-mono">Source</span>
+                        <span className="text-[11px] text-primary/60 hover:text-primary/80 cursor-pointer transition-colors">Employee_Handbook_v2.pdf · p.14</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Input bar */}
-                  <div className="mt-auto pt-4 border-t border-white/6 flex items-center gap-3">
-                    <div className="flex-1 text-sm text-white/20 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
+                  <div className="mt-auto pt-4 border-t border-[#e8e6dc] flex items-center gap-3">
+                    <div className="flex-1 text-sm text-[#b0aea5] bg-[#f0eee6] border border-[#e8e6dc] rounded-xl px-4 py-2.5">
                       Ask anything about your documents...
                     </div>
                     <div className="w-8 h-8 bg-primary/15 border border-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -246,16 +238,16 @@ export default function LandingPage() {
               </div>
 
               {/* Floating stat cards */}
-              <div className="absolute -bottom-5 -left-8 hidden lg:flex items-center gap-2.5 bg-[#0d0d1c] border border-white/8 rounded-xl px-4 py-3 shadow-lg shadow-black/40">
+              <div className="absolute -bottom-5 -left-8 hidden lg:flex items-center gap-2.5 bg-white border border-[#e8e6dc] rounded-xl px-4 py-3 shadow-lg shadow-black/5">
                 <div className="w-2 h-2 rounded-full bg-emerald-400/70 animate-pulse" />
-                <span className="text-xs text-white/50 font-mono">47 docs · 12,384 chunks</span>
+                <span className="text-xs text-[#87867f] font-mono">47 docs · 12,384 chunks</span>
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* Features — asymmetric grid */}
-        <section id="features" className="py-28 border-t border-white/5">
+        <section id="features" className="py-28 border-t border-[#e8e6dc]">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <motion.div
               initial="hidden"
@@ -265,10 +257,10 @@ export default function LandingPage() {
               className="mb-16 max-w-xl"
             >
               <p className="text-[11px] font-semibold text-primary/60 tracking-[0.1em] uppercase mb-3">What's inside</p>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.03em] text-white mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.03em] text-[#141413] font-serif mb-4">
                 Built for accuracy,<br />not just speed.
               </h2>
-              <p className="text-white/40 text-base leading-relaxed">
+              <p className="text-[#87867f] text-base leading-relaxed">
                 Every component in the pipeline was chosen to reduce hallucinations and improve answer quality in production.
               </p>
             </motion.div>
@@ -279,20 +271,20 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={{ once: true, margin: "-80px" }}
               variants={stagger}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#e8e6dc] rounded-2xl overflow-hidden border border-[#e8e6dc]"
             >
               {features.map((feature, idx) => (
                 <motion.div
                   key={idx}
                   variants={fadeUp}
-                  className="p-7 bg-[#07070e] hover:bg-[#0d0d1c] transition-colors duration-300 group flex flex-col gap-4"
+                  className="p-7 bg-white hover:bg-[#faf9f5] transition-colors duration-300 group flex flex-col gap-4"
                 >
-                  <div className={`w-9 h-9 rounded-lg bg-white/4 border border-white/8 flex items-center justify-center ${feature.accent} group-hover:border-white/12 transition-colors`}>
+                  <div className={`w-9 h-9 rounded-lg bg-[#f0eee6] border border-[#e8e6dc] flex items-center justify-center ${feature.accent} group-hover:border-[#d1cfc5] transition-colors`}>
                     {feature.icon}
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white/85 mb-1.5">{feature.title}</h3>
-                    <p className="text-sm text-white/35 leading-relaxed">{feature.description}</p>
+                    <h3 className="text-sm font-semibold text-[#141413] mb-1.5">{feature.title}</h3>
+                    <p className="text-sm text-[#87867f] leading-relaxed">{feature.description}</p>
                   </div>
                 </motion.div>
               ))}
@@ -301,7 +293,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA */}
-        <section id="solutions" className="py-28 border-t border-white/5">
+        <section id="solutions" className="py-28 border-t border-[#e8e6dc]">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -309,17 +301,17 @@ export default function LandingPage() {
             variants={fadeUp}
             className="max-w-2xl mx-auto px-6 text-center"
           >
-            <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] text-white mb-5">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] text-[#141413] font-serif mb-5">
               Ready to put your<br />documents to work?
             </h2>
-            <p className="text-white/40 text-base mb-10 leading-relaxed">
+            <p className="text-[#87867f] text-base mb-10 leading-relaxed">
               Set up takes under ten minutes. No infrastructure to manage — everything runs in Docker.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-3">
               <Link to="/auth" className="px-7 py-3.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2">
                 Get started free <ChevronRight className="w-4 h-4" />
               </Link>
-              <Link to="/docs/zalo-bot" className="px-7 py-3.5 bg-white/5 hover:bg-white/8 border border-white/8 text-white/60 hover:text-white/90 text-sm font-medium rounded-xl transition-all">
+              <Link to="/docs/zalo-bot" className="px-7 py-3.5 bg-[#f0eee6] hover:bg-[#e8e6dc] border border-[#e8e6dc] text-[#5e5d59] hover:text-[#141413] text-sm font-medium rounded-xl transition-all">
                 Read the docs
               </Link>
             </div>
@@ -328,19 +320,19 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-10">
+      <footer className="border-t border-[#e8e6dc] py-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/15 flex items-center justify-center">
               <LogoIcon className="w-3.5 h-3.5" />
             </div>
-            <span className="text-xs font-medium text-white/30">OmniRAG</span>
+            <span className="text-xs font-medium text-[#87867f]">OmniRAG</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Privacy policy</a>
-            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Terms of service</a>
+            <a href="#" className="text-xs text-[#b0aea5] hover:text-[#87867f] transition-colors">Privacy policy</a>
+            <a href="#" className="text-xs text-[#b0aea5] hover:text-[#87867f] transition-colors">Terms of service</a>
           </div>
-          <p className="text-xs text-white/20">© 2026 OmniRAG. All rights reserved.</p>
+          <p className="text-xs text-[#b0aea5]">© 2026 OmniRAG. All rights reserved.</p>
         </div>
       </footer>
     </div>

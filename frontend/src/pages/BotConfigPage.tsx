@@ -440,7 +440,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#3b82f6',
+      cancelButtonColor: '#87867f',
       confirmButtonText: 'Yes, delete it!'
     });
 
@@ -482,13 +482,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
 
         {/* Top Header Card */}
-        <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative">
+        <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden relative">
           {/* Subtle background glow */}
-          <div className="absolute top-0 right-1/4 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+          <div className="absolute top-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
 
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-8 py-6 border-b border-white/5 gap-4 relative z-10">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-8 py-6 border-b border-[#e8e6dc] gap-4 relative z-10">
             <div className="flex items-center gap-5">
-              <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.2)] border border-primary/20">
+              <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                 <span className="material-symbols-outlined text-3xl">settings</span>
               </div>
               <div>
@@ -537,15 +537,15 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
 
           {/* Connected Tabs */}
-          <div className="px-4 py-2 bg-black/20 relative z-10 backdrop-blur-md border-t border-white/5">
+          <div className="px-4 py-2 bg-[#faf9f5] relative z-10 border-t border-[#e8e6dc]">
             <nav className="flex gap-2 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
                   className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all duration-300 font-medium text-sm relative overflow-hidden ${activeTab === tab.id
-                    ? 'text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.15)] bg-primary/10 border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
+                    ? 'text-primary bg-primary/8 border border-primary/15'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-[#f0eee6] border border-transparent'
                     }`}
                 >
                   <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
@@ -573,7 +573,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
               <div className="grid md:grid-cols-3 gap-6">
                 {/* Identity Column */}
-                <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 space-y-6 md:col-span-1 h-fit relative overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] p-8 space-y-6 md:col-span-1 h-fit relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] pointer-events-none"></div>
                   <h3 className="text-xl font-bold text-foreground flex items-center gap-3 relative z-10">
                     <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
@@ -637,7 +637,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 </div>
 
                 {/* Behavior Column */}
-                <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 space-y-6 md:col-span-2 relative overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] p-8 space-y-6 md:col-span-2 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-accent-600/5 rounded-full blur-[60px] pointer-events-none"></div>
                   <h3 className="text-xl font-bold text-foreground flex items-center gap-3 relative z-10">
                     <div className="p-2 rounded-lg bg-accent-600/10 border border-accent-600/20">
@@ -747,7 +747,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
-                    <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
+                    <div className="p-6 bg-[#f0eee6] rounded-2xl border border-[#e8e6dc] grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <label className="text-sm font-semibold text-foreground">Temperature</label>
@@ -777,7 +777,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           step="100"
                           value={formData.max_tokens}
                           onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2.5 rounded-xl bg-background border border-white/10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
+                          className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#e8e6dc] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
                         />
                       </div>
                     </div>
@@ -789,7 +789,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 border border-primary/50"
+                  className="px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {loading ? 'Saving...' : 'Save Configuration'}
                 </button>
@@ -800,12 +800,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           {/* Knowledge Base Tab */}
           {activeTab === 'knowledge' && id && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px]">
                 <div>
                   <h3 className="text-xl font-bold text-foreground">Knowledge Base Registry</h3>
                   <p className="text-sm text-muted-foreground mt-1">Manage the documents this agent uses for context.</p>
                 </div>
-                <div className="text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 shadow-[inset_0_0_15px_rgba(var(--primary),0.1)]">
+                <div className="text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
                   Supported: PDF, DOCX, TXT • Max: 25MB
                 </div>
               </div>
@@ -850,7 +850,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* SmolVLM Picture Description Toggle */}
-              <div className="rounded-xl border border-white/10 bg-background/40 backdrop-blur-xl px-4 py-3 space-y-2">
+              <div className="rounded-xl border border-[#e8e6dc] bg-white px-4 py-3 space-y-2">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -992,7 +992,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
               {/* Inline Upload Status Panel */}
               {uploadStatus && (
-                <div className="rounded-2xl border border-white/10 bg-background/40 backdrop-blur-xl px-6 py-4 space-y-3 text-sm">
+                <div className="rounded-2xl border border-[#e8e6dc] bg-white shadow-[rgba(0,0,0,0.05)_0px_4px_24px] px-6 py-4 space-y-3 text-sm">
 
                   {/* --- UPLOADING --- */}
                   {uploadStatus.phase === 'uploading' && (
@@ -1047,7 +1047,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {uploadStatus.phase === 'kg_processing' && (
                     <>
                       <p className="font-medium text-primary">Document vectorized — ban co the chat ngay bay gio.</p>
-                      <div className="border-t border-white/5 pt-3 space-y-2.5">
+                      <div className="border-t border-[#e8e6dc] pt-3 space-y-2.5">
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-foreground">Building Knowledge Graph</span>
                           <span className="text-xs text-muted-foreground font-mono">Elapsed: {formatElapsed(uploadStatus.kgElapsedSeconds)}</span>
@@ -1087,7 +1087,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           Start Chatting
                         </button>
                         <button type="button" onClick={() => setUploadStatus(null)}
-                          className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                          className="text-xs text-muted-foreground hover:text-foreground border border-[#e8e6dc] px-3 py-1.5 rounded-full transition-colors">
                           Dismiss
                         </button>
                       </div>
@@ -1111,7 +1111,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           Start Chatting
                         </button>
                         <button type="button" onClick={() => setUploadStatus(null)}
-                          className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                          className="text-xs text-muted-foreground hover:text-foreground border border-[#e8e6dc] px-3 py-1.5 rounded-full transition-colors">
                           Dismiss
                         </button>
                       </div>
@@ -1123,7 +1123,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-muted-foreground">Upload cancelled.</p>
                       <button type="button" onClick={() => setUploadStatus(null)}
-                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-[#e8e6dc] px-3 py-1.5 rounded-full transition-colors">
                         Dismiss
                       </button>
                     </div>
@@ -1134,7 +1134,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-destructive">{uploadStatus.errorMsg || 'Upload failed.'}</p>
                       <button type="button" onClick={() => setUploadStatus(null)}
-                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-[#e8e6dc] px-3 py-1.5 rounded-full transition-colors">
                         Dismiss
                       </button>
                     </div>
@@ -1143,10 +1143,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               )}
 
               {/* Documents Table */}
-              <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
-                <div className="px-8 py-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
+              <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden">
+                <div className="px-8 py-5 border-b border-[#e8e6dc] bg-[#faf9f5] flex justify-between items-center">
                   <h4 className="text-base font-bold text-foreground">Indexed Documents</h4>
-                  <span className="bg-background/50 backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-lg border border-white/10 shadow-inner">{documents.length} files</span>
+                  <span className="bg-[#f0eee6] text-xs font-semibold px-3 py-1 rounded-lg border border-[#e8e6dc]">{documents.length} files</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -1220,24 +1220,24 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* Conversation Memory Section */}
-              <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
-                <div className="px-8 py-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
+              <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden">
+                <div className="px-8 py-5 border-b border-[#e8e6dc] bg-[#faf9f5] flex justify-between items-center">
                   <div>
                     <h4 className="text-base font-bold text-foreground">Conversation Memory</h4>
                     <p className="text-xs text-muted-foreground mt-0.5">What the bot has learned and remembered from your conversations</p>
                   </div>
                   <div className="flex items-center gap-3">
                     {!memoryEnabled && (
-                      <span className="text-xs text-muted-foreground bg-muted/20 px-3 py-1 rounded-lg border border-white/5">Memory disabled</span>
+                      <span className="text-xs text-muted-foreground bg-muted/20 px-3 py-1 rounded-lg border border-[#e8e6dc]">Memory disabled</span>
                     )}
-                    <span className="bg-background/50 backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-lg border border-white/10 shadow-inner">
+                    <span className="bg-[#f0eee6] text-xs font-semibold px-3 py-1 rounded-lg border border-[#e8e6dc]">
                       {memories.length} memories
                     </span>
                     <button
                       type="button"
                       onClick={() => id && loadMemories(id)}
                       disabled={memoriesLoading}
-                      className="text-xs font-medium text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground border border-[#e8e6dc] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
                       {memoriesLoading ? 'Loading...' : 'Refresh'}
                     </button>
@@ -1252,7 +1252,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     )}
                   </div>
                 </div>
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-[#e8e6dc]">
                   {memoriesLoading ? (
                     <div className="px-8 py-6 space-y-3">
                       {[1, 2, 3].map(i => (
@@ -1266,7 +1266,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   ) : (
                     memories.map((mem: any, i: number) => (
-                      <div key={mem.id || i} className="px-8 py-4 flex items-start gap-4 hover:bg-white/[0.02] transition-colors">
+                      <div key={mem.id || i} className="px-8 py-4 flex items-start gap-4 hover:bg-[#f0eee6] transition-colors">
                         <span className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary">{i + 1}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground leading-relaxed">{mem.memory || mem.text || JSON.stringify(mem)}</p>

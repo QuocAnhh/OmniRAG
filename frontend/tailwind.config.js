@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{ts,tsx,js,jsx}",
@@ -50,7 +49,6 @@ export default {
         accent: {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
-          500: "var(--color-accent-500)", // For legacy direct usage
         },
         popover: {
           DEFAULT: "var(--popover)",
@@ -60,26 +58,36 @@ export default {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
-        // Re-mapping the terminal colors to fit the new "Earthen" theme but keep compatibility
-        terminal: {
-          bg: "#1c1917", // Warm charcoal instead of deep blue
-          surface: "#292524", // Stone 800
-          panel: "#44403c", // Stone 700
-          elevated: "#57534e", // Stone 600
-          border: "#57534e", // Stone 600
-          text: "#e7e5e4", // Stone 200
-          "text-bright": "#fafaf9", // Stone 50
-          muted: "#a8a29e", // Stone 400
-          cyan: "#6cae99", // Muted Teal/Sage (matches primary 400)
-          green: "#499178", // Eucalyptus (matches primary 500)
-          red: "#ef4444",
-          amber: "#d4a373", // Sand/Gold (matches accent 500)
-        }
+        /* Warm neutral palette for direct usage */
+        warm: {
+          sand: "#e8e6dc",
+          cream: "#f0eee6",
+          ivory: "#faf9f5",
+          parchment: "#f5f4ed",
+          charcoal: "#4d4c48",
+          olive: "#5e5d59",
+          stone: "#87867f",
+          silver: "#b0aea5",
+          dark: "#30302e",
+          "near-black": "#141413",
+        },
+        terracotta: {
+          DEFAULT: "#c96442",
+          light: "#d97757",
+          dark: "#b3522f",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        "ring": "0px 0px 0px 1px var(--border)",
+        "ring-hover": "0px 0px 0px 1px #d1cfc5",
+        "ring-active": "0px 0px 0px 1px #c2c0b6",
+        "ring-primary": "0px 0px 0px 1px #c96442",
+        "whisper": "rgba(0,0,0,0.05) 0px 4px 24px",
       },
       keyframes: {
         "accordion-down": {
@@ -90,7 +98,6 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
-        // Gentle float animation
         "float": {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-5px)" },
@@ -102,9 +109,10 @@ export default {
         "float": "float 3s ease-in-out infinite",
       },
       fontFamily: {
-        sans: ["Geist", "system-ui", "sans-serif"],
-        mono: ["Geist Mono", "JetBrains Mono", "monospace"],
-      }
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        serif: ["Georgia", '"Times New Roman"', "serif"],
+        mono: ['"SF Mono"', '"Fira Code"', "monospace"],
+      },
     },
   },
   plugins: [],

@@ -119,15 +119,14 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 rounded-2xl bg-background/40 backdrop-blur-2xl border border-white/6 relative overflow-hidden"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 rounded-2xl bg-white border border-[#e8e6dc] relative overflow-hidden"
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
           <div className="relative z-10">
-            <p className="text-white/25 text-xs mb-1.5 font-medium">
+            <p className="text-[#b0aea5] text-xs mb-1.5 font-medium">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
-            <h1 className="text-2xl font-semibold text-white tracking-tight">{greeting}, {firstName}</h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-white/30">
+            <h1 className="text-2xl font-semibold font-serif text-[#141413] tracking-tight">{greeting}, {firstName}</h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-[#87867f]">
               <span className="flex items-center gap-1.5">
                 <span className="size-1.5 rounded-full bg-emerald-400/70" />
                 {activeBots} active agent{activeBots !== 1 ? 's' : ''}
@@ -138,7 +137,7 @@ export default function DashboardPage() {
           </div>
           <Link
             to="/bots/new"
-            className="relative z-10 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-md shadow-primary/20"
+            className="relative z-10 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all shadow-[0px_0px_0px_1px_#c96442]"
           >
             <Plus className="w-4 h-4" />
             New agent
@@ -155,14 +154,14 @@ export default function DashboardPage() {
           {statTiles.map((tile) => (
             <div
               key={tile.label}
-              className="flex flex-col gap-3 p-5 rounded-2xl bg-background/40 backdrop-blur-xl border border-white/6"
+              className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e8e6dc]"
             >
-              <div className="size-8 rounded-lg bg-white/4 border border-white/8 flex items-center justify-center text-white/40 flex-shrink-0">
+              <div className="size-8 rounded-lg bg-[#f0eee6] border border-[#e8e6dc] flex items-center justify-center text-[#87867f] flex-shrink-0">
                 {tile.icon}
               </div>
               <div className="min-w-0">
                 <div className="text-2xl font-semibold text-foreground/90 tabular-nums tracking-tight">{tile.value}</div>
-                <div className="text-[11px] text-white/25 mt-0.5 font-medium">{tile.label}</div>
+                <div className="text-[11px] text-[#b0aea5] mt-0.5 font-medium">{tile.label}</div>
               </div>
             </div>
           ))}
@@ -197,10 +196,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-3 bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+            className="lg:col-span-3 bg-white rounded-3xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden flex flex-col"
           >
-            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+            <div className="px-6 py-4 border-b border-[#e8e6dc] flex items-center justify-between">
+              <h3 className="font-semibold font-serif text-sm text-foreground flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 Recent Conversations
               </h3>
@@ -217,16 +216,16 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-[#e8e6dc]">
                 {conversations.map((conv) => {
                   const dm = getDomainMeta(bots.find(b => b.id === conv.bot_id)?.config?.domain);
                   return (
                     <Link
                       key={conv.id}
                       to={`/bots/${conv.bot_id}/chat`}
-                      className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.03] transition-colors group"
+                      className="flex items-center gap-4 px-6 py-4 hover:bg-[#f0eee6] transition-colors group"
                     >
-                      <div className="size-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-background/60 border border-white/10">
+                      <div className="size-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[#f0eee6] border border-[#e8e6dc]">
                         <span className={`material-symbols-outlined text-[16px] ${dm.iconColor}`}>{dm.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -249,10 +248,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="lg:col-span-2 bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+            className="lg:col-span-2 bg-white rounded-3xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden flex flex-col"
           >
-            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+            <div className="px-6 py-4 border-b border-[#e8e6dc] flex items-center justify-between">
+              <h3 className="font-semibold font-serif text-sm text-foreground flex items-center gap-2">
                 <BotIcon className="w-4 h-4 text-primary" />
                 Agents
               </h3>
@@ -270,7 +269,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-white/5 flex-1">
+              <div className="divide-y divide-[#e8e6dc] flex-1">
                 {bots.map((bot) => {
                   const dm = getDomainMeta(bot.config?.domain);
                   const docs = botDocs[bot.id];
@@ -281,8 +280,8 @@ export default function DashboardPage() {
                     : 'ready';
 
                   return (
-                    <div key={bot.id} className="flex items-center gap-3 px-5 py-4 group hover:bg-white/[0.02] transition-colors">
-                      <div className="size-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-background/60 border border-white/10">
+                    <div key={bot.id} className="flex items-center gap-3 px-5 py-4 group hover:bg-[#f0eee6] transition-colors">
+                      <div className="size-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[#f0eee6] border border-[#e8e6dc]">
                         <span className={`material-symbols-outlined text-[16px] ${dm.iconColor}`}>{dm.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -319,7 +318,7 @@ export default function DashboardPage() {
                         </Link>
                         <Link
                           to={`/bots/${bot.id}/config`}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-[#f0eee6] text-muted-foreground hover:text-foreground transition-colors"
                           title="Configure"
                         >
                           <Settings className="w-3.5 h-3.5" />
