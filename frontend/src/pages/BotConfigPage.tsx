@@ -465,9 +465,21 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   if (loading && !bot) {
     return (
       <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: 'Config' }]}>
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground mt-4 text-sm font-medium">Loading configuration...</p>
+        <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
+          {/* Header card skeleton */}
+          <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-32" />
+          {/* Tab bar skeleton */}
+          <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-12 flex items-center gap-3 px-4">
+            <div className="animate-pulse bg-white/60 rounded-full h-6 w-24" />
+            <div className="animate-pulse bg-white/60 rounded-full h-6 w-28" />
+            <div className="animate-pulse bg-white/60 rounded-full h-6 w-20" />
+            <div className="animate-pulse bg-white/60 rounded-full h-6 w-24" />
+          </div>
+          {/* Content area skeleton */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-96" />
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-96 md:col-span-2" />
+          </div>
         </div>
       </Layout>
     );
@@ -1220,7 +1232,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
               </div>
 
               {/* Conversation Memory Section */}
-              <div className="bg-white rounded-2xl border border-[#e8e6dc] shadow-[rgba(0,0,0,0.05)_0px_4px_24px] overflow-hidden">
+              <div className="border-t border-[#e8e6dc]">
                 <div className="px-8 py-5 border-b border-[#e8e6dc] bg-[#faf9f5] flex justify-between items-center">
                   <div>
                     <h4 className="text-base font-bold text-foreground">Conversation Memory</h4>
@@ -1629,7 +1641,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           {/* Playground Tab - Redirect to Full Experience */}
           {activeTab === 'playground' && (
             <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col items-center justify-center py-20 px-6 text-center animate-in fade-in zoom-in duration-500">
-              <div className="size-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-8 animate-bounce transition-all">
+              <div className="size-24 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-8 animate-bounce transition-all">
                 <span className="material-symbols-outlined text-5xl">rocket_launch</span>
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-3">Professional Playground</h3>

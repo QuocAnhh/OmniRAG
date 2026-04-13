@@ -64,7 +64,7 @@ export default function ChatLayout({
     }
 
     return (
-        <div className="h-screen w-full bg-background overflow-hidden flex flex-col font-sans relative">
+        <div className="h-dvh w-full bg-background overflow-hidden flex flex-col font-sans relative">
             <div className="flex flex-col h-full w-full relative">
                 {/* Mobile Header */}
                 {!isDesktop && !embedded && (
@@ -164,8 +164,12 @@ export default function ChatLayout({
                                                 ))}
                                             </>
                                         ) : (
-                                            <div className="px-3 py-8 text-center text-xs text-[#87867f] italic">
-                                                No conversations yet
+                                            <div className="px-3 py-8 flex flex-col items-center gap-2 text-center">
+                                                <div className="size-8 rounded-lg bg-[#f0eee6] border border-[#e8e6dc] flex items-center justify-center mb-1">
+                                                    <Plus className="h-4 w-4 text-[#b0aea5]" />
+                                                </div>
+                                                <p className="text-xs font-medium text-[#5e5d59]">No conversations yet</p>
+                                                <p className="text-[10px] text-[#87867f]">Start a new chat above</p>
                                             </div>
                                         )}
                                     </div>

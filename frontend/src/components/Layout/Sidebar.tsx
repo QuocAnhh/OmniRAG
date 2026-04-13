@@ -61,10 +61,10 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group
+                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group min-h-[44px]
                 ${active
                   ? 'text-primary bg-primary/8 border border-primary/15 font-medium'
-                  : 'text-[#5e5d59] hover:text-[#141413] hover:bg-[#f0eee6] border border-transparent font-normal'
+                  : 'text-[#5e5d59] hover:text-[#141413] hover:bg-[#f0eee6] hover:translate-x-0.5 border border-transparent font-normal'
                 }
               `}
             >

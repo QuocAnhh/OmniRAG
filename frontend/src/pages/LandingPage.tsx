@@ -265,7 +265,7 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            {/* 2+2+2 grid — left side slightly larger */}
+            {/* Feature grid — gap-px divider pattern */}
             <motion.div
               initial="hidden"
               whileInView="visible"

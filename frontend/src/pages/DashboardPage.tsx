@@ -104,8 +104,21 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <Layout breadcrumbs={[{ label: 'Home' }]}>
-        <div className="flex items-center justify-center h-64">
-          <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full">
+          {/* Greeting card skeleton */}
+          <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-20" />
+          {/* Stat tiles skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-28" />
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-28" />
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-28" />
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-28" />
+          </div>
+          {/* Panels skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-80 lg:col-span-3" />
+            <div className="animate-pulse bg-[#f0eee6] rounded-2xl h-80 lg:col-span-2" />
+          </div>
         </div>
       </Layout>
     );
@@ -151,12 +164,15 @@ export default function DashboardPage() {
           transition={{ delay: 0.05 }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {statTiles.map((tile) => (
+          {statTiles.map((tile, index) => (
             <div
               key={tile.label}
               className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e8e6dc]"
             >
-              <div className="size-8 rounded-lg bg-[#f0eee6] border border-[#e8e6dc] flex items-center justify-center text-[#87867f] flex-shrink-0">
+              <div
+                className="size-8 rounded-lg bg-[#f0eee6] border border-[#e8e6dc] flex items-center justify-center text-[#87867f] flex-shrink-0 animate-float"
+                style={{ animationDelay: `${index * 200}ms` }}
+              >
                 {tile.icon}
               </div>
               <div className="min-w-0">
@@ -216,12 +232,23 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-[#e8e6dc]">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { staggerChildren: 0.06 } }
+                }}
+                className="divide-y divide-[#e8e6dc]"
+              >
                 {conversations.map((conv) => {
                   const dm = getDomainMeta(bots.find(b => b.id === conv.bot_id)?.config?.domain);
                   return (
-                    <Link
+                    <motion.div
                       key={conv.id}
+                      variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+                    >
+                    <Link
                       to={`/bots/${conv.bot_id}/chat`}
                       className="flex items-center gap-4 px-6 py-4 hover:bg-[#f0eee6] transition-colors group"
                     >
@@ -237,9 +264,10 @@ export default function DashboardPage() {
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/70 transition-colors flex-shrink-0" />
                     </Link>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </motion.div>
 
@@ -269,7 +297,15 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-[#e8e6dc] flex-1">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { staggerChildren: 0.06 } }
+                }}
+                className="divide-y divide-[#e8e6dc] flex-1"
+              >
                 {bots.map((bot) => {
                   const dm = getDomainMeta(bot.config?.domain);
                   const docs = botDocs[bot.id];
@@ -280,7 +316,11 @@ export default function DashboardPage() {
                     : 'ready';
 
                   return (
-                    <div key={bot.id} className="flex items-center gap-3 px-5 py-4 group hover:bg-[#f0eee6] transition-colors">
+                    <motion.div
+                      key={bot.id}
+                      variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+                      className="flex items-center gap-3 px-5 py-4 group hover:bg-[#f0eee6] transition-colors"
+                    >
                       <div className="size-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[#f0eee6] border border-[#e8e6dc]">
                         <span className={`material-symbols-outlined text-[16px] ${dm.iconColor}`}>{dm.icon}</span>
                       </div>
@@ -324,10 +364,10 @@ export default function DashboardPage() {
                           <Settings className="w-3.5 h-3.5" />
                         </Link>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </motion.div>
 
