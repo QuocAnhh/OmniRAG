@@ -378,15 +378,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 </button>
             }
             rightPanel={
-                <div className="flex-1 w-full h-full min-h-[500px] bg-white border-l border-[#e8e6dc] relative overflow-hidden flex flex-col">
+                <div className="flex-1 w-full h-full min-h-[500px] bg-white border-l border-border-warm relative overflow-hidden flex flex-col">
                     {debugMode ? (
                         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                             <DebugPanel data={debugData} loading={debugLoading} />
                         </div>
                     ) : (
                         <KnowledgeGraphPanel
-                            botId={id}
-                            chunks={selectedEvidence ?? undefined}
+                            botId={id!}
                             activeEntities={activeEntities}
                             onExpandClick={() => navigate(`/bots/${id}/graph`)}
                             onAskAboutEntity={handleSendMessage}
@@ -399,6 +398,9 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 {/* Messages Area */}
                 <div
                     ref={messagesContainerRef}
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Chat messages"
                     className={cn(
                         "flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar",
                         !isTyping && "scroll-smooth"

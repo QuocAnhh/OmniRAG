@@ -21,7 +21,7 @@ export default function DocumentOrganizer({ botId, onSelectDocument, onUploadCli
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
     // Breadcrumbs path calculation
-    const breadcrumbs = [];
+    const breadcrumbs: Folder[] = [];
     let tempId: string | null | undefined = currentFolderId;
     while (tempId) {
         const folder = folders.find(f => f.id === tempId);

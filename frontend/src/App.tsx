@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { useAuthStore } from './store/authStore';
 import { Toaster } from 'react-hot-toast';
 import { LogoIcon } from './components/ui/LogoIcon';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy load all route components for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -15,13 +16,14 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ZaloBotGuidePage = lazy(() => import('./pages/Docs/ZaloBotGuidePage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Loading component
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
-        <div className="size-20 mx-auto mb-6 rounded-lg overflow-hidden border border-[#e8e6dc] bg-[#faf9f5] p-3">
+        <div className="size-20 mx-auto mb-6 rounded-lg overflow-hidden border border-border-warm bg-warm-ivory p-3">
           <LogoIcon className="w-full h-full" />
         </div>
         <div className="flex justify-center gap-2 mb-4">
@@ -33,7 +35,7 @@ function LoadingScreen() {
             ></div>
           ))}
         </div>
-        <p className="text-xs text-[#87867f] uppercase tracking-wider font-medium">Loading workspace...</p>
+        <p className="text-xs text-text-tertiary uppercase tracking-wider font-medium">Loading workspace...</p>
       </div>
     </div>
   );
@@ -64,20 +66,21 @@ function App() {
   }, [initializeAuth]);
 
   return (
-    <BrowserRouter>
-      <Toaster
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#faf9f5',
-            color: '#141413',
-            border: '1px solid #e8e6dc',
+            background: 'var(--color-warm-ivory, #faf9f5)',
+            color: 'var(--color-warm-near-black, #141413)',
+            border: '1px solid var(--color-warm-sand, #e8e6dc)',
             borderRadius: '8px',
             padding: '16px',
             fontSize: '14px',
             fontWeight: '500',
-            boxShadow: 'rgba(0,0,0,0.05) 0px 4px 24px',
+            boxShadow: '0px 4px 24px rgba(0,0,0,0.05)',
           },
           success: {
             iconTheme: {
@@ -145,11 +148,12 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch all — 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

@@ -21,7 +21,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     /* Linting – strict flags tắt bớt để tránh false-positive khi dev */
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitAny": false,

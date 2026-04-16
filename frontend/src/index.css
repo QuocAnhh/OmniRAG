@@ -45,6 +45,67 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
+    /* Warm neutral palette — direct usage */
+    --color-warm-sand: #e8e6dc;
+    --color-warm-cream: #f0eee6;
+    --color-warm-ivory: #faf9f5;
+    --color-warm-parchment: #f5f4ed;
+    --color-warm-charcoal: #4d4c48;
+    --color-warm-olive: #5e5d59;
+    --color-warm-stone: #87867f;
+    --color-warm-silver: #b0aea5;
+    --color-warm-dark: #30302e;
+    --color-warm-near-black: #141413;
+
+    --color-terracotta: #c96442;
+    --color-terracotta-light: #d97757;
+    --color-terracotta-dark: #b3522f;
+
+    /* Semantic role tokens — text */
+    --color-text-primary: #141413;
+    --color-text-secondary: #5e5d59;
+    --color-text-tertiary: #87867f;
+    --color-text-inverse: #faf9f5;
+    --color-text-muted: #b0aea5;
+    --color-text-link: #c96442;
+    --color-text-link-hover: #d97757;
+
+    /* Semantic role tokens — border */
+    --color-border-subtle: #f0eee6;
+    --color-border-warm: #e8e6dc;
+    --color-border-dark: #30302e;
+    --color-border-focus: #3898ec;
+
+    /* Semantic role tokens — brand */
+    --color-brand-terracotta: #c96442;
+    --color-brand-coral: #d97757;
+    --color-brand-crimson: #b53333;
+
+    /* Sketch accent (Doodle layer — muted terracotta variants) */
+    --color-sketch-stroke: #b3522f;
+    --color-sketch-fill: #fbe1d6;
+    --color-sketch-highlight: #ee9a74;
+
+    /* Radius scale — editorial softness */
+    --radius-sharp: 4px;
+    --radius-subtle: 6px;
+    --radius-comfort: 8px;
+    --radius-generous: 12px;
+    --radius-feature: 16px;
+    --radius-tag: 24px;
+    --radius-hero: 32px;
+
+    /* Shadow scale — warm ring system */
+    --shadow-ring: 0px 0px 0px 1px var(--border);
+    --shadow-ring-subtle: 0px 0px 0px 1px #f0eee6;
+    --shadow-ring-warm: 0px 0px 0px 1px #e8e6dc;
+    --shadow-ring-hover: 0px 0px 0px 1px #d1cfc5;
+    --shadow-ring-active: 0px 0px 0px 1px #c2c0b6;
+    --shadow-ring-primary: 0px 0px 0px 1px #c96442;
+    --shadow-whisper-sm: 0px 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-whisper: rgba(0, 0, 0, 0.05) 0px 4px 24px;
+    --shadow-whisper-lg: 0px 8px 32px rgba(0, 0, 0, 0.06);
+
     --animate-accordion-down: accordion-down 0.2s ease-out;
     --animate-accordion-up: accordion-up 0.2s ease-out;
     --animate-float: float 3s ease-in-out infinite;
@@ -126,6 +187,27 @@
         font-variant-numeric: tabular-nums;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Respect reduced motion preferences globally */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+
+    /* Focus-visible ring — Focus Blue per DESIGN.md */
+    :focus-visible {
+        outline: 2px solid #3898ec;
+        outline-offset: 2px;
+    }
+
+    /* Remove default outline for mouse users */
+    :focus:not(:focus-visible) {
+        outline: none;
     }
 
     /* Headlines — serif authority */
