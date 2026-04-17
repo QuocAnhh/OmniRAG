@@ -8,3 +8,43 @@ __pycache__/
 **/__pycache__/
 *.pyc
 *.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# OS
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project temp files
+Figure/
+backend/rag_storage/
+ngrok.yml
+*.xlsx
+~$*.docx
+nic_back_barcode*.png
+qr.py
+test.py
+.claude/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Logs
+*.log
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
