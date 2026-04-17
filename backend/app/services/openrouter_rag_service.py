@@ -647,23 +647,23 @@ class OpenRouterRAGService:
         )
         vector_results = vector_response.points
 
-        # 2. Full-Text Search (uses the text index created during collection setup)
+        # 2. Full-Text Search (uses the text payload index — NOT scroll)
         fts_results = []
         if query.strip():
             try:
-                fts_scroll, _ = self.qdrant_client.scroll(
+                fts_response = self.qdrant_client.query_points(
                     collection_name=self.collection_name,
-                    scroll_filter=Filter(
+                    query_filter=Filter(
                         must=[
                             FieldCondition(key="bot_id", match=MatchValue(value=bot_id)),
-                            FieldCondition(key="text", match=MatchText(text=query))
+                            FieldCondition(key="text", match=MatchText(text=query)),
                         ]
                     ),
                     limit=initial_limit,
                     with_payload=True,
                     with_vectors=False,
                 )
-                fts_results = fts_scroll
+                fts_results = fts_response.points
                 logger.debug(f"FTS found {len(fts_results)} results for query: {query[:50]}")
             except Exception as e:
                 logger.warning(f"FTS search failed, using vector-only: {e}")
