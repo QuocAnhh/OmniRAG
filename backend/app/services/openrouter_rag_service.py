@@ -176,21 +176,9 @@ class OpenRouterRAGService:
         self.qdrant_client = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
         self.collection_name = "omnirag_openrouter_collection"
         
-        # Initialize Redis client for caching
-        try:
-            import redis
-            self.redis_client = redis.from_url(
-                settings.REDIS_URL,
-                decode_responses=True,
-                socket_connect_timeout=5,
-                socket_timeout=5
-            )
-            # Test connection
-            self.redis_client.ping()
-            logger.info("Redis connection established successfully")
-        except Exception as e:
-            logger.warning(f"Redis connection failed: {e}. Caching will be disabled.")
-            self.redis_client = None
+        # Redis caching via async client (shared from app.db.redis)
+        from app.services.cache_service import cache_service
+        self.cache = cache_service
         
         # Get embedding dimensions (typically 1536 for text-embedding-3-small)
         self.embedding_dim = 1536  # Will be auto-detected on first embedding
@@ -1621,8 +1609,33 @@ Answer:"""
         # ── Step 1: embed(query) + rewrite(query) — CONCURRENT ─────────────
         # Embed does NOT need the rewritten query — fire both immediately.
         print(f"[PERF] embed+rewrite concurrent", flush=True)
-        embed_task = asyncio.ensure_future(asyncio.to_thread(self._embed_with_retry, query))
-        rewrite_task = asyncio.ensure_future(self._rewrite_query(query))
+
+        async def _cached_embed(q: str) -> list:
+            """Embed with Redis cache (singleflight protected)."""
+            cache_key = f"q:{self.openrouter.embedding_model}:{q.strip().lower()}"
+            cached = await self.cache.get("emb", cache_key)
+            if cached is not None:
+                print(f"[PERF] embed cache HIT", flush=True)
+                return cached
+            result = await asyncio.to_thread(self._embed_with_retry, q)
+            await self.cache.set("emb", cache_key, result, ttl=86400)
+            return result
+
+        async def _cached_rewrite(q: str) -> str:
+            """Rewrite with cache. Skip for short queries."""
+            if len(q.strip()) < 20 and not q.endswith("?"):
+                return q
+            cache_key = f"rw:{q}"
+            cached = await self.cache.get("rewrite", cache_key)
+            if cached is not None:
+                return cached
+            result = await self._rewrite_query(q)
+            if result != q:
+                await self.cache.set("rewrite", cache_key, result, ttl=1800)
+            return result
+
+        embed_task = asyncio.ensure_future(_cached_embed(query))
+        rewrite_task = asyncio.ensure_future(_cached_rewrite(query))
 
         # ── Step 2: search + lightrag — start as soon as embed is ready ────
         # DO NOT await rewrite_task here — search uses original-query embedding.
@@ -1689,7 +1702,21 @@ Answer:"""
 
         # CRAG + wait for lightrag — run concurrently
         _t2 = _time.time()
-        crag_task = asyncio.ensure_future(self._crag_classify(search_query, filtered_results))
+
+        async def _cached_crag(q: str, chunks: list) -> str:
+            """CRAG verdict cache keyed on query + top chunk IDs."""
+            chunk_ids = hashlib.sha256(
+                "|".join(c.get("text", "")[:100] for c in chunks[:5]).encode()
+            ).hexdigest()[:16]
+            cache_key = f"{bot_id}:{chunk_ids}:{q[:100]}"
+            cached = await self.cache.get("crag", cache_key)
+            if cached is not None:
+                return cached
+            verdict = await self._crag_classify(q, chunks)
+            await self.cache.set("crag", cache_key, verdict, ttl=3600)
+            return verdict
+
+        crag_task = asyncio.ensure_future(_cached_crag(search_query, filtered_results))
         crag_status, lightrag_raw = await asyncio.gather(crag_task, lightrag_task, return_exceptions=True)
 
         if isinstance(crag_status, BaseException):
@@ -2254,37 +2281,25 @@ Answer:"""
             logger.error(f"Error clearing history: {e}")
             return False
     
-    def invalidate_bot_cache(self, bot_id: str):
-        """Invalidate all cached queries for a specific bot."""
-        if not self.redis_client:
-            return
-        
-        try:
-            pattern = f"rag:chat:{bot_id}:*"
-            cursor = 0
-            deleted_count = 0
-            
-            while True:
-                cursor, keys = self.redis_client.scan(
-                    cursor=cursor,
-                    match=pattern,
-                    count=100
-                )
-                if keys:
-                    self.redis_client.delete(*keys)
-                    deleted_count += len(keys)
-                if cursor == 0:
-                    break
-            
-            logger.info(f"Invalidated {deleted_count} cached queries for bot {bot_id}")
-        except Exception as e:
-            logger.error(f"Cache invalidation failed for bot {bot_id}: {e}")
-
     async def invalidate_bot_cache_async(self, bot_id: str):
-        """Async wrapper to avoid blocking event loop."""
-        if not self.redis_client:
-            return
-        await asyncio.to_thread(self.invalidate_bot_cache, bot_id)
+        """Invalidate all cached data for a specific bot (chat responses, CRAG, etc.)."""
+        try:
+            await self.cache.clear_prefix(f"rag:chat:{bot_id}")
+            await self.cache.clear_prefix(f"crag:{bot_id}")
+            logger.info("bot_cache_invalidated", bot_id=bot_id)
+        except Exception as e:
+            logger.error("cache_invalidation_failed", bot_id=bot_id, error=str(e))
+
+    def invalidate_bot_cache(self, bot_id: str):
+        """Sync wrapper — schedule async invalidation as a task."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(self.invalidate_bot_cache_async(bot_id))
+            else:
+                loop.run_until_complete(self.invalidate_bot_cache_async(bot_id))
+        except RuntimeError:
+            asyncio.run(self.invalidate_bot_cache_async(bot_id))
 
 
 # Singleton instance
