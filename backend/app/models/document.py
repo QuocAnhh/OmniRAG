@@ -34,5 +34,5 @@ class Document(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    bot = relationship("Bot", back_populates="documents")
-    folder = relationship("Folder", back_populates="documents")
+    bot = relationship("Bot", back_populates="documents", lazy="selectin")
+    folder = relationship("Folder", back_populates="documents", lazy="selectin")

@@ -18,7 +18,7 @@ class Folder(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    parent = relationship("Folder", remote_side=[id], back_populates="children")
-    children = relationship("Folder", back_populates="parent", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="folder")
-    bot = relationship("Bot", back_populates="folders")
+    parent = relationship("Folder", remote_side=[id], back_populates="children", lazy="selectin")
+    children = relationship("Folder", back_populates="parent", cascade="all, delete-orphan", lazy="selectin")
+    documents = relationship("Document", back_populates="folder", lazy="selectin")
+    bot = relationship("Bot", back_populates="folders", lazy="selectin")

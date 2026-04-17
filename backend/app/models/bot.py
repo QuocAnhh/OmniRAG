@@ -28,6 +28,6 @@ class Bot(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    tenant = relationship("Tenant", back_populates="bots")
-    documents = relationship("Document", back_populates="bot", cascade="all, delete-orphan")
-    folders = relationship("Folder", back_populates="bot", cascade="all, delete-orphan")
+    tenant = relationship("Tenant", back_populates="bots", lazy="selectin")
+    documents = relationship("Document", back_populates="bot", cascade="all, delete-orphan", lazy="selectin")
+    folders = relationship("Folder", back_populates="bot", cascade="all, delete-orphan", lazy="selectin")

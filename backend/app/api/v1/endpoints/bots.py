@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 import uuid
 from uuid import UUID
@@ -48,17 +50,19 @@ rag_service = get_openrouter_rag_service()
 router = APIRouter()
 
 @router.get("/", response_model=List[Bot])
-def read_bots(
+async def read_bots(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    db: AsyncSession = Depends(deps.get_async_db),
+    current_user: User = Depends(deps.get_current_active_user_async),
 ):
     """Get all bots for current user's tenant"""
-    bots = db.query(BotModel).filter(
-        BotModel.tenant_id == current_user.tenant_id
-    ).offset(skip).limit(limit).all()
-    return bots
+    result = await db.execute(
+        select(BotModel)
+        .where(BotModel.tenant_id == current_user.tenant_id)
+        .offset(skip).limit(limit)
+    )
+    return result.scalars().all()
 
 @router.post("/", response_model=Bot, status_code=201)
 def create_bot(
@@ -79,8 +83,8 @@ def create_bot(
     return bot
 
 @router.get("/{bot_id}", response_model=Bot)
-def read_bot(
-    bot: BotModel = Depends(deps.get_current_bot),
+async def read_bot(
+    bot: BotModel = Depends(deps.get_current_bot_async),
 ):
     """Get a specific bot"""
     return bot
@@ -232,15 +236,15 @@ async def upload_document(
     return doc
 
 @router.get("/{bot_id}/documents", response_model=List[Document])
-def list_documents(
-    bot: BotModel = Depends(deps.get_current_bot),
-    db: Session = Depends(deps.get_db),
+async def list_documents(
+    bot: BotModel = Depends(deps.get_current_bot_async),
+    db: AsyncSession = Depends(deps.get_async_db),
 ):
     """List all documents for a bot"""
-    documents = db.query(DocumentModel).filter(
-        DocumentModel.bot_id == bot.id
-    ).all()
-    return documents
+    result = await db.execute(
+        select(DocumentModel).where(DocumentModel.bot_id == bot.id)
+    )
+    return result.scalars().all()
 
 @router.delete("/{bot_id}/documents/{doc_id}", status_code=204)
 def delete_document(
