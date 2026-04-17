@@ -36,3 +36,7 @@ lightrag-hku>=0.1.0
 networkx>=3.0
 openpyxl
 requests
+# ── Observability + Perf (Phase 1) ──────────────────────────────────────────
+prometheus-client>=0.20.0
+structlog>=24.1.0
+msgpack>=1.0.7
