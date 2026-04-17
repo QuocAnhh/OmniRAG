@@ -379,17 +379,25 @@ class OpenRouterRAGService:
         """Upload extracted images (charts, figures, diagrams) to MinIO."""
         try:
             from app.services.storage_service import storage_service
-            image_files = list(Path(image_dir).glob("*.*"))
+            image_files = [
+                p for p in Path(image_dir).glob("*.*")
+                if p.suffix.lower() in (".png", ".jpeg", ".jpg")
+            ]
             if not image_files:
                 return
-            uploaded = []
-            for img_path in image_files:
-                if img_path.suffix.lower() not in (".png", ".jpeg", ".jpg"):
-                    continue
-                content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
-                with open(img_path, "rb") as f:
-                    object_path = storage_service.upload_file(f, img_path.name, content_type=content_type)
-                uploaded.append(object_path)
+
+            sem = asyncio.Semaphore(8)
+
+            async def _upload_one(img_path: Path):
+                async with sem:
+                    content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
+                    with open(img_path, "rb") as f:
+                        return await asyncio.to_thread(
+                            storage_service.upload_file, f, img_path.name, content_type
+                        )
+
+            uploaded = await asyncio.gather(*[_upload_one(p) for p in image_files])
+            uploaded = [u for u in uploaded if not isinstance(u, BaseException)]
             logger.info(f"Uploaded {len(uploaded)} extracted images to MinIO for {original_filename}")
         except Exception as e:
             logger.warning(f"Failed to upload extracted images to MinIO: {e}")
@@ -989,11 +997,13 @@ Answer:"""
 
         UPSERT_BATCH_SIZE = 200
         logger.info(f"Inserting {len(points)} vectors into Qdrant (batches of {UPSERT_BATCH_SIZE})")
-        for i in range(0, len(points), UPSERT_BATCH_SIZE):
-            self.qdrant_client.upsert(
-                collection_name=self.collection_name,
-                points=points[i:i + UPSERT_BATCH_SIZE]
-            )
+        batches = [points[i:i + UPSERT_BATCH_SIZE] for i in range(0, len(points), UPSERT_BATCH_SIZE)]
+        from app.services.qdrant_gateway import get_qdrant_gateway
+        gw = get_qdrant_gateway()
+        await asyncio.gather(*[
+            gw.upsert(self.collection_name, batch)
+            for batch in batches
+        ])
 
         elapsed_time = time.time() - start_time
 
@@ -1293,10 +1303,13 @@ Answer:"""
     # ──────────────────────────────────────────────────────────────────────────
 
     async def _generate_contextual_prefix_batch(
-        self, doc_text: str, chunk_texts: List[str], max_chunks: int = 50
+        self, doc_text: str, chunk_texts: List[str], max_chunks: int = 0
     ) -> List[str]:
         """
         Contextual Retrieval — generate a 1-2 sentence situating context for each chunk.
+        Batches 8 chunks per LLM call (down from 50 separate calls) and removes the
+        cap so all chunks get prefixes.
+        """
         The prefix is prepended to the chunk *before* embedding so that the vector
         captures where the chunk lives within the whole document (Anthropic technique).
 
@@ -1305,18 +1318,24 @@ Answer:"""
         """
         # Truncate full doc text to keep prompts manageable
         doc_summary = doc_text[:4000]
+        BATCH_SIZE = 8
 
-        async def _prefix_one(chunk: str) -> str:
+        async def _prefix_batch(chunk_batch: List[tuple]) -> List[str]:
+            """Generate prefixes for a batch of (idx, chunk) tuples in one LLM call."""
+            chunks_xml = "\n".join(
+                f'<chunk id="{i}">{text[:600]}</chunk>'
+                for i, text in chunk_batch
+            )
             messages = [
                 {
                     "role": "user",
                     "content": (
                         f"<document>\n{doc_summary}\n</document>\n\n"
-                        f"<chunk>\n{chunk[:600]}\n</chunk>\n\n"
-                        "Write 1-2 sentences that situate this chunk within the overall document "
-                        "(e.g. which section it belongs to, what topic it covers). "
-                        "This context will be prepended to the chunk to improve search retrieval. "
-                        "Reply with ONLY the context sentences, no labels or headings."
+                        f"{chunks_xml}\n\n"
+                        "For each chunk, write 1-2 sentences that situate it within the "
+                        "overall document (which section, what topic). "
+                        'Reply as JSON: {"prefixes": [{"id": 0, "text": "..."}, ...]}\n'
+                        "Only the JSON object, no other text."
                     ),
                 }
             ]
@@ -1326,19 +1345,53 @@ Answer:"""
                     messages=messages,
                     model=INTERNAL_LLM_MODEL,
                     temperature=0.1,
-                    max_tokens=80,
+                    max_tokens=80 * len(chunk_batch),
                 )
-                return response.get("content", "").strip()
+                content = response.get("content", "").strip()
+                # Try JSON parse
+                import json as _json
+                match = re.search(r'\{.*\}', content, re.DOTALL)
+                if match:
+                    parsed = _json.loads(match.group())
+                    prefix_map = {p["id"]: p["text"] for p in parsed.get("prefixes", [])}
+                    return [prefix_map.get(i, "") for i, _ in chunk_batch]
             except Exception:
-                return ""
+                pass
+            # Fallback: one-by-one for this batch
+            fallback = []
+            for i, text in chunk_batch:
+                try:
+                    resp = await asyncio.to_thread(
+                        self.openrouter.chat_completion,
+                        messages=[{"role": "user", "content": (
+                            f"<document>\n{doc_summary}\n</document>\n\n"
+                            f"<chunk>\n{text[:600]}\n</chunk>\n\n"
+                            "Write 1-2 sentences that situate this chunk within the document. "
+                            "Reply with ONLY the context sentences."
+                        )}],
+                        model=INTERNAL_LLM_MODEL,
+                        temperature=0.1,
+                        max_tokens=80,
+                    )
+                    fallback.append(resp.get("content", "").strip())
+                except Exception:
+                    fallback.append("")
+            return fallback
 
-        active_chunks = chunk_texts[:max_chunks]
-        prefixes = await asyncio.gather(
-            *[_prefix_one(c) for c in active_chunks], return_exceptions=True
+        # Build batches of (index, chunk_text)
+        indexed = list(enumerate(chunk_texts))
+        batches = [indexed[i:i + BATCH_SIZE] for i in range(0, len(indexed), BATCH_SIZE)]
+
+        batch_results = await asyncio.gather(
+            *[_prefix_batch(b) for b in batches], return_exceptions=True
         )
-        result = [p if isinstance(p, str) else "" for p in prefixes]
-        # Pad with empty strings for chunks beyond max_chunks
-        result += [""] * max(0, len(chunk_texts) - max_chunks)
+
+        result = [""] * len(chunk_texts)
+        for batch, batch_result in zip(batches, batch_results):
+            if isinstance(batch_result, BaseException):
+                continue
+            for (idx, _), prefix in zip(batch, batch_result):
+                result[idx] = prefix
         return result
 
     async def chat(

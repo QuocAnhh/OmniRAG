@@ -40,21 +40,24 @@ def process_document_task(
     5. Optionally kick off LightRAG graph extraction (only if enable_knowledge_graph=True)
     """
     try:
+        # Reuse a single DB session across all status updates for this task
+        db = SessionLocal()
+
         # Update status to processing
         self.update_state(state='PROCESSING', meta={'status': 'Downloading file'})
-        _update_document_status(document_id, status="processing")
-        
+        _update_document_status(document_id, status="processing", _session=db)
+
         # Download file from MinIO
         file_data = storage_service.download_file(file_path)
-        
+
         # Get file extension
         file_ext = Path(filename).suffix
-        
+
         # Create temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
             tmp_file.write(file_data)
             tmp_file_path = tmp_file.name
-        
+
         try:
             self.update_state(state='PROCESSING', meta={'status': 'Processing document'})
 
@@ -87,7 +90,6 @@ def process_document_task(
             num_chunks = ingest_result.get("chunks_created", 0)
 
             # Mark document as 'completed' immediately after Qdrant indexing.
-            # Users can now chat with the bot right away — no need to wait for graph!
             _update_document_status(
                 document_id,
                 status="completed",
@@ -100,7 +102,8 @@ def process_document_task(
                     "model": ingest_result.get("model_used"),
                     "has_structured_json": loaded_documents[0].metadata.get("has_structured_json", False) if loaded_documents else False,
                 },
-                error_message=None
+                error_message=None,
+                _session=db,
             )
 
             # --- Fire-and-forget: LightRAG Knowledge Graph (separate task) ---
@@ -127,13 +130,16 @@ def process_document_task(
             # Clean up temp file
             if os.path.exists(tmp_file_path):
                 os.remove(tmp_file_path)
+            db.close()
                 
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Error processing document {document_id}: {error_msg}")
-        
+
         try:
-            _update_document_status(document_id, status="failed", error_message=error_msg)
+            db = SessionLocal()
+            _update_document_status(document_id, status="failed", error_message=error_msg, _session=db)
+            db.close()
         except Exception as db_err:
             logger.error(f"Failed to update document status for {document_id}: {db_err}")
 
@@ -232,8 +238,11 @@ def _update_document_status(
     status: str,
     doc_metadata: dict | None = None,
     error_message: str | None = None,
+    _session=None,
 ):
-    db = SessionLocal()
+    """Update document status. Reuses _session if provided (avoids per-call session creation)."""
+    db = _session or SessionLocal()
+    own_session = _session is None
     try:
         doc_uuid = UUID(document_id)
         doc = db.query(DocumentModel).filter(DocumentModel.id == doc_uuid).first()
@@ -247,7 +256,8 @@ def _update_document_status(
         db.add(doc)
         db.commit()
     finally:
-        db.close()
+        if own_session:
+            db.close()
 
 
 def _update_kg_status(document_id: str, kg_status: str, error_msg: str | None = None):
