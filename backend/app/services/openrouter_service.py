@@ -68,7 +68,10 @@ class OpenRouterService:
             api_key=self.api_key,
             default_headers=self._default_headers
         )
-        
+
+        # Lazy async client (shared httpx transport, created on first use)
+        self._async_client = None
+
         logger.info(
             f"OpenRouter service initialized with chat_model={self.chat_model}, "
             f"embedding_model={self.embedding_model}"
@@ -310,17 +313,15 @@ class OpenRouterService:
         texts: List[str],
         model: Optional[str] = None,
         batch_size: int = 100,
-        concurrency: int = 3,
+        concurrency: int = 6,
         max_retries: int = 3
     ) -> List[List[float]]:
         """
         Async version of embed_batch using asyncio.gather() + Semaphore.
 
-        Tất cả batches được fired gần như cùng lúc. Semaphore giới hạn số batch
-        đang active → thời gian tổng ≈ thời gian của batch chậm nhất (+ overhead nhỏ).
-
-        NOTE: AsyncOpenAI client được tạo bên trong function (không phải __init__)
-        vì mỗi asyncio.run() tạo event loop mới — client phải cùng loop với caller.
+        All batches fired near-simultaneously. Semaphore caps concurrent requests.
+        Reuses a shared AsyncOpenAI client (lazy singleton) to avoid repeated
+        SSL handshakes.
         """
         from openai import RateLimitError as AsyncRateLimitError
 
@@ -329,7 +330,9 @@ class OpenRouterService:
         sem = asyncio.Semaphore(concurrency)
         embed_model = model or self.embedding_model
 
-        async def _fetch_one(idx: int, batch: List[str], client: AsyncOpenAI) -> None:
+        client = await self._get_async_client()
+
+        async def _fetch_one(idx: int, batch: List[str]) -> None:
             async with sem:
                 for attempt in range(max_retries):
                     try:
@@ -343,25 +346,42 @@ class OpenRouterService:
                     except AsyncRateLimitError:
                         if attempt == max_retries - 1:
                             raise
-                        wait = 2 ** attempt  # 1s, 2s, 4s
+                        wait = 2 ** attempt
                         logger.warning(
                             f"Rate limit hit on batch {idx + 1}, retry in {wait}s "
                             f"(attempt {attempt + 1}/{max_retries})"
                         )
                         await asyncio.sleep(wait)
 
-        # AsyncOpenAI tạo ở đây — cùng event loop với asyncio.gather()
-        async with AsyncOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=self.api_key,
-            default_headers=self._default_headers
-        ) as async_client:
-            await asyncio.gather(*[
-                _fetch_one(idx, batch, async_client)
-                for idx, batch in enumerate(batches)
-            ])
+        await asyncio.gather(*[
+            _fetch_one(idx, batch)
+            for idx, batch in enumerate(batches)
+        ])
 
         return [emb for batch_result in all_embeddings for emb in batch_result]
+
+    async def _get_async_client(self) -> AsyncOpenAI:
+        """Lazy singleton AsyncOpenAI client with shared httpx transport."""
+        if self._async_client is None:
+            import httpx
+            transport = httpx.AsyncClient(
+                http2=True,
+                limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+                timeout=httpx.Timeout(60.0, connect=5.0),
+            )
+            self._async_client = AsyncOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.api_key,
+                default_headers=self._default_headers,
+                http_client=transport,
+            )
+        return self._async_client
+
+    async def close_async_client(self):
+        """Close the shared async client (call during app shutdown)."""
+        if self._async_client is not None:
+            await self._async_client.close()
+            self._async_client = None
 
     def test_connection(self) -> bool:
         """

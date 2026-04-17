@@ -66,6 +66,15 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await close_mongodb_connection()
     await close_redis_connection()
+
+    # Close shared async OpenAI client
+    try:
+        from app.services.openrouter_service import get_openrouter_service
+        svc = get_openrouter_service()
+        await svc.close_async_client()
+    except Exception:
+        pass
+
     logger.info("shutdown_complete")
 
 
