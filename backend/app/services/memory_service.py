@@ -155,14 +155,14 @@ class MemoryService:
             return
 
         try:
-            metadata = {"bot_id": bot_id}
+            metadata = {"bot_id": bot_id, "user_id": user_id}
+            if session_id:
+                metadata["session_id"] = session_id
             kwargs = {
                 "messages": messages,
                 "user_id": user_id,
-                "metadata": {**metadata, "user_id": user_id},
+                "metadata": metadata,
             }
-            if session_id:
-                kwargs["session_id"] = session_id
 
             await asyncio.to_thread(self._mem0.add, **kwargs)
             logger.debug(f"[Memory] Saved turn for user={user_id}, bot={bot_id}")

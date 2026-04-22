@@ -56,10 +56,15 @@ async def zalo_bot_webhook(bot_id: str, request: Request):
     finally:
         db.close()
 
-    # Parse payload and dispatch to Celery
+    # Parse payload and process directly in FastAPI process (same event loop as web chat)
+    # This ensures LightRAG, Redis cache, memory — all work identically to the web experience.
     payload = await request.json()
     logger.info(f"Zalo Bot webhook received for bot {bot_id}")
-    process_zalo_bot_webhook_task.delay(bot_id, payload)
+
+    import asyncio
+    from app.services.channels.zalo_bot_service import get_zalo_bot_service
+    service = get_zalo_bot_service()
+    asyncio.create_task(service.handle_webhook(bot_id, payload))
 
     return {"status": "received"}
 

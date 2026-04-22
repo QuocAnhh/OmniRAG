@@ -18,7 +18,10 @@ class CacheService:
 
     @property
     def redis(self):
-        return get_redis()
+        r = get_redis()
+        if r is None:
+            logger.warning("cache_service: Redis not connected — skipping cache op")
+        return r
 
     def _generate_key(self, prefix: str, data: Any) -> str:
         if isinstance(data, (dict, list)):
@@ -31,6 +34,8 @@ class CacheService:
     # ── Basic get/set/delete ───────────────────────────────────────────────
 
     async def get(self, prefix: str, key_data: Any) -> Optional[Any]:
+        if self.redis is None:
+            return None
         key = self._generate_key(prefix, key_data)
         data = await self.redis.get(key)
         if data:
@@ -40,6 +45,8 @@ class CacheService:
         return None
 
     async def set(self, prefix: str, key_data: Any, value: Any, ttl: int = 3600):
+        if self.redis is None:
+            return
         key = self._generate_key(prefix, key_data)
         await self.redis.set(key, json.dumps(value), ex=ttl)
 

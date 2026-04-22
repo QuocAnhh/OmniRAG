@@ -148,7 +148,7 @@ class ZaloBotService:
                 query=text,
                 bot_config={
                     **(bot.config or {}),
-                    "user_id": f"zalo_{chat_id}",    # Stable per-user memory key
+                    "user_id": f"zalo_{chat_id}",
                     "enable_memory": True,
                 },
                 session_id=f"zalo_bot_{chat_id}"

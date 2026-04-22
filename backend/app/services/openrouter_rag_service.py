@@ -1422,19 +1422,17 @@ Answer:"""
             domain_prompt_suffix = ""
 
         # 1. Check Redis cache
-        if use_cache and self.redis_client:
-            cache_key = f"rag:chat:{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
+        cache_key_data = f"{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
+        if use_cache and self.cache:
             try:
-                cached_str = await asyncio.to_thread(self.redis_client.get, cache_key)
-                if cached_str:
+                cached = await self.cache.get("rag:chat", cache_key_data)
+                if cached:
                     logger.info(f"Cache HIT for query: {query[:50]}...")
-                    result = json.loads(cached_str)
-                    result["from_cache"] = True
-                    # Recalculate response time
-                    result["response_time"] = round(time.time() - start_time, 3)
-                    return result
+                    cached["from_cache"] = True
+                    cached["response_time"] = round(time.time() - start_time, 3)
+                    return cached
             except Exception as e:
-                logger.warning(f"Redis error: {e}")
+                logger.warning(f"Redis cache read error: {e}")
         
         # Prepare context (retrieval, reranking, agent logs)
         prep = await self._prepare_chat_context(bot_id, query, bot_config, effective_top_k)
@@ -1574,22 +1572,13 @@ Answer:"""
             # ─────────────────────────────────────────────────────────────
 
             # 9. Cache response
-            if use_cache and self.redis_client:
+            if use_cache and self.cache:
                 try:
-                    # Remove session-specific or dynamic fields before caching if desired
-                    # But for simple full-response caching we can cache mostly everything.
-                    # Ideally we don't cache session_id or message_id if they are unique per request.
                     cache_payload = result.copy()
                     cache_payload.pop("session_id", None)
                     cache_payload.pop("message_id", None)
                     cache_payload["from_cache"] = True
-                    
-                    await asyncio.to_thread(
-                        self.redis_client.setex,
-                        cache_key,
-                        3600, # 1 hour TTL
-                        json.dumps(cache_payload)
-                    )
+                    await self.cache.set("rag:chat", cache_key_data, cache_payload, ttl=3600)
                 except Exception as e:
                     logger.warning(f"Failed to write to Redis cache: {e}")
 
@@ -2126,7 +2115,7 @@ Answer:"""
             logger.debug(f"Conversation logged: session_id={session_id}")
             
         except Exception as e:
-            logger.error(f"Error logging conversation: {e}")
+            logger.error(f"Error logging conversation: {e}", exc_info=True)
 
     async def _summarize_session_title(self, session_id: str, first_message: str):
         """Generate a short (3-5 words) title from the first message in Vietnamese."""
