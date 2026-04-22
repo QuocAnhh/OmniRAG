@@ -73,6 +73,10 @@ export const chatApi = {
             try {
               const data = JSON.parse(line.slice(6));
               onChunk(data);
+              // Yield to the browser so React can render each chunk visually
+              // before processing the next one. Without this, React 18/19
+              // batches all setMessages() calls in this loop into a single render.
+              await new Promise<void>(r => requestAnimationFrame(() => r()));
             } catch (e) {
               console.error('Error parsing stream chunk', e);
             }

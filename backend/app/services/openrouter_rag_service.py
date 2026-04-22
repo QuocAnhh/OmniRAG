@@ -386,18 +386,11 @@ class OpenRouterRAGService:
             if not image_files:
                 return
 
-            sem = asyncio.Semaphore(8)
-
-            async def _upload_one(img_path: Path):
-                async with sem:
-                    content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
-                    with open(img_path, "rb") as f:
-                        return await asyncio.to_thread(
-                            storage_service.upload_file, f, img_path.name, content_type
-                        )
-
-            uploaded = await asyncio.gather(*[_upload_one(p) for p in image_files])
-            uploaded = [u for u in uploaded if not isinstance(u, BaseException)]
+            uploaded = []
+            for img_path in image_files:
+                content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
+                with open(img_path, "rb") as f:
+                    uploaded.append(storage_service.upload_file(f, img_path.name, content_type))
             logger.info(f"Uploaded {len(uploaded)} extracted images to MinIO for {original_filename}")
         except Exception as e:
             logger.warning(f"Failed to upload extracted images to MinIO: {e}")
@@ -1000,10 +993,10 @@ Answer:"""
         batches = [points[i:i + UPSERT_BATCH_SIZE] for i in range(0, len(points), UPSERT_BATCH_SIZE)]
         from app.services.qdrant_gateway import get_qdrant_gateway
         gw = get_qdrant_gateway()
-        await asyncio.gather(*[
+        asyncio.run(asyncio.gather(*[
             gw.upsert(self.collection_name, batch)
             for batch in batches
-        ])
+        ]))
 
         elapsed_time = time.time() - start_time
 
@@ -1309,7 +1302,7 @@ Answer:"""
         Contextual Retrieval — generate a 1-2 sentence situating context for each chunk.
         Batches 8 chunks per LLM call (down from 50 separate calls) and removes the
         cap so all chunks get prefixes.
-        """
+
         The prefix is prepended to the chunk *before* embedding so that the vector
         captures where the chunk lives within the whole document (Anthropic technique).
 
@@ -2003,63 +1996,22 @@ Answer:"""
         # Streaming from OpenRouter
         full_response = ""
         try:
-            import queue
-            q = queue.Queue()
-
-            def stream_worker():
-                try:
-                    logger.info(f"[STREAM_WORKER] Starting OpenRouter stream request")
-                    stream_obj = self.openrouter.chat_completion(
-                        messages=messages,
-                        model=model,
-                        temperature=temperature,
-                        max_tokens=max_tokens,
-                        stream=True
-                    )
-
-                    stream_chunk_count = 0
-                    for chk in stream_obj:
-                        stream_chunk_count += 1
-                        q.put(("chunk", chk))
-                    logger.info(f"[STREAM_WORKER] Finished receiving {stream_chunk_count} chunks from OpenRouter")
-                    q.put(("done", None))
-                except Exception as e:
-                    logger.error(f"[STREAM_WORKER] Stream worker error: {e}", exc_info=True)
-                    q.put(("error", e))
-
-            # Start worker thread
-            logger.info(f"[CHAT_STREAM] Starting worker thread for OpenRouter streaming")
-            worker_thread = asyncio.get_running_loop().run_in_executor(None, stream_worker)
-
             chunk_count = 0
-            while True:
-                # Poll queue safely
-                try:
-                    logger.debug(f"[CHAT_STREAM] Polling queue... (chunk_count={chunk_count})")
-                    item_type, item_data = await asyncio.to_thread(q.get)
-                    logger.debug(f"[CHAT_STREAM] Got item from queue: type={item_type}")
-                except Exception as e:
-                    logger.error(f"[CHAT_STREAM] Error polling queue: {e}")
-                    break
+            async for chk in self.openrouter.chat_completion_stream(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ):
+                if getattr(chk, "choices", None) and len(chk.choices) > 0:
+                    delta = getattr(chk.choices[0], "delta", None)
+                    if delta and getattr(delta, "content", None):
+                        content = delta.content
+                        full_response += content
+                        chunk_count += 1
+                        yield {"type": "content", "content": content}
 
-                if item_type == "done":
-                    logger.info(f"[CHAT_STREAM] Stream completed (done signal)")
-                    break
-                elif item_type == "error":
-                    logger.error(f"[CHAT_STREAM] Stream error received: {item_data}")
-                    break
-                elif item_type == "chunk":
-                    chunk_count += 1
-                    logger.debug(f"[CHAT_STREAM] Processing chunk #{chunk_count}")
-                    if getattr(item_data, "choices", None) and len(item_data.choices) > 0:
-                        delta = getattr(item_data.choices[0], "delta", None)
-                        if delta and getattr(delta, "content", None):
-                            content = delta.content
-                            full_response += content
-                            logger.debug(f"[CHAT_STREAM] Yielding content chunk: {len(content)} chars")
-                            yield {"type": "content", "content": content}
-                            
-            logger.info(f"Finished streaming {chunk_count} chunks. Full response length: {len(full_response)}")
+            logger.info(f"[CHAT_STREAM] Finished streaming {chunk_count} chunks, response length={len(full_response)}")
             if len(full_response) == 0:
                 logger.warning("Warning: Generated response is empty!")
 

@@ -175,7 +175,33 @@ class OpenRouterService:
         except Exception as e:
             logger.error(f"Unexpected error in chat_completion: {str(e)}")
             raise
-    
+
+    async def chat_completion_stream(
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+    ):
+        """Async streaming chat completion using AsyncOpenAI. Yields raw stream chunks."""
+        model = model or self.chat_model
+        client = await self._get_async_client()
+
+        params = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "temperature": temperature,
+        }
+        if max_tokens:
+            params["max_tokens"] = max_tokens
+        if self.enable_fallbacks:
+            params["extra_body"] = {"provider": {"allow_fallbacks": True}}
+
+        response = await client.chat.completions.create(**params)
+        async for chunk in response:
+            yield chunk
+
     def generate_embeddings(
         self,
         texts: Union[str, List[str]],
