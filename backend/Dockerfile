@@ -24,6 +24,9 @@ RUN uv pip install --no-cache torch torchvision torchaudio --index-url https://d
 COPY requirements.txt .
 RUN uv pip install --no-cache -r requirements.txt
 
+# Pre-download spaCy model required by mem0 lemmatization (no pip at runtime)
+RUN python -m spacy download en_core_web_sm
+
 # Final stage
 FROM python:3.11-slim
 

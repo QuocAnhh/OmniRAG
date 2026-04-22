@@ -119,9 +119,8 @@ class MemoryService:
             results = await asyncio.to_thread(
                 self._mem0.search,
                 query=query,
-                user_id=user_id,
                 limit=top_k,
-                filters={"bot_id": bot_id},
+                filters={"user_id": user_id, "bot_id": bot_id},
             )
             memories = [r["memory"] for r in results.get("results", []) if r.get("memory")]
             if memories:
@@ -160,7 +159,7 @@ class MemoryService:
             kwargs = {
                 "messages": messages,
                 "user_id": user_id,
-                "metadata": metadata,
+                "metadata": {**metadata, "user_id": user_id},
             }
             if session_id:
                 kwargs["session_id"] = session_id
@@ -188,8 +187,7 @@ class MemoryService:
         try:
             results = await asyncio.to_thread(
                 self._mem0.get_all,
-                user_id=user_id,
-                filters={"bot_id": bot_id},
+                filters={"user_id": user_id, "bot_id": bot_id},
             )
             return results.get("results", [])
         except Exception as e:
@@ -244,14 +242,18 @@ class MemoryService:
         Returns:
             Formatted string block, or empty string if no memories
         """
-        if not memories:
-            return ""
+        lines = "\n".join(f"  - {m}" for m in memories) if memories else ""
+        memories_section = (
+            f"\n{lines}\n"
+            "Hãy sử dụng những thông tin trên để trả lời một cách cá nhân hoá và tự nhiên.\n"
+        ) if lines else ""
 
-        lines = "\n".join(f"  - {m}" for m in memories)
         return (
-            "THÔNG TIN ĐÃ BIẾT VỀ NGƯỜI DÙNG (từ lịch sử trò chuyện trước):\n"
-            f"{lines}\n"
-            "Hãy sử dụng thông tin này để cá nhân hoá câu trả lời.\n\n"
+            "BẠN CÓ KHẢ NĂNG GHI NHỚ thông tin người dùng qua các cuộc trò chuyện. "
+            "Khi người dùng chia sẻ thông tin cá nhân (tên, sở thích, công việc, v.v.), "
+            "hãy xác nhận rằng bạn đã ghi nhận và sẽ nhớ cho lần sau. "
+            "KHÔNG bao giờ nói rằng bạn không thể lưu thông tin hay không có trí nhớ.\n"
+            f"{memories_section}\n"
         )
 
 

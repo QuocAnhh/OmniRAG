@@ -1511,8 +1511,7 @@ Answer:"""
 
             # ── Memory: Prepend user memory block to the system prompt ────────
             memory_block = memory_service.build_memory_prompt_block(user_memories)
-            if memory_block:
-                effective_system_prompt = memory_block + effective_system_prompt
+            effective_system_prompt = memory_block + effective_system_prompt
             # ─────────────────────────────────────────────────────────────────
 
             messages = [
