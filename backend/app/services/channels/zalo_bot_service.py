@@ -69,6 +69,13 @@ class ZaloBotService:
             "text": text
         })
 
+    async def send_chat_action(self, bot_token: str, chat_id: str, action: str = "typing") -> dict:
+        """Send chat action (typing indicator) to a Zalo user/chat."""
+        return await self._zalo_post(bot_token, "sendChatAction", {
+            "chat_id": chat_id,
+            "action": action,
+        })
+
     # ─── Connect / Disconnect ────────────────────────────
 
     async def connect(self, bot_id: str, bot_token: str, webhook_base_url: str) -> dict:
@@ -140,6 +147,12 @@ class ZaloBotService:
             if not bot_token or not zalo_config.get("is_active", False):
                 logger.warning(f"Zalo Bot: Integration inactive for bot {bot_id}")
                 return {"status": "inactive"}
+
+            # Show typing indicator while processing
+            try:
+                await self.send_chat_action(bot_token, chat_id, "typing")
+            except Exception:
+                pass  # non-critical
 
             # Call RAG engine
             logger.info(f"Zalo Bot: Processing message for bot '{bot.name}': '{text[:50]}...'")
