@@ -46,12 +46,15 @@ async def zalo_bot_webhook(bot_id: str, request: Request):
         zalo_config = (bot.config or {}).get("zalo_bot", {})
         expected_secret = zalo_config.get("webhook_secret", "")
 
+        # Debug: log all headers to identify the secret token header name
+        logger.info(f"Zalo Bot webhook headers: {dict(request.headers)}")
+
         # Verify secret token header using constant-time comparison to prevent timing attacks
         received_secret = request.headers.get("x-bot-api-secret-token", "")
         if not expected_secret or not hmac.compare_digest(
             received_secret.encode(), expected_secret.encode()
         ):
-            logger.warning(f"Zalo Bot webhook: Invalid secret for bot {bot_id}")
+            logger.warning(f"Zalo Bot webhook: Invalid secret for bot {bot_id} | expected={expected_secret} | received={received_secret}")
             raise HTTPException(status_code=403, detail="Invalid secret token")
     finally:
         db.close()
