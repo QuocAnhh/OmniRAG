@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel
 
@@ -39,7 +40,7 @@ async def zalo_bot_webhook(bot_id: str, request: Request):
 
     db = SessionLocal()
     try:
-        bot = db.query(BotModel).filter(BotModel.id == bot_id).first()
+        bot = db.execute(select(BotModel).where(BotModel.id == bot_id)).scalar_one_or_none()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")
 
@@ -97,10 +98,9 @@ async def connect_zalo_bot(
         )
 
     # Find and authorize the bot
-    bot = db.query(BotModel).filter(
-        BotModel.id == data.bot_id,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(BotModel.id == data.bot_id, BotModel.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
@@ -149,10 +149,9 @@ async def disconnect_zalo_bot(
     db: Session = Depends(get_db),
 ):
     """Disconnect Zalo Bot from an OmniRAG bot. Keeps other config intact."""
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_id,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(BotModel.id == bot_id, BotModel.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
@@ -175,10 +174,9 @@ async def zalo_bot_status(
     db: Session = Depends(get_db),
 ):
     """Check Zalo Bot connection status for a bot."""
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_id,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(BotModel.id == bot_id, BotModel.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 

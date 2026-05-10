@@ -2,6 +2,7 @@ import logging
 import httpx
 from typing import Dict, Any, Optional
 from app.services.openrouter_rag_service import get_openrouter_rag_service
+from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models.bot import Bot as BotModel
 from app.core.config import settings
@@ -60,10 +61,12 @@ class ZaloHubService:
             else:
                 search_ids.append(f"zu{zalo_account_id}")
 
-            bot = db.query(BotModel).filter(
-                BotModel.config['zalo_integration']['account_id'].astext.in_(search_ids),
-                BotModel.config['zalo_integration']['is_active'].as_boolean() == True
-            ).first()
+            bot = db.execute(
+                select(BotModel).where(
+                    BotModel.config['zalo_integration']['account_id'].astext.in_(search_ids),
+                    BotModel.config['zalo_integration']['is_active'].as_boolean() == True,
+                )
+            ).scalar_one_or_none()
 
             if not bot:
                 logger.warning(f"No active bot found for Zalo account {zalo_account_id}")

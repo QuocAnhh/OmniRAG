@@ -1,6 +1,7 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.tenant import Tenant
@@ -18,7 +19,7 @@ def read_tenant_me(
     """
     Get current user's tenant
     """
-    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+    tenant = db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id)).scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     return tenant
@@ -37,7 +38,7 @@ def update_tenant_me(
     if current_user.role not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+    tenant = db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id)).scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     

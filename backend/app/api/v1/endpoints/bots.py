@@ -167,10 +167,12 @@ async def upload_document(
     safe_storage_name = f"{uuid.uuid4()}{suffix}"
 
     # ── Deduplication Check: prevent re-processing same file ─────────────
-    existing_doc = db.query(DocumentModel).filter(
-        DocumentModel.bot_id == bot.id,
-        DocumentModel.filename == original_filename
-    ).first()
+    existing_doc = db.execute(
+        select(DocumentModel).where(
+            DocumentModel.bot_id == bot.id,
+            DocumentModel.filename == original_filename,
+        )
+    ).scalar_one_or_none()
 
     if existing_doc:
         # If already processing or completed, return existing doc (idempotent)
@@ -259,10 +261,12 @@ def delete_document(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid document ID format")
 
-    doc = db.query(DocumentModel).filter(
-        DocumentModel.id == doc_uuid,
-        DocumentModel.bot_id == bot.id,
-    ).first()
+    doc = db.execute(
+        select(DocumentModel).where(
+            DocumentModel.id == doc_uuid,
+            DocumentModel.bot_id == bot.id,
+        )
+    ).scalar_one_or_none()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
@@ -526,10 +530,12 @@ async def generate_bot_prompt(
     if request.bot_id:
         try:
             bot_uuid = UUID(request.bot_id)
-            documents = db.query(DocumentModel).filter(
-                DocumentModel.bot_id == bot_uuid,
-                DocumentModel.tenant_id == current_user.tenant_id if hasattr(DocumentModel, 'tenant_id') else True # Safety check if tenant_id exists on Doc
-            ).all()
+            documents = db.execute(
+                select(DocumentModel).where(
+                    DocumentModel.bot_id == bot_uuid,
+                    DocumentModel.tenant_id == current_user.tenant_id if hasattr(DocumentModel, 'tenant_id') else True,
+                )
+            ).scalars().all()
             
             if documents:
                 file_types = list(set([Path(doc.filename).suffix for doc in documents]))

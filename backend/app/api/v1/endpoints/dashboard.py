@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from app.api.deps import get_current_user, get_db
 from app.db.mongodb import get_mongodb
@@ -39,12 +39,12 @@ async def get_dashboard_stats(
     conversations_collection = mongo_db.conversations
     
     # Total bots for this tenant
-    total_bots = db.query(func.count(Bot.id)).filter(
-        Bot.tenant_id == current_user.tenant_id
+    total_bots = db.execute(
+        select(func.count(Bot.id)).where(Bot.tenant_id == current_user.tenant_id)
     ).scalar()
-    
+
     # Get tenant's bot IDs
-    bots = db.query(Bot).filter(Bot.tenant_id == current_user.tenant_id).all()
+    bots = db.execute(select(Bot).where(Bot.tenant_id == current_user.tenant_id)).scalars().all()
     bot_ids = [str(bot.id) for bot in bots]
     
     # Active sessions in last 24 hours (unique session_ids)
@@ -115,7 +115,7 @@ async def get_dashboard_activity(
     conversations_collection = mongo_db.conversations
     
     # Get tenant's bots
-    bots = db.query(Bot).filter(Bot.tenant_id == current_user.tenant_id).all()
+    bots = db.execute(select(Bot).where(Bot.tenant_id == current_user.tenant_id)).scalars().all()
     bot_ids = [str(bot.id) for bot in bots]
     bot_map = {str(bot.id): bot.name for bot in bots}
     
@@ -151,20 +151,24 @@ async def get_quick_stats(
     Get quick stats for dashboard cards (documents, active bots, etc.)
     """
     # Total documents
-    total_documents = db.query(func.count(Document.id)).join(Bot).filter(
-        Bot.tenant_id == current_user.tenant_id
+    total_documents = db.execute(
+        select(func.count(Document.id)).join(Bot).where(Bot.tenant_id == current_user.tenant_id)
     ).scalar()
-    
+
     # Active bots
-    active_bots = db.query(func.count(Bot.id)).filter(
-        Bot.tenant_id == current_user.tenant_id,
-        Bot.is_active == True
+    active_bots = db.execute(
+        select(func.count(Bot.id)).where(
+            Bot.tenant_id == current_user.tenant_id,
+            Bot.is_active == True,
+        )
     ).scalar()
-    
+
     # Processing documents
-    processing_docs = db.query(func.count(Document.id)).join(Bot).filter(
-        Bot.tenant_id == current_user.tenant_id,
-        Document.status.in_(['pending', 'processing'])
+    processing_docs = db.execute(
+        select(func.count(Document.id)).join(Bot).where(
+            Bot.tenant_id == current_user.tenant_id,
+            Document.status.in_(['pending', 'processing']),
+        )
     ).scalar()
     
     return {

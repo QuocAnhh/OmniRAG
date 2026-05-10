@@ -46,7 +46,7 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == token_data.sub).first()
+    user = db.execute(select(User).where(User.id == token_data.sub)).scalar_one_or_none()
     if user is None:
         raise credentials_exception
     return user
@@ -70,10 +70,12 @@ def get_current_bot(
         bot_uuid = UUID(bot_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid bot ID format")
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id,
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == bot_uuid,
+            BotModel.tenant_id == current_user.tenant_id,
+        )
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
     return bot

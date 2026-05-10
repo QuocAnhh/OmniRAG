@@ -9,6 +9,7 @@ from app.worker import celery_app
 logger = logging.getLogger(__name__)
 from app.services.openrouter_rag_service import get_openrouter_rag_service
 from app.services.storage_service import storage_service
+from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models.document import Document as DocumentModel
 # Import all related models to ensure SQLAlchemy registry is populated
@@ -245,7 +246,7 @@ def _update_document_status(
     own_session = _session is None
     try:
         doc_uuid = UUID(document_id)
-        doc = db.query(DocumentModel).filter(DocumentModel.id == doc_uuid).first()
+        doc = db.execute(select(DocumentModel).where(DocumentModel.id == doc_uuid)).scalar_one_or_none()
         if not doc:
             return
         doc.status = status
@@ -265,7 +266,7 @@ def _update_kg_status(document_id: str, kg_status: str, error_msg: str | None = 
     db = SessionLocal()
     try:
         doc_uuid = UUID(document_id)
-        doc = db.query(DocumentModel).filter(DocumentModel.id == doc_uuid).first()
+        doc = db.execute(select(DocumentModel).where(DocumentModel.id == doc_uuid)).scalar_one_or_none()
         if not doc:
             return
         metadata = {**(doc.doc_metadata or {}), "kg_status": kg_status}

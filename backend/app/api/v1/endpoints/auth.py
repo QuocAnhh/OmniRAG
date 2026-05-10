@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 import uuid
 
 from app.api.deps import get_db, get_current_active_user
@@ -26,7 +27,7 @@ def register(
     Register new user and create a tenant
     """
     # Check if user already exists
-    user = db.query(User).filter(User.email == user_in.email).first()
+    user = db.execute(select(User).where(User.email == user_in.email)).scalar_one_or_none()
     if user:
         raise HTTPException(
             status_code=400,
@@ -68,7 +69,7 @@ def login(
     """
     OAuth2 compatible token login
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
+    user = db.execute(select(User).where(User.email == form_data.username)).scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

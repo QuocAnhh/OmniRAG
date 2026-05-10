@@ -7,9 +7,10 @@ import logging
 import secrets
 from typing import Dict, Any, Optional
 from app.services.openrouter_rag_service import get_openrouter_rag_service
+from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 from app.db.session import SessionLocal
 from app.models.bot import Bot as BotModel
-from sqlalchemy.orm.attributes import flag_modified
 
 logger = logging.getLogger(__name__)
 
@@ -132,10 +133,9 @@ class ZaloBotService:
 
         db = SessionLocal()
         try:
-            bot = db.query(BotModel).filter(
-                BotModel.id == bot_id,
-                BotModel.is_active == True
-            ).first()
+            bot = db.execute(
+                select(BotModel).where(BotModel.id == bot_id, BotModel.is_active == True)
+            ).scalar_one_or_none()
 
             if not bot:
                 logger.warning(f"Zalo Bot: Bot {bot_id} not found or inactive")

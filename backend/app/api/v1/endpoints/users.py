@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 import secrets
 import hashlib
@@ -70,10 +71,9 @@ async def update_user_profile(
     
     if profile_update.email:
         # Check if email is already taken by another user
-        existing_user = db.query(User).filter(
-            User.email == profile_update.email,
-            User.id != current_user.id
-        ).first()
+        existing_user = db.execute(
+            select(User).where(User.email == profile_update.email, User.id != current_user.id)
+        ).scalar_one_or_none()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
         current_user.email = profile_update.email

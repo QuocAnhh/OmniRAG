@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from typing import List, Optional
 import uuid
 from uuid import UUID
@@ -27,19 +28,20 @@ def create_folder(
         raise HTTPException(status_code=400, detail="Invalid bot ID format")
 
     # Check bot access
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(BotModel.id == bot_uuid, BotModel.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-        
+
     # Check parent folder if provided
     if folder_in.parent_id:
-        parent = db.query(FolderModel).filter(
-            FolderModel.id == folder_in.parent_id,
-            FolderModel.bot_id == bot_uuid
-        ).first()
+        parent = db.execute(
+            select(FolderModel).where(
+                FolderModel.id == folder_in.parent_id,
+                FolderModel.bot_id == bot_uuid,
+            )
+        ).scalar_one_or_none()
         if not parent:
             raise HTTPException(status_code=404, detail="Parent folder not found")
 
@@ -67,29 +69,22 @@ def list_folders(
         raise HTTPException(status_code=400, detail="Invalid bot ID format")
         
     # Check bot access
-    bot = db.query(BotModel).filter(
-        BotModel.id == bot_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(BotModel).where(BotModel.id == bot_uuid, BotModel.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    query = db.query(FolderModel).filter(FolderModel.bot_id == bot_uuid)
-    
+    stmt = select(FolderModel).where(FolderModel.bot_id == bot_uuid)
+
     if parent_id:
         try:
             parent_uuid = UUID(parent_id)
-            query = query.filter(FolderModel.parent_id == parent_uuid)
+            stmt = stmt.where(FolderModel.parent_id == parent_uuid)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid parent ID format")
-    else:
-        # If no parent_id specified, behavior depends on frontend needs
-        # Usually we want root folders (parent_id is NULL)
-        # But let's allow fetching all if needed, or filter by None
-        # For tree view, usually fetching all is better properly ordered
-        pass 
-        
-    return query.all()
+
+    return db.execute(stmt).scalars().all()
 
 @router.put("/{folder_id}", response_model=Folder)
 def update_folder(
@@ -104,10 +99,12 @@ def update_folder(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid folder ID format")
 
-    folder = db.query(FolderModel).join(BotModel).filter(
-        FolderModel.id == folder_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    folder = db.execute(
+        select(FolderModel).join(BotModel).where(
+            FolderModel.id == folder_uuid,
+            BotModel.tenant_id == current_user.tenant_id,
+        )
+    ).scalar_one_or_none()
     
     if not folder:
         raise HTTPException(status_code=404, detail="Folder not found")
@@ -143,10 +140,12 @@ def delete_folder(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid folder ID format")
 
-    folder = db.query(FolderModel).join(BotModel).filter(
-        FolderModel.id == folder_uuid,
-        BotModel.tenant_id == current_user.tenant_id
-    ).first()
+    folder = db.execute(
+        select(FolderModel).join(BotModel).where(
+            FolderModel.id == folder_uuid,
+            BotModel.tenant_id == current_user.tenant_id,
+        )
+    ).scalar_one_or_none()
     
     if not folder:
         raise HTTPException(status_code=404, detail="Folder not found")

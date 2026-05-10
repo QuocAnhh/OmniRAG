@@ -51,10 +51,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 import httpx
 
 from fastapi import UploadFile
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document as LangChainDocument
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document as LangChainDocument
 from langchain_community.document_loaders import TextLoader
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, AsyncQdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, MatchText
 
@@ -174,6 +174,7 @@ class OpenRouterRAGService:
         """Initialize OpenRouter RAG service with all dependencies."""
         self.openrouter = get_openrouter_service()
         self.qdrant_client = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+        self.async_qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
         self.collection_name = "omnirag_openrouter_collection"
         
         # Redis caching via async client (shared from app.db.redis)
@@ -513,7 +514,7 @@ class OpenRouterRAGService:
         if chunking_strategy == "semantic":
             # Semantic chunking: split at sentence boundaries
             try:
-                from langchain.text_splitter import SpacyTextSplitter
+                from langchain_text_splitters import SpacyTextSplitter
                 text_splitter = SpacyTextSplitter(
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
@@ -598,8 +599,6 @@ class OpenRouterRAGService:
             self.reranker = CrossEncoder(
                 reranker_model,
                 device=device,
-                automodel_args={'cache_dir': model_cache_dir},
-                tokenizer_args={'cache_dir': model_cache_dir}
             )
             print(f"[Reranker] Loaded on {device.upper()} ✓", flush=True)
         except Exception as e:
@@ -608,7 +607,7 @@ class OpenRouterRAGService:
 
         return self.reranker
 
-    def _hybrid_search(
+    async def _hybrid_search(
         self,
         bot_id: str,
         query: str,
@@ -631,7 +630,7 @@ class OpenRouterRAGService:
         )
 
         # 1. Vector search (Semantic)
-        vector_response = self.qdrant_client.query_points(
+        vector_response = await self.async_qdrant_client.query_points(
             collection_name=self.collection_name,
             query=query_embedding,
             query_filter=bot_filter,
@@ -644,7 +643,7 @@ class OpenRouterRAGService:
         fts_results = []
         if query.strip():
             try:
-                fts_response = self.qdrant_client.query_points(
+                fts_response = await self.async_qdrant_client.query_points(
                     collection_name=self.collection_name,
                     query_filter=Filter(
                         must=[
@@ -837,10 +836,7 @@ Answer:"""
                     self.embedding_dim = detected_dim
                     # Recreate collection with correct dimensions
                     try:
-                        await asyncio.to_thread(
-                            self.qdrant_client.delete_collection,
-                            self.collection_name
-                        )
+                        await self.async_qdrant_client.delete_collection(self.collection_name)
                     except Exception as del_err:
                         logger.warning(f"Could not delete Qdrant collection during dimension reset: {del_err}")
                     await asyncio.to_thread(self._ensure_collection)
@@ -868,10 +864,9 @@ Answer:"""
                     )
                 )
             
-            await asyncio.to_thread(
-                self.qdrant_client.upsert,
+            await self.async_qdrant_client.upsert(
                 collection_name=self.collection_name,
-                points=points
+                points=points,
             )
             
             elapsed_time = time.time() - start_time
@@ -1237,9 +1232,7 @@ Answer:"""
         """
         async def _search_one(q: str) -> List[Dict]:
             embedding = await asyncio.to_thread(self._embed_with_retry, q)
-            return await asyncio.to_thread(
-                self._hybrid_search, bot_id, q, embedding, top_k, False  # rerank=False
-            )
+            return await self._hybrid_search(bot_id, q, embedding, top_k, False)
 
         results_per_query = await asyncio.gather(
             *[_search_one(q) for q in queries], return_exceptions=True
@@ -1697,9 +1690,9 @@ Answer:"""
 
         _t1 = _time.time()
         # search uses original query embedding (not HyDE — saves 1 LLM call)
-        search_task = asyncio.ensure_future(asyncio.to_thread(
-            self._hybrid_search, bot_id, query, query_embedding, top_k
-        ))
+        search_task = asyncio.ensure_future(
+            self._hybrid_search(bot_id, query, query_embedding, top_k)
+        )
         # lightrag uses original query (rewrite not ready yet)
         lightrag_task = asyncio.ensure_future(
             _run_lightrag(bot_id, query, lightrag_mode) if use_kg

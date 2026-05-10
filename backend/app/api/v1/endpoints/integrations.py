@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from pydantic import BaseModel, HttpUrl
 from enum import Enum
 
@@ -73,16 +74,15 @@ async def list_integrations(
     query = {"tenant_id": str(current_user.tenant_id)}
     if bot_id:
         # Verify bot belongs to tenant
-        bot = db.query(Bot).filter(
-            Bot.id == bot_id,
-            Bot.tenant_id == current_user.tenant_id
-        ).first()
+        bot = db.execute(
+            select(Bot).where(Bot.id == bot_id, Bot.tenant_id == current_user.tenant_id)
+        ).scalar_one_or_none()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")
         query["bot_id"] = bot_id
-    
+
     # Get all tenant bots for mapping
-    bots = db.query(Bot).filter(Bot.tenant_id == current_user.tenant_id).all()
+    bots = db.execute(select(Bot).where(Bot.tenant_id == current_user.tenant_id)).scalars().all()
     bot_map = {str(bot.id): bot.name for bot in bots}
     
     # Fetch integrations
@@ -117,13 +117,12 @@ async def create_integration(
     from app.db.mongodb import get_mongodb
     
     # Verify bot belongs to tenant
-    bot = db.query(Bot).filter(
-        Bot.id == integration_data.bot_id,
-        Bot.tenant_id == current_user.tenant_id
-    ).first()
+    bot = db.execute(
+        select(Bot).where(Bot.id == integration_data.bot_id, Bot.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    
+
     # Validate config based on integration type
     _validate_integration_config(integration_data.type, integration_data.config)
     
@@ -188,7 +187,7 @@ async def get_integration(
         raise HTTPException(status_code=404, detail="Integration not found")
     
     # Get bot name
-    bot = db.query(Bot).filter(Bot.id == integration["bot_id"]).first()
+    bot = db.execute(select(Bot).where(Bot.id == integration["bot_id"])).scalar_one_or_none()
     
     return {
         "id": str(integration["_id"]),
