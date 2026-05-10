@@ -106,8 +106,8 @@ The gateway handles CORS, rate limiting (100 req/s dev / 200 prod), and Redis ca
 ## Advanced RAG Pipeline
 
 The main chat endpoints are:
-- `POST /api/v1/openrouter/rag/chat` — standard (non-streaming)
-- `POST /api/v1/openrouter/rag/stream` — SSE streaming
+- `POST /api/v1/bots/{bot_id}/chat` — standard (non-streaming)
+- `POST /api/v1/bots/{bot_id}/chat-stream` — SSE streaming
 
 ### Pipeline Steps (per request)
 

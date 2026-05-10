@@ -1,5 +1,15 @@
 # 🤖 Zalo Bot Integration — Implementation Plan (v2)
 
+> **Status: IMPLEMENTED** (commit `1ed3c0b`). Xem code thực tế:
+> - `backend/app/services/channels/zalo_bot_service.py` — service core
+> - `backend/app/api/v1/endpoints/channels/zalo_bot.py` — webhook + connect/disconnect endpoints
+> - `backend/app/tasks/zalo_bot_tasks.py` — Celery task (imported nhưng webhook hiện xử lý in-process)
+>
+> **Thay đổi so với plan ban đầu:**
+> - Webhook xử lý **in-process** (`asyncio.create_task`) thay vì dispatch qua Celery — đảm bảo LightRAG, Redis cache, memory hoạt động giống web chat
+> - **Typing indicator** (`sendChatAction`) được gửi trước khi xử lý RAG
+> - Header debug logging để trace `x-bot-api-secret-token`
+
 > **Dựa trên**: Repo `zalo-bot` sẵn có — Zalo Bot Platform (`bot-api.zapps.me`)  
 > **Pipeline user**: Paste Bot Token → Click Connect → Bot live trên Zalo  
 > **Estimated effort**: 2-3 ngày  

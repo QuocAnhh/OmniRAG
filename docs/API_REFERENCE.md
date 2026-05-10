@@ -126,11 +126,12 @@ chunking_strategy=recursive   # or "semantic"
 
 ---
 
-## Chat — `/bots/{id}/chat`
+## Chat — `/bots/{id}/chat` and `/bots/{id}/chat-stream`
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/bots/{id}/chat` | Chat with bot (RAG-powered) |
+| `POST` | `/bots/{id}/chat` | Chat with bot — standard JSON response |
+| `POST` | `/bots/{id}/chat-stream` | Chat with bot — SSE streaming response |
 
 ```json
 POST /bots/{id}/chat
@@ -144,19 +145,66 @@ POST /bots/{id}/chat
 }
 ```
 
+The streaming endpoint (`/chat-stream`) returns `text/event-stream` SSE. Each event is JSON:
+```json
+{"type": "metadata", "sources": [...], "retrieved_chunks": [...], "agent_logs": [...], "session_id": "..."}
+{"type": "content",  "content": "chunk of text..."}
+{"type": "done"}
+{"type": "error",    "message": "..."}
+```
+
+## Sessions & History — `/bots/{id}/sessions` and `/bots/{id}/history`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/bots/{id}/sessions` | List conversation sessions |
+| `DELETE` | `/bots/{id}/sessions/{session_id}` | Delete a session |
+| `GET` | `/bots/{id}/history` | Full conversation history |
+| `DELETE` | `/bots/{id}/history` | Clear all history for bot |
+
+## Memory — `/bots/{id}/memory`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/bots/{id}/memory` | Get Mem0 stored facts for a user |
+| `DELETE` | `/bots/{id}/memory` | Clear Mem0 memory for a user |
+
+Both endpoints accept `?user_id=<user_id>` query param.
+
+## Retrieval Debug — `/bots/{id}/retrieve` and `/bots/{id}/debug-retrieval`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/bots/{id}/retrieve` | Run hybrid search and return raw results |
+| `GET` | `/bots/{id}/debug-retrieval` | Debug retrieval pipeline (scores, reranking) |
+
+## Feedback — `/bots/{id}/chat/{message_id}/feedback`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/bots/{id}/chat/{message_id}/feedback` | Submit thumbs up/down feedback on a message |
+
+## Generate Prompt — `/bots/generate-prompt`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/bots/generate-prompt` | AI-generate a system prompt for a bot description |
+
 ---
 
 ## OpenRouter — `/openrouter`
 
-Direct access to OpenRouter services and advanced RAG pipeline.
+Direct access to OpenRouter services. Note: primary chat endpoints are on `/bots/{id}/chat` and `/bots/{id}/chat-stream`.
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/openrouter/test` | Test OpenRouter API connection |
-| `POST` | `/openrouter/chat` | Direct LLM chat completion |
+| `POST` | `/openrouter/chat` | Direct LLM chat completion (no RAG) |
 | `POST` | `/openrouter/embeddings` | Generate text embeddings |
-| `POST` | `/openrouter/rag/ingest` | Ingest a document into RAG |
-| `POST` | `/openrouter/rag/chat` | RAG-powered chat (full pipeline) |
+| `POST` | `/openrouter/rag/ingest` | Ingest a document into RAG (low-level) |
+| `POST` | `/openrouter/rag/chat` | RAG-powered chat — low-level direct call |
+| `GET` | `/openrouter/models/chat` | List available chat models from OpenRouter |
+| `GET` | `/openrouter/models/embeddings` | List available embedding models |
 
 ### RAG Chat (full pipeline)
 ```json
@@ -259,12 +307,20 @@ Response:
 
 ## Channels — Zalo
 
+### Zalo Hub (central OA hub via Func.vn)
+
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/channels/zalo/webhook` | Zalo Hub webhook receiver |
-| `GET` | `/channels/zalo/status` | Zalo connection status |
-| `POST` | `/channels/zalo-bot/send` | Send message via Zalo bot |
-| `GET` | `/channels/zalo-bot/bots` | List configured Zalo bots |
+| `POST` | `/channels/zalo/hub-webhook` | Zalo Hub webhook receiver (verifies `x-hub-secret` header) |
+
+### Zalo Bot Platform (direct `bot-api.zapps.me` integration)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/channels/zalo-bot/webhook/{bot_id}` | Receive events from Zalo Bot Platform (verifies `x-bot-api-secret-token` header) |
+| `POST` | `/channels/zalo-bot/connect` | Connect a bot token — calls `getMe` + `setWebhook` automatically |
+| `POST` | `/channels/zalo-bot/disconnect` | Disconnect and remove Zalo credentials from bot config |
+| `GET` | `/channels/zalo-bot/status/{bot_id}` | Zalo bot connection status |
 
 ---
 

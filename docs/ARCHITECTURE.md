@@ -64,7 +64,7 @@ app/
 │       ├── integrations.py  — External integration hooks
 │       └── channels/
 │           ├── zalo_hub.py  — Zalo Hub webhook receiver
-│           └── zalo_bot.py  — Zalo bot task dispatcher
+│           └── zalo_bot.py  — Zalo bot webhook receiver + connect/disconnect (in-process via asyncio.create_task)
 ├── services/
 │   ├── openrouter_rag_service.py  — Main RAG pipeline (see RAG Pipeline below)
 │   ├── domain_config.py           — Domain profile registry (general/education/legal/sales)
@@ -90,36 +90,33 @@ app/
 ## Advanced RAG Pipeline
 
 Main endpoints:
-- `POST /api/v1/openrouter/rag/chat` — standard response
-- `POST /api/v1/openrouter/rag/stream` — SSE streaming
+- `POST /api/v1/bots/{bot_id}/chat` — standard response
+- `POST /api/v1/bots/{bot_id}/chat-stream` — SSE streaming
+
+All steps are parallelised for minimum latency (~2.8s to first token):
 
 ```
-User Query
-  │
-  ├─► 1. Query Rewriting        gpt-4o-mini, search-optimized
-  │
-  ├─► 2. HyDE + Multi-Query     concurrent:
-  │         HyDE hypothesis     domain-aware passage → embed
-  │         Query variants      2 reformulations for broader recall
-  │
-  ├─► 3. Multi-Query Fusion     3× parallel _hybrid_search → RRF merge
-  │       +
-  │       LightRAG query        concurrent, if enable_knowledge_graph
-  │
-  ├─► 4. Hybrid Search          vector (HyDE embed) + BM25 → RRF → Cross-Encoder rerank
-  │
-  ├─► 5. Score Filtering        similarity_threshold (default 0.15)
-  │
-  ├─► 6. CRAG                   relevant / ambiguous / no_context → system prompt signal
-  │
-  ├─► 7. Context Assembly       [[n]]-cited; parent_text used if parent_child chunking
-  │
-  ├─► 8. Memory Retrieval       Mem0 top-K facts → prepend to system prompt
-  │
-  ├─► 9. LLM Generation         OpenRouter, domain suffix + CRAG signal injected
-  │
-  └─► 10. Memory Update         async, non-blocking
+t=0:    ┌─ embed(query)      ─────────────────────────────┐
+        └─ rewrite(query)    ───────────────────────────┐ │
+                                                        │ ↓
+t=~0.4: ┌─ hybrid_search()  ───────────────────────┐   │ (embed done)
+        └─ lightrag_query() ─────────────────────┐ │   │ (if KG bot)
+                                                 │ ↓   │
+t=~1.7:   CRAG classify()   ─────────────────┐  │ ↓   │ (search done)
+                                             ↓  ↓ ↓   ↓
+t=~2.8:   context assembled ← all tasks done
+  +       memory_search() ── concurrent with rag prep
+t=~2.8:   LLM streaming begins
 ```
+
+Pipeline steps:
+1. **Embed + Rewrite** — concurrent at t=0; embed fires original query (no HyDE), rewrite runs alongside
+2. **Hybrid Search + LightRAG** — start as soon as embedding is ready (not waiting for rewrite)
+3. **CRAG** — starts immediately after search; LightRAG keeps running concurrently
+4. **Memory Search** — runs concurrent with entire RAG prep via `asyncio.gather`
+5. **Context Assembly** — `[[n]]`-cited blocks; uses `parent_text` if Parent-Child chunking
+6. **LLM Generation** — OpenRouter with domain prompt suffix + CRAG signal injected
+7. **Memory Update** — `asyncio.create_task` (non-blocking, after response)
 
 ## Document Ingestion Pipeline
 
@@ -177,7 +174,7 @@ File Upload (PDF/TXT)
 
 - Triggered during document ingestion — extracts entities & relationships
 - Stored in `backend/rag_storage/lightrag_{bot_id}/` (local, untracked by git)
-- LLM for extraction: configurable via `LIGHTRAG_LLM_MODEL` (default `openai/gpt-4.1-mini`)
+- LLM for extraction: configurable via `LIGHTRAG_LLM_MODEL` (default `openai/gpt-5.4-nano`)
 - Frontend visualisation: `KnowledgeGraphPage` using `@react-sigma/core` + `graphology`
 - Query runs concurrently with hybrid search — no added latency
 

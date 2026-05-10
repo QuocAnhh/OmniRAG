@@ -42,7 +42,7 @@ OPENROUTER_CHAT_MODEL=openai/gpt-4o-mini
 OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
 
 # Knowledge Graph — LLM dùng để extract entities
-LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini
+LIGHTRAG_LLM_MODEL=openai/gpt-5.4-nano
 
 # Mem0 — persistent memory
 MEM0_ENABLED=true

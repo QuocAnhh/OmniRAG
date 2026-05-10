@@ -225,7 +225,7 @@ User: "Tôi phụ trách team 50 người, đang triển khai ERP SAP"
 ```env
 MEM0_ENABLED=true
 MEM0_TOP_K=5
-MEM0_MEMORY_MODEL=openai/gpt-5.4-nano
+MEM0_MEMORY_MODEL=openai/gpt-4o-mini   # default; gpt-5.4-nano used as code-level fallback
 ```
 
 ---

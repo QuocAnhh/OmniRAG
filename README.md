@@ -56,14 +56,14 @@ docker compose up -d --build
 
 ### AI & RAG
 - **Domain-Aware RAG** — 4 specialized domains: General, Education (sentence chunking + KG), Legal (article chunking + hybrid KG), Sales (dense retrieval)
-- **HyDE** — Hypothetical Document Embedding: embed a generated passage instead of the raw query for better semantic recall
-- **Multi-Query Fusion** — 3 query variants searched in parallel, merged via Reciprocal Rank Fusion
+- **Query Rewriting** — rewrites user query into search-engine optimised form before retrieval
 - **Contextual Retrieval** — Anthropic technique: situating context prepended to each chunk at index time
 - **CRAG** — Corrective RAG: classify retrieval quality, prevent hallucination when KB lacks an answer
 - **Parent-Child Chunking** — child chunks for precise matching, parent text returned to LLM for full context
-- **Hybrid Search** — vector (semantic) + BM25 keyword, merged via RRF, reranked by Cross-Encoder (`BAAI/bge-reranker-v2-m3`)
+- **Hybrid Search** — vector (semantic) + BM25 keyword, merged via RRF, reranked by Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`; `BAAI/bge-reranker-v2-m3` for multilingual)
 - **Knowledge Graph** — LightRAG entity/relationship extraction + interactive graph visualisation
 - **Persistent Memory** — Mem0 cross-session fact extraction and retrieval
+- **Multi-level Caching** — Redis caches query embeddings, rewrite results, and CRAG verdicts
 - **400+ AI Models** via OpenRouter (GPT-4o, Claude, Gemini, Llama, ...)
 
 ### Platform
@@ -72,7 +72,7 @@ docker compose up -d --build
 - **Streaming Chat** — SSE-based streaming responses
 - **Document Processing** — PDF, DOCX, PPTX, TXT via Celery async jobs
 - **Multi-tenancy** — full data isolation per organisation
-- **Zalo Bot Integration** — webhook-based channel support
+- **Zalo Bot Integration** — webhook-based Zalo Bot Platform integration with typing indicator
 - **Go API Gateway** — Redis caching (1h TTL), rate limiting (100 rps), structured logging
 
 ## Documentation
@@ -85,7 +85,7 @@ All detailed guides live in `docs/`:
 | [STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md) | Full setup & env config |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, RAG pipeline, ingestion flow |
 | [FEATURES.md](docs/FEATURES.md) | Complete feature list |
-| [ADVANCED_RAG_FEATURES.md](docs/ADVANCED_RAG_FEATURES.md) | RAG pipeline deep-dive (HyDE, CRAG, Multi-Query, etc.) |
+| [ADVANCED_RAG_FEATURES.md](docs/ADVANCED_RAG_FEATURES.md) | RAG pipeline deep-dive (Query Rewriting, Hybrid Search, CRAG, etc.) |
 | [API_REFERENCE.md](docs/API_REFERENCE.md) | All API endpoints |
 | [GATEWAY_QUICKSTART.md](docs/GATEWAY_QUICKSTART.md) | Go Gateway setup |
 | [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | Database access & queries |

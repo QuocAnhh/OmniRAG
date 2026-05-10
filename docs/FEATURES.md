@@ -22,10 +22,10 @@
 | OpenRouter Integration | ✅ | 400+ models: GPT-4o, Claude, Gemini, Llama, ... |
 | Default Chat Model | ✅ | `openai/gpt-4o-mini` (configurable per bot) |
 | Default Embedding Model | ✅ | `openai/text-embedding-3-small` via OpenRouter |
-| Query Rewriting | ✅ | Rewrites user query for search optimization before retrieval |
-| HyDE | ✅ | Hypothetical Document Embedding — domain-aware, improves semantic recall |
-| Multi-Query Fusion | ✅ | 2 extra query variants → 3× parallel search → RRF merge |
-| Hybrid Search | ✅ | Vector (HyDE embed) + BM25 keyword → RRF → Cross-Encoder rerank |
+| Query Rewriting | ✅ | Rewrites user query for search optimization before retrieval; runs concurrent with embed |
+| HyDE | ⚙️ | Hypothetical Document Embedding — available but not in default pipeline (removed to cut latency) |
+| Multi-Query Fusion | ⚙️ | 2 extra query variants → 3× parallel search → RRF merge — available but not in default pipeline |
+| Hybrid Search | ✅ | Vector (query embed) + BM25 keyword → RRF → Cross-Encoder rerank |
 | PDF Parsing | ✅ | OpenDataLoader PDF — cluster tables, dual MD+JSON, image extraction, page separators, bounding boxes (#1 benchmark) |
 | PDF Hybrid Mode | ✅ | Optional OCR (80+ langs), SmolVLM image/chart descriptions, LaTeX formula extraction via docling server |
 | Contextual Retrieval | ✅ | Anthropic technique: situating prefix per chunk at index time |
@@ -35,7 +35,8 @@
 | Sentence Chunking | ✅ | Rolling-window accumulator — Education domain |
 | Article Chunking | ✅ | Vietnamese legal article (`Điều N`) boundary split — Legal domain |
 | Domain Profiles | ✅ | Per-domain chunking, retrieval K, LightRAG mode, system prompt suffix |
-| Cross-Encoder Reranking | ✅ | `BAAI/bge-reranker-v2-m3` multilingual model |
+| Cross-Encoder Reranking | ✅ | Default: `cross-encoder/ms-marco-MiniLM-L-6-v2`; set `RERANKER_MODEL=BAAI/bge-reranker-v2-m3` for multilingual (M1/M2 MPS) |
+| Multi-level Redis Cache | ✅ | Caches query embeddings (24h), rewrite results (30min), CRAG verdicts (1h), and full RAG responses (1h) |
 | Knowledge Graph RAG | ✅ | LightRAG entity/relationship extraction + graph queries |
 | Knowledge Graph UI | ✅ | Interactive visualisation (sigma.js + graphology) |
 | Persistent Memory | ✅ | Mem0 — cross-session fact extraction & retrieval |
@@ -61,8 +62,9 @@
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Zalo Bot | ✅ | Webhook-based Zalo OA integration via Func.vn Hub |
-| Zalo Bot Async Tasks | ✅ | Celery tasks for Zalo message handling |
+| Zalo Bot | ✅ | Webhook-based Zalo Bot Platform integration (`bot-api.zapps.me`) |
+| Zalo Bot Typing Indicator | ✅ | `sendChatAction` typing sent before RAG processing |
+| Zalo Bot In-Process | ✅ | Webhook processed via `asyncio.create_task` in FastAPI process (not Celery) |
 | External Integrations | ✅ | `/integrations` endpoint for third-party hooks |
 | OpenRouter Provider Fallback | ✅ | Automatic model fallback on API failure |
 
