@@ -1,5 +1,8 @@
+import logging
 import redis.asyncio as redis
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class RedisClient:
     client: redis.Redis = None
@@ -14,14 +17,14 @@ async def connect_to_redis():
         encoding="utf-8",
         decode_responses=True
     )
-    print(f"Connected to Redis at {settings.REDIS_URL}")
+    logger.info("redis_connected")
 
 
 async def close_redis_connection():
     """Close Redis connection"""
     if redis_client.client:
         await redis_client.client.close()
-        print("Closed Redis connection")
+        logger.info("redis_disconnected")
 
 
 def get_redis() -> redis.Redis:

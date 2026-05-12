@@ -287,7 +287,6 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 session_id: activeSessionId,
                 history: historyForStream
             }, (chunk) => {
-                console.log('[STREAM] Chunk received:', chunk.type, chunk);
                 if (chunk.type === 'metadata' && chunk.retrieved_chunks && chunk.retrieved_chunks.length > 0) {
                     setSelectedEvidence(chunk.retrieved_chunks);
                 }
@@ -310,7 +309,6 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                         };
                     } else if (chunk.type === 'content') {
                         const newContent = (msg.content || '') + chunk.content;
-                        console.log('[STREAM] Updating message content:', newContent.substring(0, 50) + '...');
                         return {
                             ...msg,
                             content: newContent
@@ -332,12 +330,12 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             setIsTyping(false);
             // Refresh sessions list after message (to show new session title)
             if (id) {
-                chatApi.getSessions(id).then(setSessions).catch(console.error);
-                
+                chatApi.getSessions(id).then(setSessions).catch(() => {});
+
                 // Also refresh again after a delay to pick up LLM-generated title
                 // (backend generates a better title asynchronously via _summarize_session_title)
                 setTimeout(() => {
-                    chatApi.getSessions(id).then(setSessions).catch(console.error);
+                    chatApi.getSessions(id).then(setSessions).catch(() => {});
                 }, 3000);
             }
         }

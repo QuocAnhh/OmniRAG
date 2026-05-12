@@ -1,9 +1,12 @@
+import logging
 from minio import Minio
 from minio.error import S3Error
 from io import BytesIO
 from typing import BinaryIO
 import uuid
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService:
@@ -21,9 +24,9 @@ class StorageService:
         try:
             if not self.client.bucket_exists(settings.MINIO_BUCKET):
                 self.client.make_bucket(settings.MINIO_BUCKET)
-                print(f"Created MinIO bucket: {settings.MINIO_BUCKET}")
+                logger.info("minio_bucket_created", extra={"bucket": settings.MINIO_BUCKET})
         except S3Error as e:
-            print(f"Error creating bucket: {e}")
+            logger.warning("minio_bucket_create_error", extra={"error": str(e)})
     
     def upload_file(self, file: BinaryIO, filename: str, content_type: str = "application/octet-stream") -> str:
         """

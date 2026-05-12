@@ -20,5 +20,5 @@ class Tenant(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
-    bots = relationship("Bot", back_populates="tenant", cascade="all, delete-orphan")
+    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan", lazy="selectin")
+    bots = relationship("Bot", back_populates="tenant", cascade="all, delete-orphan", lazy="selectin")

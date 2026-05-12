@@ -80,8 +80,8 @@ async def lifespan(app: FastAPI):
         from app.services.openrouter_service import get_openrouter_service
         svc = get_openrouter_service()
         await svc.close_async_client()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("shutdown_cleanup_error", error=str(e))
 
     logger.info("shutdown_complete")
 
@@ -100,7 +100,10 @@ app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[str(o) for o in settings.BACKEND_CORS_ORIGINS],
-    allow_origin_regex=r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?|https://[a-z0-9-]+-\d+\.asse\.devtunnels\.ms",
+    allow_origin_regex=(
+        r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?"
+        + (r"|https://[a-z0-9-]+-\d+\.asse\.devtunnels\.ms" if settings.ENVIRONMENT != "production" else "")
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -25,7 +25,7 @@ class ZaloHubService:
         Processes incoming payload from the central Admin Func.vn Webhook.
         Identifies the bot based on the Zalo Account ID (to_account).
         """
-        logger.info(f"Received hub webhook payload: {payload}")
+        logger.info("hub_webhook_received", extra={"payload_keys": list(payload.keys()) if payload else []})
         
         # 1. Identify target bot based on Zalo account ID
         # Format expected from Func.vn Zalo Webhook (more robust parsing)

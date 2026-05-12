@@ -10,7 +10,7 @@ def process_zalo_hub_webhook_task(payload: dict):
     """
     Celery task to process Zalo messages asynchronously.
     """
-    logger.info(f"Processing Zalo Hub task for payload: {payload}")
+    logger.info("zalo_hub_task_processing", extra={"payload_keys": list(payload.keys()) if payload else []})
     
     service = get_zalo_hub_service()
     

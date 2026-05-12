@@ -7,6 +7,8 @@ Provides seamless migration path from existing services.
 import os
 import logging
 
+logger = logging.getLogger(__name__)
+
 # --- ENABLE WRITABLE CACHE FOR DOCKER ---
 model_cache_dir = os.getenv('HF_HOME', '/tmp/huggingface_cache')
 try:
@@ -19,7 +21,7 @@ try:
     os.remove(test_file)
 except (Exception, OSError) as e:
     # Fallback to /tmp if primary fails (usually due to Docker volume permissions)
-    print(f"Warning: Primary cache {model_cache_dir} not writable ({e}). Falling back to /tmp/huggingface_cache")
+    logger.warning("primary_cache_not_writable", extra={"cache_dir": model_cache_dir, "error": str(e)})
     model_cache_dir = '/tmp/huggingface_cache'
     os.makedirs(model_cache_dir, exist_ok=True)
 
@@ -40,7 +42,7 @@ try:
                     except OSError:
                         pass
 except Exception as e:
-    print(f"Warning: Stale lock cleanup failed: {e}")
+    logger.warning("lock_cleanup_failed", extra={"error": str(e)})
 
 import time
 import uuid
@@ -68,8 +70,6 @@ import shutil
 import hashlib
 import json
 import re
-
-logger = logging.getLogger(__name__)
 
 # Fast model for internal pipeline calls (query rewriting, HyDE, CRAG, etc.)
 # User-facing answer generation uses the model configured per-bot in the UI.
@@ -142,7 +142,7 @@ def _extract_lightrag_entity_names(lightrag_raw: str) -> list:
                         entities.append(name)
 
     except Exception:
-        pass
+        logger.warning("lightrag_entity_parse_failed")
 
     # Deduplicate, preserve order
     seen: set = set()
@@ -595,12 +595,12 @@ class OpenRouterRAGService:
             else:
                 device = "cpu"
 
-            print(f"[Reranker] Loading {reranker_model} on {device.upper()}...", flush=True)
+            logger.info("reranker_loading", extra={"model": reranker_model, "device": device.upper()})
             self.reranker = CrossEncoder(
                 reranker_model,
                 device=device,
             )
-            print(f"[Reranker] Loaded on {device.upper()} ✓", flush=True)
+            logger.info("reranker_loaded", extra={"device": device.upper()})
         except Exception as e:
             logger.warning(f"Failed to load Reranker model on demand: {e}")
             self.reranker = None
@@ -959,7 +959,7 @@ Answer:"""
                 try:
                     self.qdrant_client.delete_collection(self.collection_name)
                 except Exception:
-                    pass
+                    logger.warning("qdrant_collection_delete_failed", extra={"collection": self.collection_name})
                 self._ensure_collection()
 
         points = []
@@ -1342,7 +1342,7 @@ Answer:"""
                     prefix_map = {p["id"]: p["text"] for p in parsed.get("prefixes", [])}
                     return [prefix_map.get(i, "") for i, _ in chunk_batch]
             except Exception:
-                pass
+                logger.warning("contextual_prefix_parse_failed")
             # Fallback: one-by-one for this batch
             fallback = []
             for i, text in chunk_batch:
@@ -1635,14 +1635,14 @@ Answer:"""
 
         # ── Step 1: embed(query) + rewrite(query) — CONCURRENT ─────────────
         # Embed does NOT need the rewritten query — fire both immediately.
-        print(f"[PERF] embed+rewrite concurrent", flush=True)
+        logger.debug("perf_embed_rewrite_concurrent")
 
         async def _cached_embed(q: str) -> list:
             """Embed with Redis cache (singleflight protected)."""
             cache_key = f"q:{self.openrouter.embedding_model}:{q.strip().lower()}"
             cached = await self.cache.get("emb", cache_key)
             if cached is not None:
-                print(f"[PERF] embed cache HIT", flush=True)
+                logger.debug("perf_embed_cache_hit")
                 return cached
             result = await asyncio.to_thread(self._embed_with_retry, q)
             await self.cache.set("emb", cache_key, result, ttl=86400)
@@ -1667,7 +1667,7 @@ Answer:"""
         # ── Step 2: search + lightrag — start as soon as embed is ready ────
         # DO NOT await rewrite_task here — search uses original-query embedding.
         query_embedding = await embed_task
-        print(f"[PERF] embed done in {_time.time()-_t0:.2f}s → starting search+lightrag", flush=True)
+        logger.debug("perf_embed_done", extra={"duration_s": round(_time.time()-_t0, 2)})
 
         agent_logs.append({
             "step": "Knowledge Retrieval",
@@ -1702,7 +1702,7 @@ Answer:"""
         # ── Step 3: CRAG starts as soon as search is done ──────────────────
         # lightrag keeps running concurrently — we don't block on it here.
         search_results = await search_task
-        print(f"[PERF] search done in {_time.time()-_t1:.2f}s → starting CRAG", flush=True)
+        logger.debug("perf_search_done", extra={"duration_s": round(_time.time()-_t1, 2)})
 
         if isinstance(search_results, BaseException):
             logger.warning(f"Hybrid search failed: {search_results}")
@@ -1753,7 +1753,7 @@ Answer:"""
             logger.warning(f"LightRAG gather error: {lightrag_raw}")
             lightrag_raw = ""
 
-        print(f"[PERF] CRAG+lightrag done in {_time.time()-_t2:.2f}s | total prep={_time.time()-_t0:.2f}s", flush=True)
+        logger.debug("perf_crag_lightrag_done", extra={"phase_s": round(_time.time()-_t2, 2), "total_prep_s": round(_time.time()-_t0, 2)})
         agent_logs.append({
             "step": "CRAG Relevance Check",
             "description": (

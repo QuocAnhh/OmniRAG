@@ -8,10 +8,6 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: [
-      'a3a0ca52c0ba07.lhr.life',
-      'f54b9f294caab5.lhr.life',
-      'c271bc9c4fa55d.lhr.life',
-      'fd701afaac6c90.lhr.life',
       'localhost',
       '127.0.0.1'
     ],

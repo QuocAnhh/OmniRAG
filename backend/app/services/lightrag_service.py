@@ -132,10 +132,10 @@ class LightRAGService:
         if not self._storages_initialized:
             import time as _t
             _ts = _t.time()
-            print(f"[LightRAG] initialize_storages() START for bot={self.bot_id}", flush=True)
+            logger.info("lightrag_initialize_storages_start", extra={"bot_id": self.bot_id})
             await self.rag.initialize_storages()
             self._storages_initialized = True
-            print(f"[LightRAG] initialize_storages() DONE in {_t.time()-_ts:.2f}s", flush=True)
+            logger.info("lightrag_initialize_storages_done", extra={"bot_id": self.bot_id, "duration_s": round(_t.time()-_ts, 2)})
 
     async def insert_text(self, text: str) -> Dict[str, Any]:
         """
