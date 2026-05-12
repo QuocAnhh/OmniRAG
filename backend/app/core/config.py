@@ -137,6 +137,13 @@ class Settings(BaseSettings):
     ZALO_HUB_WEBHOOK_SECRET: str = ""  # Secret for verifying incoming hub webhooks (set in .env)
 
     # ============================================================
+    # Facebook Messenger Channel (via fb-channel-worker)
+    # ============================================================
+    FB_WORKER_URL: str = "http://fb-channel-worker:9100"
+    FB_WORKER_API_TOKEN: str = ""   # Bearer token backend uses when calling the worker
+    FB_INBOUND_SECRET: str = ""     # HMAC secret the worker uses to sign POSTs back to us
+
+    # ============================================================
     # Mem0 Memory Configuration
     # ============================================================
     MEM0_ENABLED: bool = True
