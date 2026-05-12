@@ -4,6 +4,7 @@ import { useAuthStore } from './store/authStore';
 import { useSecurity } from './hooks/useSecurity';
 import { Toaster } from 'react-hot-toast';
 import { LogoIcon } from './components/ui/LogoIcon';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy load all route components for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -96,8 +97,9 @@ function App() {
           },
         }}
       />
-      <Suspense fallback={<LoadingScreen />}>
-        <Routes>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -151,7 +153,8 @@ function App() {
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Suspense>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

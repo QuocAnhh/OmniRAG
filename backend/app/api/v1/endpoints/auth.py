@@ -8,6 +8,7 @@ import uuid
 
 from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 from app.models.tenant import Tenant
@@ -18,6 +19,7 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=user_schema.User, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 def register(
     *,
     db: Session = Depends(get_db),
@@ -62,6 +64,7 @@ def register(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("10/minute")
 def login(
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()

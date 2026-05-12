@@ -1,15 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import text
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.core.rate_limit import limiter
 import asyncio
+import httpx
 import logging
 import structlog
 from app.core.config import settings
 from app.core.middleware import RequestIDMiddleware
 from app.core.metrics import metrics_response
-from app.db.mongodb import connect_to_mongodb, close_mongodb_connection
-from app.db.redis import connect_to_redis, close_redis_connection
+from app.db.mongodb import connect_to_mongodb, close_mongodb_connection, mongodb
+from app.db.redis import connect_to_redis, close_redis_connection, get_redis
+from app.db.session import AsyncSessionLocal
 
 
 def _setup_logging():
@@ -98,6 +106,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 from app.api.api import api_router
 
@@ -108,8 +121,55 @@ def root():
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+async def health_check():
+    """Health check with real dependency verification.
+    Returns 200 if all deps are healthy, 503 if any are degraded."""
+    checks = {}
+
+    # PostgreSQL
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        checks["postgres"] = "healthy"
+    except Exception:
+        checks["postgres"] = "unhealthy"
+
+    # Redis
+    try:
+        r = get_redis()
+        if r:
+            await r.ping()
+            checks["redis"] = "healthy"
+        else:
+            checks["redis"] = "unhealthy"
+    except Exception:
+        checks["redis"] = "unhealthy"
+
+    # MongoDB
+    try:
+        if mongodb.client:
+            await mongodb.client.admin.command("ping")
+            checks["mongodb"] = "healthy"
+        else:
+            checks["mongodb"] = "unhealthy"
+    except Exception:
+        checks["mongodb"] = "unhealthy"
+
+    # Qdrant (REST health endpoint)
+    try:
+        qdrant_url = f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}/health"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(qdrant_url)
+        checks["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"
+    except Exception:
+        checks["qdrant"] = "unhealthy"
+
+    all_healthy = all(v == "healthy" for v in checks.values())
+    status_code = 200 if all_healthy else 503
+    return JSONResponse(
+        content={"status": "healthy" if all_healthy else "degraded", "checks": checks},
+        status_code=status_code,
+    )
 
 
 @app.get("/metrics")

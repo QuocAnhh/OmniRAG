@@ -121,9 +121,9 @@ async def upload_document(
     file: UploadFile = File(...),
     chunking_strategy: str = Form("recursive"),  # or "semantic"
     enable_knowledge_graph: bool = Form(False),
-    bot: BotModel = Depends(deps.get_current_bot),
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot_async),
+    db: AsyncSession = Depends(deps.get_async_db),
+    current_user: User = Depends(deps.get_current_active_user_async),
 ):
     """Upload a document to a bot's knowledge base with advanced processing"""
 
@@ -167,12 +167,12 @@ async def upload_document(
     safe_storage_name = f"{uuid.uuid4()}{suffix}"
 
     # ── Deduplication Check: prevent re-processing same file ─────────────
-    existing_doc = db.execute(
+    existing_doc = (await db.execute(
         select(DocumentModel).where(
             DocumentModel.bot_id == bot.id,
             DocumentModel.filename == original_filename,
         )
-    ).scalar_one_or_none()
+    )).scalar_one_or_none()
 
     if existing_doc:
         # If already processing or completed, return existing doc (idempotent)
@@ -207,8 +207,8 @@ async def upload_document(
         doc_metadata={"chunking_strategy": chunking_strategy, "enable_knowledge_graph": enable_knowledge_graph}
     )
     db.add(doc)
-    db.commit()
-    db.refresh(doc)
+    await db.commit()
+    await db.refresh(doc)
 
     # Resolve chunk params: explicit form values override domain profile defaults
     from app.services.domain_config import get_domain_profile
@@ -520,8 +520,8 @@ async def delete_user_memories(
 @router.post("/generate-prompt", response_model=Dict[str, str])
 async def generate_bot_prompt(
     request: PromptGenerationRequest,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    db: AsyncSession = Depends(deps.get_async_db),
+    current_user: User = Depends(deps.get_current_active_user_async),
 ):
     """Generate a high-quality system prompt based on bot name, description, and available documents"""
     
@@ -530,12 +530,12 @@ async def generate_bot_prompt(
     if request.bot_id:
         try:
             bot_uuid = UUID(request.bot_id)
-            documents = db.execute(
+            documents = (await db.execute(
                 select(DocumentModel).where(
                     DocumentModel.bot_id == bot_uuid,
                     DocumentModel.tenant_id == current_user.tenant_id if hasattr(DocumentModel, 'tenant_id') else True,
                 )
-            ).scalars().all()
+            )).scalars().all()
             
             if documents:
                 file_types = list(set([Path(doc.filename).suffix for doc in documents]))

@@ -49,6 +49,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
 COPY . .
+RUN chmod +x /app/prestart.sh
 
 # Chown all files to the app user
 RUN chown -R app:app /app
@@ -56,4 +57,4 @@ RUN chown -R app:app /app
 # Switch to non-root user
 USER app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "/app/prestart.sh"]
