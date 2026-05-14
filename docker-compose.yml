@@ -141,6 +141,35 @@ services:
       - qdrant
       - opendataloader-hybrid
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # fb-channel-worker — Facebook Messenger bridge (GPL v3 isolated microservice)
+  # Uses unofficial fbchat-muqit library; isolated from backend to avoid GPL
+  # license entanglement. Communicates with backend over HTTP only.
+  # See services/fb-channel-worker/README.md for details.
+  # ─────────────────────────────────────────────────────────────────────────
+  fb-channel-worker:
+    build: ./services/fb-channel-worker
+    image: omnirag-fb-channel-worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    expose:
+      - "9100"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
+      - INBOUND_SECRET=${FB_INBOUND_SECRET:-}
+      - LOG_LEVEL=INFO
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   qdrant:
     image: qdrant/qdrant:latest
     restart: unless-stopped

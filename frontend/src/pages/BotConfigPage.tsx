@@ -79,6 +79,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [zaloBotConnecting, setZaloBotConnecting] = useState(false);
   const [zaloBotToken, setZaloBotToken] = useState('');
 
+  // Facebook Messenger connect state
+  const [fbConnecting, setFbConnecting] = useState(false);
+  const [fbCookiesText, setFbCookiesText] = useState('');
+  const [fbCookiesError, setFbCookiesError] = useState('');
+  const fbFileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Form data for settings
   const [formData, setFormData] = useState({
     name: '',
@@ -98,7 +104,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       account_id: '',
       is_active: false
     },
-    zalo_bot: null as any
+    zalo_bot: null as any,
+    facebook: null as any
   });
 
   const loadBot = async (botId: string) => {
@@ -124,7 +131,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           account_id: '',
           is_active: false
         },
-        zalo_bot: botData.config?.zalo_bot || null
+        zalo_bot: botData.config?.zalo_bot || null,
+        facebook: botData.config?.facebook || null
       });
     } catch (error) {
       setError('Failed to load bot');
@@ -291,7 +299,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           enrich_picture_description: formData.enrich_picture_description,
           domain: formData.domain,
           zalo_integration: formData.zalo_integration,
-          ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {})
+          ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {}),
+          ...(formData.facebook ? { facebook: formData.facebook } : {})
         },
       };
 
@@ -1464,6 +1473,192 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
                         <p className="text-[10px] text-primary-700 font-medium">
                           <strong>How it works:</strong> We call <code>setWebhook</code> + <code>getMe</code> on the Zalo Bot API automatically. Your bot will start responding to Zalo messages instantly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ═══ FACEBOOK MESSENGER (via fb-channel-worker, GPL v3 isolated) ═══ */}
+              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 rounded-xl bg-[#0866FF]/10 flex items-center justify-center text-[#0866FF]">
+                      <span className="material-symbols-outlined text-3xl">forum</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground">Facebook Messenger</h3>
+                      <p className="text-sm text-muted-foreground">Reply in Messenger group chats. Bot answers only when @mentioned.</p>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.facebook?.status === 'connected'
+                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    : formData.facebook?.status === 'expired'
+                      ? 'bg-red-50 text-red-600 border border-red-200'
+                      : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                    <span className={`size-2 rounded-full ${formData.facebook?.status === 'connected' ? 'bg-success-500 animate-pulse' : formData.facebook?.status === 'expired' ? 'bg-red-500' : 'bg-muted-foreground'}`}></span>
+                    {formData.facebook?.status === 'connected' ? 'CONNECTED' : formData.facebook?.status === 'expired' ? 'COOKIES EXPIRED' : 'NOT CONNECTED'}
+                  </div>
+                </div>
+
+                {formData.facebook?.status === 'connected' ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <div>
+                          <p className="text-sm font-bold text-success-800">Logged in as {formData.facebook.display_name || '(unknown name)'}</p>
+                          <p className="text-xs text-success-700 mt-0.5">UID: <code className="font-mono">{formData.facebook.uid}</code></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-muted/30 border border-border rounded-xl text-xs text-muted-foreground space-y-1">
+                      <p><strong>Reply policy:</strong> mention-only (bot chỉ trả lời khi được @tag trong group)</p>
+                      <p><strong>Connected at:</strong> {formData.facebook.connected_at ? new Date(formData.facebook.connected_at).toLocaleString() : '—'}</p>
+                      {formData.facebook.last_event_at && <p><strong>Last event:</strong> {new Date(formData.facebook.last_event_at).toLocaleString()}</p>}
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={async () => {
+                          if (!id) return;
+                          if (!confirm('Disconnect Facebook Messenger? Bot will stop replying in Messenger groups.')) return;
+                          try {
+                            await apiClient.post(`/api/v1/channels/facebook/disconnect/${id}`);
+                            setFormData({ ...formData, facebook: null });
+                            toast.success('Facebook Messenger disconnected');
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Failed to disconnect');
+                          }
+                        }}
+                        className="px-6 py-3 bg-red-500/10 text-red-600 font-semibold rounded-xl hover:bg-red-500/20 transition-all border border-red-200"
+                      >
+                        <span className="material-symbols-outlined text-sm mr-1">link_off</span>
+                        Disconnect
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Facebook Cookies (JSON)</label>
+                        <textarea
+                          placeholder='Paste JSON exported from Cookie-Editor extension here — supports both {"url":"...","cookies":[...]} and plain [...] formats.'
+                          value={fbCookiesText}
+                          onChange={(e) => { setFbCookiesText(e.target.value); setFbCookiesError(''); }}
+                          rows={6}
+                          className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                        />
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); }}
+                          onDrop={async (e) => {
+                            e.preventDefault();
+                            const file = e.dataTransfer.files?.[0];
+                            if (!file) return;
+                            try { setFbCookiesText(await file.text()); setFbCookiesError(''); }
+                            catch { toast.error('Cannot read file'); }
+                          }}
+                          onClick={() => fbFileInputRef.current?.click()}
+                          className="cursor-pointer rounded-xl border-2 border-dashed border-border bg-muted/10 hover:bg-muted/30 transition-colors p-4 text-center"
+                        >
+                          <p className="text-xs text-muted-foreground">
+                            <span className="material-symbols-outlined text-sm align-middle mr-1">upload_file</span>
+                            Drag-drop a <code>.json</code> file here or click to browse
+                          </p>
+                          <input
+                            ref={fbFileInputRef}
+                            type="file"
+                            accept="application/json,.json"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try { setFbCookiesText(await file.text()); setFbCookiesError(''); }
+                              catch { toast.error('Cannot read file'); }
+                            }}
+                          />
+                        </div>
+                        {fbCookiesError && <p className="text-[11px] text-red-600 pl-1">{fbCookiesError}</p>}
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!id || !fbCookiesText.trim()) {
+                            setFbCookiesError('Please paste cookies JSON first.');
+                            return;
+                          }
+                          let parsed: any;
+                          try { parsed = JSON.parse(fbCookiesText.trim()); }
+                          catch { setFbCookiesError('Not valid JSON — re-export from Cookie-Editor.'); return; }
+
+                          const cookiesList: any[] = Array.isArray(parsed)
+                            ? parsed
+                            : (parsed && Array.isArray(parsed.cookies) ? parsed.cookies : []);
+                          if (!cookiesList.length) {
+                            setFbCookiesError('JSON does not contain a cookies array.');
+                            return;
+                          }
+                          const names = new Set(cookiesList.map((c: any) => c?.name || c?.key));
+                          const required = ['c_user', 'xs', 'fr', 'datr', 'sb'];
+                          const missing = required.filter((n) => !names.has(n));
+                          if (missing.length) {
+                            setFbCookiesError(`Missing required cookies: ${missing.join(', ')}. Make sure you exported after logging in.`);
+                            return;
+                          }
+
+                          setFbConnecting(true);
+                          const t = toast.loading('Connecting Facebook Messenger...');
+                          try {
+                            const res = await apiClient.post('/api/v1/channels/facebook/connect', {
+                              bot_id: id,
+                              cookies: cookiesList,
+                            });
+                            if (id) await loadBot(id);
+                            setFbCookiesText('');
+                            toast.success(`Connected as ${res.data.display_name || res.data.uid}`, { id: t });
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Connection failed', { id: t });
+                          } finally {
+                            setFbConnecting(false);
+                          }
+                        }}
+                        disabled={fbConnecting || !fbCookiesText.trim()}
+                        className="w-full px-6 py-3 bg-[#0866FF] text-white font-bold rounded-xl hover:bg-[#0866FF]/90 transition-all shadow-lg shadow-[#0866FF]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {fbConnecting ? (
+                          <><span className="animate-spin">⏳</span> Connecting...</>
+                        ) : (
+                          <><span className="material-symbols-outlined text-sm">link</span> Connect Facebook</>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="bg-muted/10 rounded-2xl p-5 border border-border">
+                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-lg">info</span>
+                        How to get cookies
+                      </h4>
+                      <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">1</span>
+                          <p>Use a <strong>dummy Facebook account</strong> in a separate browser session (never your main account).</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">2</span>
+                          <p>Install <strong>Cookie-Editor</strong> extension and log in to facebook.com.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">3</span>
+                          <p>Click the extension → <strong>Export → JSON</strong> → paste here or drag the file.</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-[10px] text-red-700 font-medium">
+                          ⚠️ <strong>Risks:</strong> This uses an unofficial Messenger API. Facebook may ban automated accounts. E2EE limits replies to <strong>group chats</strong> only (no 1-1 DMs). Cookies expire and must be refreshed.
                         </p>
                       </div>
                     </div>

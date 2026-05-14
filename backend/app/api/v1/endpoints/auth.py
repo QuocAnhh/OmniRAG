@@ -1,6 +1,6 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -21,6 +21,7 @@ router = APIRouter()
 @router.post("/register", response_model=user_schema.User, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 def register(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     user_in: UserRegister,
@@ -66,6 +67,7 @@ def register(
 @router.post("/login", response_model=Token)
 @limiter.limit("10/minute")
 def login(
+    request: Request,
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
