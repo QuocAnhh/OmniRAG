@@ -106,10 +106,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     enable_knowledge_graph: false,
     enrich_picture_description: false,
     domain: 'general' as 'general' | 'education' | 'legal' | 'sales',
-    zalo_integration: {
-      account_id: '',
-      is_active: false
-    },
     zalo_bot: null as any,
     zalo_personal: null as any,
     facebook: null as any
@@ -134,10 +130,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         enable_knowledge_graph: botData.config?.enable_knowledge_graph
           || ['education', 'legal'].includes(botData.config?.domain ?? ''),
         enrich_picture_description: botData.config?.enrich_picture_description || false,
-        zalo_integration: botData.config?.zalo_integration || {
-          account_id: '',
-          is_active: false
-        },
         zalo_bot: botData.config?.zalo_bot || null,
         zalo_personal: botData.config?.zalo_personal || null,
         facebook: botData.config?.facebook || null
@@ -352,7 +344,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           enable_knowledge_graph: formData.enable_knowledge_graph,
           enrich_picture_description: formData.enrich_picture_description,
           domain: formData.domain,
-          zalo_integration: formData.zalo_integration,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {}),
           ...(formData.zalo_personal ? { zalo_personal: zaloPersonalConfig } : {}),
           ...(formData.facebook ? { facebook: formData.facebook } : {})
@@ -1881,157 +1872,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                 )}
-              </div>
-
-              {/* ═══ ZALO HUB (Legacy — Func.vn Integration) ═══ */}
-
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
-                      <span className="material-symbols-outlined text-3xl">chat</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-foreground">Zalo Integration</h3>
-                      <p className="text-sm text-muted-foreground">Power your Zalo OA or Personal Account with OmniRAG AI.</p>
-                    </div>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.zalo_integration?.is_active ? 'bg-success-50 text-success-600 border border-success-200' : 'bg-muted text-muted-foreground border border-border'}`}>
-                    <span className={`size-2 rounded-full ${formData.zalo_integration?.is_active ? 'bg-success-500 animate-pulse' : 'bg-muted-foreground'}`}></span>
-                    {formData.zalo_integration?.is_active ? 'AI ACTIVE' : 'INACTIVE'}
-                  </div>
-                </div>
-
-                <div className="grid lg:grid-cols-2 gap-10">
-                  {/* Step 1: Connection Info */}
-                  <div className="space-y-6">
-                    <div className="p-5 rounded-2xl bg-muted/20 border border-border border-dashed">
-                      <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                        <span className="size-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">1</span>
-                        Connect to Zalo Hub
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                        To use Zalo with OmniRAG, you first need to connect your Zalo account to our central integration hub on Func.vn.
-                      </p>
-
-                      <div className="bg-white p-4 rounded-xl border border-border w-fit mx-auto shadow-sm group relative overflow-hidden">
-                        {/* Placeholder for QR - In a real app this would be a dynamic QR or link */}
-                        <div className="size-32 bg-muted/50 rounded flex items-center justify-center text-muted-foreground border border-border border-dashed group-hover:bg-primary/5 transition-colors">
-                          <span className="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">qr_code_2</span>
-                        </div>
-                        <div className="absolute inset-0 bg-primary/80 text-primary-foreground flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                          <span className="material-symbols-outlined mb-1">open_in_new</span>
-                          <span className="text-[10px] font-bold">OPEN HUB</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                        <p className="text-[11px] text-primary-700 font-medium">
-                          <strong>Note:</strong> After connecting on Func.vn, note down your <strong>Zalo Account ID</strong> or <strong>OA ID</strong>.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <span className="size-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">2</span>
-                        Configure Integration
-                      </h4>
-
-                      <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Zalo Account / OA ID</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. 182736455243"
-                            value={formData.zalo_integration?.account_id || ''}
-                            onChange={(e) => {
-                              setFormData({
-                                ...formData,
-                                zalo_integration: {
-                                  ...formData.zalo_integration,
-                                  account_id: e.target.value
-                                }
-                              });
-                            }}
-                            className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
-                          <div>
-                            <p className="text-sm font-bold text-foreground">Enable AI Auto-Reply</p>
-                            <p className="text-xs text-muted-foreground">Bot will automatically reply to Zalo messages.</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                zalo_integration: {
-                                  ...formData.zalo_integration,
-                                  is_active: !formData.zalo_integration?.is_active
-                                }
-                              });
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.zalo_integration?.is_active ? 'bg-primary' : 'bg-muted-foreground/30'}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.zalo_integration?.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sidebar/Docs */}
-                  <div className="space-y-6">
-                    <div className="bg-muted/10 rounded-2xl p-6 border border-border">
-                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500">info</span>
-                        How it works
-                      </h4>
-                      <div className="space-y-4 text-xs text-muted-foreground leading-relaxed">
-                        <div className="flex gap-3">
-                          <span className="font-bold text-primary">1.</span>
-                          <p>Messages from Zalo users are sent to our central Hub on Func.vn.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="font-bold text-primary">2.</span>
-                          <p>Our Hub forwards the message to your specific OmniRAG bot based on your <strong>Account ID</strong>.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="font-bold text-primary">3.</span>
-                          <p>The AI analyzes your knowledge base and generates a response.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="font-bold text-primary">4.</span>
-                          <p>OmniRAG sends the response back to Zalo instantly using our verified API.</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-warning-50 border border-warning-200 rounded-xl">
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-warning-600 text-[18px]">warning</span>
-                        <div>
-                          <p className="text-[11px] font-bold text-warning-800">Prerequisite</p>
-                          <p className="text-[10px] text-warning-700 leading-tight mt-0.5">
-                            Make sure your Zalo account is correctly linked to our Hub. Contact support if you haven't received the Hub connection invitation.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-10 pt-6 border-t border-border flex justify-end">
-                  <button
-                    onClick={handleSaveBasicSettings}
-                    disabled={loading || !formData.zalo_integration?.account_id}
-                    className="px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {loading ? 'Saving...' : 'Save & Activate Integration'}
-                  </button>
-                </div>
               </div>
 
             </div>
