@@ -21,8 +21,10 @@ FastAPI Backend  (port 8000)
   ├── Users             /api/v1/users/*
   ├── Integrations      /api/v1/integrations/*
   ├── Zalo Hub          /api/v1/channels/zalo/*
-  └── Zalo Bot          /api/v1/channels/zalo-bot/*
+  ├── Zalo Bot          /api/v1/channels/zalo-bot/*
+  └── Facebook          /api/v1/channels/facebook/*
   │
+  ├── fb-channel-worker (port 9100) — isolated Messenger bridge
   ├── PostgreSQL  (port 5433) — Users, Bots, Documents metadata
   ├── MongoDB     (port 27017) — Chat logs, conversation history
   ├── Redis       (port 6380) — Celery broker, gateway cache
@@ -43,6 +45,7 @@ FastAPI Backend  (port 8000)
 | Redis | 7-alpine | 6380 | Cache & task broker |
 | Qdrant | latest | 6333 | Vector DB |
 | MinIO | latest | 9000/9001 | Object storage |
+| fb-channel-worker | Python 3.11 + FastAPI | 9100 | Isolated Facebook Messenger bridge |
 
 ## Backend Structure (`backend/app/`)
 
@@ -64,7 +67,8 @@ app/
 │       ├── integrations.py  — External integration hooks
 │       └── channels/
 │           ├── zalo_hub.py  — Zalo Hub webhook receiver
-│           └── zalo_bot.py  — Zalo bot webhook receiver + connect/disconnect (in-process via asyncio.create_task)
+│           ├── zalo_bot.py  — Zalo bot webhook receiver + connect/disconnect (in-process via asyncio.create_task)
+│           └── facebook_messenger.py — Facebook connect/disconnect/status + signed worker inbound
 ├── services/
 │   ├── openrouter_rag_service.py  — Main RAG pipeline (see RAG Pipeline below)
 │   ├── domain_config.py           — Domain profile registry (general/education/legal/sales)
@@ -74,7 +78,7 @@ app/
 │   ├── bot_templates.py           — Bot template business logic
 │   ├── cache_service.py           — Redis cache wrapper
 │   ├── storage_service.py         — MinIO file storage
-│   └── channels/                  — Zalo message handling
+│   └── channels/                  — Channel services (Zalo, Facebook Messenger)
 ├── models/                  — SQLAlchemy ORM (Bot, Document, Tenant, User)
 ├── schemas/                 — Pydantic v2 schemas; BotConfig includes domain + chunk fields
 ├── tasks/
@@ -86,6 +90,30 @@ app/
     ├── config.py            — Settings (pydantic-settings, reads .env); includes RERANKER_MODEL
     └── security.py          — JWT utilities
 ```
+
+## Facebook Messenger Worker Flow
+
+Facebook Messenger is intentionally separated from the backend because it uses
+the unofficial GPL-licensed `fbchat-muqit` library.
+
+```
+Messenger MQTT events
+  ↓
+fb-channel-worker
+  ├─ echo guard / thread whitelist / mention-only policy
+  ├─ text + image event coalescing
+  ├─ raw + normalized attachment payload
+  └─ HMAC-signed POST to backend inbound route
+       ↓
+FacebookMessengerService
+  ├─ group context and participant lookup
+  ├─ image description via OpenRouter vision
+  ├─ RAG + memory pipeline
+  └─ worker send/react/leave calls
+```
+
+See [FACEBOOK_MESSENGER_INTEGRATION.md](FACEBOOK_MESSENGER_INTEGRATION.md) for
+operational details.
 
 ## Advanced RAG Pipeline
 

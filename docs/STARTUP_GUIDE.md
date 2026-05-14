@@ -73,6 +73,10 @@ QDRANT_PORT=6333
 PUBLIC_URL=https://your-domain.com
 FUNC_API_URL=https://func.vn/api/...
 FUNC_API_TOKEN=your_func_token
+
+# Facebook Messenger Integration (chỉ cần nếu dùng Facebook channel)
+FB_WORKER_API_TOKEN=replace-with-random-token
+FB_INBOUND_SECRET=replace-with-random-hmac-secret
 ```
 
 > **Production:** Bắt buộc đổi `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY`, `SECRET_KEY`. Set `ENVIRONMENT=production`.
@@ -89,6 +93,7 @@ docker compose up -d --build
 
 # Xem logs
 docker compose logs -f backend
+docker compose logs -f fb-channel-worker
 docker compose logs -f gateway
 docker compose logs -f celery_worker
 ```
@@ -98,6 +103,13 @@ docker compose logs -f celery_worker
 ```bash
 docker compose build backend celery_worker
 docker compose up -d backend celery_worker
+```
+
+### Chỉ build lại Facebook Messenger channel
+
+```bash
+docker compose build backend fb-channel-worker
+docker compose up -d backend fb-channel-worker
 ```
 
 ### Production

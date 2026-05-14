@@ -324,6 +324,61 @@ Response:
 
 ---
 
+## Channels — Facebook Messenger
+
+Facebook Messenger uses an isolated internal worker. Frontend clients should
+call the backend routes below; worker routes are for backend-to-worker traffic
+inside the Docker network.
+
+### Backend API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/channels/facebook/connect` | Connect an OmniRAG bot to Messenger using exported Facebook cookies |
+| `POST` | `/channels/facebook/disconnect/{bot_id}` | Unload the worker session and remove Facebook config from the bot |
+| `GET` | `/channels/facebook/status/{bot_id}` | Return stored Facebook config plus worker runtime status |
+| `POST` | `/channels/facebook/inbound/{bot_id}` | HMAC-protected worker webhook; not intended for frontend calls |
+
+`POST /channels/facebook/connect` body:
+
+```json
+{
+  "bot_id": "aafae6f3-0a76-45a8-aa56-61bd5749da71",
+  "cookies": [
+    {"name": "c_user", "value": "..."},
+    {"name": "xs", "value": "..."}
+  ],
+  "thread_whitelist": ["1280823117452427"]
+}
+```
+
+`cookies` may be a flat Cookie-Editor-style list or an object containing a
+`cookies` list. The backend validates critical cookies: `c_user`, `xs`, `fr`,
+`datr`, and `sb`.
+
+### Internal Worker API
+
+Worker base URL is normally `http://fb-channel-worker:9100`.
+Authenticated worker routes require `Authorization: Bearer <FB_WORKER_API_TOKEN>`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Worker liveness, version, uptime, and loaded bot count |
+| `GET` | `/bots` | List loaded bot ids |
+| `POST` | `/bots/{bot_id}/load` | Start a Messenger session from cookies |
+| `POST` | `/bots/{bot_id}/unload` | Stop and remove a Messenger session |
+| `GET` | `/bots/{bot_id}/status` | Worker runtime status for one bot |
+| `POST` | `/bots/{bot_id}/send` | Send a reply, optionally with reply id and real mention metadata |
+| `POST` | `/bots/{bot_id}/react` | React to a message |
+| `POST` | `/bots/{bot_id}/threads/leave` | Remove the bot account from a group thread |
+| `GET` | `/bots/{bot_id}/threads/{thread_id}/participants` | Fetch participants |
+| `GET` | `/bots/{bot_id}/threads/{thread_id}/context` | Fetch group metadata, participants, and recent messages |
+
+See [FACEBOOK_MESSENGER_INTEGRATION.md](FACEBOOK_MESSENGER_INTEGRATION.md) for
+the event flow, normalized attachment payload, and troubleshooting.
+
+---
+
 ## Health
 
 | Method | Path | Description |

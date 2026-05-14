@@ -57,6 +57,7 @@
 | MinIO | latest | 9000/9001 | S3-compatible document storage |
 | Celery | — | — | Async document processing worker |
 | OpenDataLoader Hybrid | opendataloader/pdf-hybrid | 5002 | PDF OCR, SmolVLM image descriptions, formula extraction |
+| Facebook Messenger Worker | Python 3.11 + FastAPI | 9100 | Isolated Messenger bridge using `fbchat-muqit` |
 
 ## Integrations & Channels
 
@@ -65,6 +66,9 @@
 | Zalo Bot | ✅ | Webhook-based Zalo Bot Platform integration (`bot-api.zapps.me`) |
 | Zalo Bot Typing Indicator | ✅ | `sendChatAction` typing sent before RAG processing |
 | Zalo Bot In-Process | ✅ | Webhook processed via `asyncio.create_task` in FastAPI process (not Celery) |
+| Facebook Messenger | ✅ | Cookie-based Messenger bridge with group/DM replies through isolated worker |
+| Facebook Image Coalescing | ✅ | Merges split text + image MQTT events and normalizes attachments before backend processing |
+| Facebook Group Context | ✅ | Fetches members, nicknames, recent messages, and supports real `@Name` mentions |
 | External Integrations | ✅ | `/integrations` endpoint for third-party hooks |
 | OpenRouter Provider Fallback | ✅ | Automatic model fallback on API failure |
 
