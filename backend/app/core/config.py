@@ -144,6 +144,14 @@ class Settings(BaseSettings):
     FB_INBOUND_SECRET: str = ""     # HMAC secret the worker uses to sign POSTs back to us
 
     # ============================================================
+    # Zalo Personal Account Channel (via zca-js worker)
+    # ============================================================
+    ZALO_PERSONAL_ENABLED: bool = False
+    ZALO_PERSONAL_WORKER_URL: str = "http://zalo-personal-worker:9200"
+    ZALO_PERSONAL_WORKER_API_TOKEN: str = ""
+    ZALO_PERSONAL_INBOUND_SECRET: str = ""
+
+    # ============================================================
     # Mem0 Memory Configuration
     # ============================================================
     MEM0_ENABLED: bool = True

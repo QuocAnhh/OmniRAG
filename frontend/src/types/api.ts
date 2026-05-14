@@ -41,6 +41,14 @@ export interface Bot {
     chunk_size?: number;
     chunk_overlap?: number;
     enable_knowledge_graph?: boolean;
+    enrich_picture_description?: boolean;
+    zalo_integration?: {
+      account_id: string;
+      is_active: boolean;
+    };
+    zalo_personal?: Record<string, any> | null;
+    zalo_bot?: Record<string, any> | null;
+    facebook?: Record<string, any> | null;
   };
   created_at: string;
   updated_at: string;

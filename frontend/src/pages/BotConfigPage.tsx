@@ -79,6 +79,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [zaloBotConnecting, setZaloBotConnecting] = useState(false);
   const [zaloBotToken, setZaloBotToken] = useState('');
 
+  // Zalo Personal connect state (experimental)
+  const zaloPersonalEnabled = import.meta.env.VITE_ENABLE_ZALO_PERSONAL === 'true';
+  const [zaloPersonalConnecting, setZaloPersonalConnecting] = useState(false);
+  const [zaloPersonalPolling, setZaloPersonalPolling] = useState(false);
+  const zaloPersonalPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Facebook Messenger connect state
   const [fbConnecting, setFbConnecting] = useState(false);
   const [fbCookiesText, setFbCookiesText] = useState('');
@@ -105,6 +111,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       is_active: false
     },
     zalo_bot: null as any,
+    zalo_personal: null as any,
     facebook: null as any
   });
 
@@ -132,6 +139,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           is_active: false
         },
         zalo_bot: botData.config?.zalo_bot || null,
+        zalo_personal: botData.config?.zalo_personal || null,
         facebook: botData.config?.facebook || null
       });
     } catch (error) {
@@ -230,8 +238,53 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
       if (kgTimerRef.current) clearInterval(kgTimerRef.current);
       if (kgPollRef.current) clearInterval(kgPollRef.current);
+      if (zaloPersonalPollRef.current) clearInterval(zaloPersonalPollRef.current);
     };
   }, []);
+
+  const stopZaloPersonalPolling = () => {
+    if (zaloPersonalPollRef.current) {
+      clearInterval(zaloPersonalPollRef.current);
+      zaloPersonalPollRef.current = null;
+    }
+    setZaloPersonalPolling(false);
+  };
+
+  const pollZaloPersonalLogin = () => {
+    if (!id || zaloPersonalPollRef.current) return;
+    setZaloPersonalPolling(true);
+    zaloPersonalPollRef.current = setInterval(async () => {
+      try {
+        const res = await apiClient.get(`/api/v1/channels/zalo-personal/login-status/${id}`);
+        const worker = res.data.worker || {};
+        setFormData(prev => ({
+          ...prev,
+          zalo_personal: {
+            ...(prev.zalo_personal || {}),
+            status: worker.status,
+            uid: worker.uid,
+            display_name: worker.name,
+            connected_at: worker.connected_at,
+            last_error: worker.last_error,
+            qr_image: worker.qr_image,
+            reply_policy: worker.reply_policy || 'mention_only',
+            thread_whitelist: worker.thread_whitelist || [],
+          }
+        }));
+
+        if (['connected', 'expired', 'error', 'relogin_required', 'duplicate_connection'].includes(worker.status)) {
+          stopZaloPersonalPolling();
+          if (worker.status === 'connected') {
+            toast.success(`Zalo Personal connected${worker.name ? ` as ${worker.name}` : ''}`);
+            await loadBot(id);
+          }
+        }
+      } catch (err: any) {
+        stopZaloPersonalPolling();
+        toast.error(err.response?.data?.detail || 'Failed to poll Zalo Personal login');
+      }
+    }, 2500);
+  };
 
   // Resume KG polling if user navigated away while a KG build was still in progress
   useEffect(() => {
@@ -283,6 +336,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     setError('');
 
     try {
+      const { qr_image: _zaloPersonalQrImage, ...zaloPersonalConfig } = formData.zalo_personal || {};
       const botData = {
         name: formData.name,
         description: formData.description,
@@ -300,6 +354,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           domain: formData.domain,
           zalo_integration: formData.zalo_integration,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {}),
+          ...(formData.zalo_personal ? { zalo_personal: zaloPersonalConfig } : {}),
           ...(formData.facebook ? { facebook: formData.facebook } : {})
         },
       };
@@ -1479,6 +1534,168 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   </div>
                 )}
               </div>
+
+              {/* ═══ ZALO PERSONAL (Experimental — zca-js worker) ═══ */}
+              {zaloPersonalEnabled && (
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="size-12 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600">
+                        <span className="material-symbols-outlined text-3xl">account_circle</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold text-foreground">Zalo Personal</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-warning-50 text-warning-700 border border-warning-200">
+                            Experimental
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Use a dedicated personal Zalo account for DMs and mention-only group replies.</p>
+                      </div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.zalo_personal?.status === 'connected'
+                      ? 'bg-success-50 text-success-600 border border-success-200'
+                      : formData.zalo_personal?.status === 'relogin_required' || formData.zalo_personal?.status === 'duplicate_connection'
+                        ? 'bg-red-50 text-red-600 border border-red-200'
+                        : formData.zalo_personal?.status === 'qr_ready' || formData.zalo_personal?.status === 'scanned'
+                          ? 'bg-warning-50 text-warning-700 border border-warning-200'
+                          : 'bg-muted text-muted-foreground border border-border'
+                      }`}>
+                      <span className={`size-2 rounded-full ${formData.zalo_personal?.status === 'connected' ? 'bg-success-500 animate-pulse' : formData.zalo_personal?.status ? 'bg-warning-500' : 'bg-muted-foreground'}`}></span>
+                      {formData.zalo_personal?.status === 'connected' ? 'CONNECTED' : (formData.zalo_personal?.status || 'NOT CONNECTED').replaceAll('_', ' ').toUpperCase()}
+                    </div>
+                  </div>
+
+                  {formData.zalo_personal?.status === 'connected' ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-success-600">check_circle</span>
+                          <div>
+                            <p className="text-sm font-bold text-success-800">Logged in as {formData.zalo_personal.display_name || '(unknown name)'}</p>
+                            <p className="text-xs text-success-700 mt-0.5">UID: <code className="font-mono">{formData.zalo_personal.uid || 'unknown'}</code></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-muted/30 border border-border rounded-xl text-xs text-muted-foreground space-y-1">
+                        <p><strong>Reply policy:</strong> direct messages always reply; groups reply on @mention or whitelist.</p>
+                        <p><strong>Connected at:</strong> {formData.zalo_personal.connected_at ? new Date(formData.zalo_personal.connected_at).toLocaleString() : '—'}</p>
+                        {formData.zalo_personal.last_event_at && <p><strong>Last event:</strong> {new Date(formData.zalo_personal.last_event_at).toLocaleString()}</p>}
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={async () => {
+                            if (!id) return;
+                            if (!confirm('Disconnect Zalo Personal? The worker session will be removed.')) return;
+                            try {
+                              stopZaloPersonalPolling();
+                              await apiClient.post(`/api/v1/channels/zalo-personal/disconnect/${id}`);
+                              setFormData({ ...formData, zalo_personal: null });
+                              toast.success('Zalo Personal disconnected');
+                            } catch (err: any) {
+                              toast.error(err.response?.data?.detail || 'Failed to disconnect');
+                            }
+                          }}
+                          className="px-6 py-3 bg-red-500/10 text-red-600 font-semibold rounded-xl hover:bg-red-500/20 transition-all border border-red-200"
+                        >
+                          <span className="material-symbols-outlined text-sm mr-1">link_off</span>
+                          Disconnect
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid lg:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        {formData.zalo_personal?.qr_image ? (
+                          <div className="p-5 rounded-2xl bg-white border border-border w-fit shadow-sm">
+                            <img
+                              src={formData.zalo_personal.qr_image.startsWith('data:')
+                                ? formData.zalo_personal.qr_image
+                                : `data:image/png;base64,${formData.zalo_personal.qr_image}`}
+                              alt="Zalo login QR"
+                              className="size-48 object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-5 rounded-2xl bg-muted/20 border border-border border-dashed">
+                            <div className="size-48 flex items-center justify-center text-muted-foreground">
+                              <span className="material-symbols-outlined text-5xl">qr_code_2</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {formData.zalo_personal?.last_error && (
+                          <p className="text-xs text-red-600">{formData.zalo_personal.last_error}</p>
+                        )}
+
+                        <button
+                          onClick={async () => {
+                            if (!id) return;
+                            setZaloPersonalConnecting(true);
+                            const t = toast.loading('Starting Zalo Personal QR login...');
+                            try {
+                              const res = await apiClient.post('/api/v1/channels/zalo-personal/connect/start', {
+                                bot_id: id,
+                                reply_policy: 'mention_only',
+                                thread_whitelist: [],
+                              });
+                              const worker = res.data.worker || {};
+                              setFormData(prev => ({
+                                ...prev,
+                                zalo_personal: {
+                                  ...(prev.zalo_personal || {}),
+                                  status: worker.status,
+                                  qr_image: worker.qr_image,
+                                  last_error: worker.last_error,
+                                  reply_policy: worker.reply_policy || 'mention_only',
+                                  thread_whitelist: worker.thread_whitelist || [],
+                                }
+                              }));
+                              pollZaloPersonalLogin();
+                              toast.success('Scan the QR code with the dedicated Zalo account.', { id: t });
+                            } catch (err: any) {
+                              toast.error(err.response?.data?.detail || 'Connection failed', { id: t });
+                            } finally {
+                              setZaloPersonalConnecting(false);
+                            }
+                          }}
+                          disabled={zaloPersonalConnecting || zaloPersonalPolling}
+                          className="w-full px-6 py-3 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-700 transition-all shadow-lg shadow-sky-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {zaloPersonalConnecting || zaloPersonalPolling ? (
+                            <><span className="animate-spin">⏳</span> Waiting for QR login...</>
+                          ) : (
+                            <><span className="material-symbols-outlined text-sm">qr_code_scanner</span> Connect Zalo Personal</>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="bg-muted/10 rounded-2xl p-5 border border-border">
+                        <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-warning-600 text-lg">warning</span>
+                          Experimental channel rules
+                        </h4>
+                        <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
+                          <div className="flex gap-3">
+                            <span className="size-5 shrink-0 rounded-full bg-warning-500 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                            <p>Use a dedicated secondary Zalo account, never a main personal account.</p>
+                          </div>
+                          <div className="flex gap-3">
+                            <span className="size-5 shrink-0 rounded-full bg-warning-500 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                            <p>Do not open Zalo Web or Zalo PC with the same account while the worker is listening.</p>
+                          </div>
+                          <div className="flex gap-3">
+                            <span className="size-5 shrink-0 rounded-full bg-warning-500 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                            <p>V1 is text-only. Group replies are mention-only unless a thread is whitelisted later.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ═══ FACEBOOK MESSENGER (via fb-channel-worker, GPL v3 isolated) ═══ */}
               <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
