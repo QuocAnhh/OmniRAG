@@ -137,6 +137,8 @@ services:
     build: ./services/fb-channel-worker
     image: omnirag-fb-channel-worker
     restart: always
+    env_file:
+      - ./backend/.env
     expose:
       - "9100"
     environment:

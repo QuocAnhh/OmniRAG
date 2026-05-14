@@ -53,6 +53,17 @@ class SendRequest(BaseModel):
     thread_id: str
     text: str
     reply_to_id: Optional[str] = None
+    mentions: Optional[list[dict]] = None  # [{user_id, offset, length}]
+
+
+class ReactRequest(BaseModel):
+    message_id: str
+    thread_id: str
+    emoji: str = "👍"
+
+
+class LeaveThreadRequest(BaseModel):
+    thread_id: str
 
 
 # ─── routes ─────────────────────────────────────────────────────────────
@@ -99,11 +110,67 @@ async def send_message(bot_id: str, req: SendRequest) -> dict[str, Any]:
     if session is None:
         raise HTTPException(status_code=404, detail="bot not loaded")
     try:
-        result = await session.send(req.thread_id, req.text, req.reply_to_id)
+        result = await session.send(req.thread_id, req.text, req.reply_to_id, req.mentions)
     except Exception as e:
         log.exception("send failed bot=%s thread=%s", bot_id, req.thread_id)
         raise HTTPException(status_code=502, detail=f"send failed: {type(e).__name__}: {e}")
     return {"ok": True, **result}
+
+
+@app.post("/bots/{bot_id}/react", dependencies=[Depends(require_bearer)])
+async def react_to_message(bot_id: str, req: ReactRequest) -> dict[str, Any]:
+    session = manager.get(bot_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="bot not loaded")
+    try:
+        await session.react(req.message_id, req.thread_id, req.emoji)
+    except Exception as e:
+        log.warning("react failed bot=%s msg=%s: %s", bot_id, req.message_id, e)
+        raise HTTPException(status_code=502, detail=f"react failed: {e}")
+    return {"ok": True}
+
+
+@app.post("/bots/{bot_id}/threads/leave", dependencies=[Depends(require_bearer)])
+async def leave_thread(bot_id: str, req: LeaveThreadRequest) -> dict[str, Any]:
+    session = manager.get(bot_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="bot not loaded")
+    try:
+        await session.leave_thread(req.thread_id)
+    except Exception as e:
+        log.exception("leave thread failed bot=%s thread=%s", bot_id, req.thread_id)
+        raise HTTPException(status_code=502, detail=f"leave failed: {type(e).__name__}: {e}")
+    return {"ok": True, "thread_id": req.thread_id}
+
+
+@app.get("/bots/{bot_id}/threads/{thread_id}/participants", dependencies=[Depends(require_bearer)])
+async def thread_participants(bot_id: str, thread_id: str) -> dict[str, Any]:
+    session = manager.get(bot_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="bot not loaded")
+    try:
+        participants = await session.get_participants(thread_id)
+    except Exception as e:
+        log.exception("get_participants failed bot=%s thread=%s", bot_id, thread_id)
+        raise HTTPException(status_code=502, detail=f"get_participants failed: {e}")
+    return {"ok": True, "participants": participants}
+
+
+@app.get("/bots/{bot_id}/threads/{thread_id}/context", dependencies=[Depends(require_bearer)])
+async def thread_context(
+    bot_id: str,
+    thread_id: str,
+    message_limit: int = 30,
+) -> dict[str, Any]:
+    session = manager.get(bot_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="bot not loaded")
+    try:
+        ctx = await session.get_thread_context(thread_id, message_limit=min(message_limit, 50))
+    except Exception as e:
+        log.exception("get_thread_context failed bot=%s thread=%s", bot_id, thread_id)
+        raise HTTPException(status_code=502, detail=f"get_thread_context failed: {e}")
+    return {"ok": True, **ctx}
 
 
 @app.get("/bots/{bot_id}/status", dependencies=[Depends(require_bearer)])

@@ -82,6 +82,52 @@ def _sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
+def _build_group_context_block(bot_config: dict) -> str:
+    """Build the [NHÓM CHAT] system-prompt block from Facebook group context keys."""
+    lines: list[str] = []
+
+    group_name = (bot_config.get("group_name") or "").strip()
+    description = (bot_config.get("group_description") or "").strip()
+    participants: list[dict] = bot_config.get("group_participants") or []
+    recent_msgs: list[dict] = bot_config.get("group_recent_messages") or []
+
+    header = f'Nhóm: "{group_name}"' if group_name else "Nhóm chat"
+    if description:
+        header += f" — {description}"
+    lines.append(f"[{header}")
+
+    if participants:
+        lines.append(f"Thành viên ({len(participants)} người):")
+        for p in participants:
+            name = p.get("name") or ""
+            nick = p.get("nickname") or ""
+            admin = p.get("is_admin", False)
+            tags: list[str] = []
+            if admin:
+                tags.append("admin")
+            if nick and nick != name:
+                tags.append(f'biệt danh: "{nick}"')
+            suffix = f" ({', '.join(tags)})" if tags else ""
+            lines.append(f"  • @{name}{suffix}")
+
+    if recent_msgs:
+        lines.append(f"\nLịch sử trò chuyện gần đây ({len(recent_msgs)} tin nhắn):")
+        for m in recent_msgs:
+            sender = m.get("sender_name") or m.get("sender_id") or "?"
+            text = (m.get("text") or "").strip()
+            if text:
+                lines.append(f"  [{sender}]: {text}")
+
+    lines.append(
+        "\nQUY TẮC TAG:\n"
+        "• Khi được yêu cầu làm gì đó với ai (tán, hỏi, nhắn tin, tag,...) → tag THẲNG người đó bằng @Tên, làm luôn, KHÔNG hỏi lại.\n"
+        "• KHÔNG tự động tag lại người đang nói chuyện với mày trừ khi câu trả lời đang hướng thẳng vào họ.\n"
+        "• Nếu không tìm thấy tên trong danh sách → báo luôn 'tao không thấy ai tên X trong nhóm'.\n"
+        "• Hệ thống tự chuyển @Tên thành mention thực trên Facebook.]"
+    )
+    return "\n\n" + "\n".join(lines)
+
+
 def _extract_lightrag_entity_names(lightrag_raw: str) -> list:
     """
     Parse entity names from LightRAG's only_need_context=True output.
@@ -1474,6 +1520,10 @@ Answer:"""
                     "Answer based on what is available, but clearly indicate uncertainty and "
                     "recommend the user verify with authoritative sources.]"
                 )
+            # ── Group chat context ────────────────────────────────────────
+            group_participants = bot_config.get("group_participants")
+            if group_participants:
+                base_system_prompt += _build_group_context_block(bot_config)
             # ─────────────────────────────────────────────────────────────
             model = bot_config.get("model", "openai/gpt-4o-mini")
             temperature = bot_config.get("temperature", 0.7)
@@ -1511,7 +1561,8 @@ Answer:"""
             ]
             
             if conversation_history:
-                messages[1:1] = conversation_history[-5:]
+                _hist_limit = int(bot_config.get("conversation_history_limit", 5))
+                messages[1:1] = conversation_history[-_hist_limit:]
 
             llm_response = await asyncio.to_thread(
                 self._chat_with_retry,
@@ -1941,6 +1992,10 @@ Answer:"""
                 "Answer based on what is available, but clearly indicate uncertainty and "
                 "recommend the user verify with authoritative sources.]"
             )
+        # ── Group chat context ────────────────────────────────────────────
+        group_participants = bot_config.get("group_participants")
+        if group_participants:
+            base_system_prompt += _build_group_context_block(bot_config)
         # ─────────────────────────────────────────────────────────────────
         model = bot_config.get("model", "openai/gpt-4o-mini")
         temperature = bot_config.get("temperature", 0.7)

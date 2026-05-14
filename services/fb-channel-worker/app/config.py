@@ -9,15 +9,24 @@ class Settings(BaseSettings):
     BACKEND_URL: str = "http://backend:8000"
     WORKER_API_TOKEN: str = ""
     INBOUND_SECRET: str = ""
+    FB_WORKER_API_TOKEN: str = ""
+    FB_INBOUND_SECRET: str = ""
     LOG_LEVEL: str = "INFO"
 
     COOKIES_DIR: str = "/tmp/fb-cookies"
     PROBE_INTERVAL_SECONDS: int = 300
     PROBE_MAX_CONSECUTIVE_FAILS: int = 3
     INBOUND_HTTP_TIMEOUT_SECONDS: float = 10.0
+    FB_COALESCE_DELAY_SECONDS: float = 0.8
+    FB_MEDIA_COALESCE_DELAY_SECONDS: float = 5.0
+    FB_MEDIA_STASH_SECONDS: float = 30.0
 
 
 settings = Settings()
+if not settings.WORKER_API_TOKEN:
+    settings.WORKER_API_TOKEN = settings.FB_WORKER_API_TOKEN
+if not settings.INBOUND_SECRET:
+    settings.INBOUND_SECRET = settings.FB_INBOUND_SECRET
 
 
 _REDACT_KEYS = ("c_user", "xs", "fr", "datr", "sb", "presence")

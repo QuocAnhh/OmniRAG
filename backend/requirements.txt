@@ -44,3 +44,4 @@ prometheus-client>=0.20.0
 structlog>=24.1.0
 msgpack>=1.0.7
 slowapi==0.1.9
+duckduckgo-search>=6.0
