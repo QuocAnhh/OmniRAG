@@ -7,6 +7,7 @@ talks to the worker over authenticated internal HTTP.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any, Optional
@@ -91,14 +92,23 @@ class ZaloPersonalService:
         return await self._post(f"/bots/{bot_id}/unload", {})
 
     async def send_message(self, bot_id: str, thread_id: str, text: str, thread_type: str = "user") -> dict[str, Any]:
-        return await self._post(
-            f"/bots/{bot_id}/send",
-            {
-                "thread_id": thread_id,
-                "text": text,
-                "thread_type": thread_type,
-            },
-        )
+        last_exception = None
+        for attempt in range(2):
+            try:
+                return await self._post(
+                    f"/bots/{bot_id}/send",
+                    {
+                        "thread_id": thread_id,
+                        "text": text,
+                        "thread_type": thread_type,
+                    },
+                )
+            except Exception as e:
+                last_exception = e
+                if attempt == 0:
+                    logger.warning("zalo_personal_send_retry bot=%s attempt=%d", bot_id, attempt)
+                    await asyncio.sleep(1.0)
+        raise last_exception
 
     @staticmethod
     def config_from_status(status_data: dict[str, Any], existing: Optional[dict[str, Any]] = None) -> dict[str, Any]:
@@ -123,7 +133,10 @@ class ZaloPersonalService:
         thread_type = str(data.get("thread_type") or "user")
         sender_id = str(data.get("sender_id") or "")
 
-        if payload.get("kind") != "message":
+        kind = payload.get("kind")
+        if kind == "status_change":
+            return await self._handle_status_change(bot_id, payload)
+        if kind != "message":
             return {"status": "ignored", "reason": "unsupported_kind"}
         if not text or not thread_id:
             return {"status": "ignored", "reason": "no_text_or_thread"}
@@ -183,6 +196,41 @@ class ZaloPersonalService:
             return {"status": "ok"}
         except Exception as e:
             logger.exception("zalo_personal_inbound_failed bot=%s", bot_id)
+            return {"status": "error", "message": str(e)}
+        finally:
+            db.close()
+
+    async def _handle_status_change(self, bot_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        data = payload.get("data") or {}
+        new_status = data.get("status")
+        reason = data.get("reason", "")
+        logger.info(
+            "zalo_personal_status_change bot=%s status=%s reason=%s",
+            bot_id, new_status, reason,
+        )
+
+        db = SessionLocal()
+        try:
+            bot_uuid = UUID(bot_id)
+            bot = db.execute(
+                select(BotModel).where(BotModel.id == bot_uuid, BotModel.is_active == True)
+            ).scalar_one_or_none()
+            if not bot:
+                return {"status": "not_found"}
+
+            config = dict(bot.config or {})
+            channel_config = dict(config.get("zalo_personal") or {})
+            channel_config["status"] = new_status or channel_config.get("status", "disconnected")
+            channel_config["last_error"] = reason or channel_config.get("last_error")
+            if new_status == "relogin_required":
+                channel_config["is_active"] = False
+            config["zalo_personal"] = channel_config
+            bot.config = config
+            flag_modified(bot, "config")
+            db.commit()
+            return {"status": "updated"}
+        except Exception as e:
+            logger.exception("zalo_personal_status_change_failed bot=%s", bot_id)
             return {"status": "error", "message": str(e)}
         finally:
             db.close()

@@ -4,6 +4,11 @@ import { Zalo, ThreadType, LoginQRCallbackEventType, CloseReason } from "zca-js"
 import { settings } from "./config.js";
 import { shouldAcceptMessage } from "./policy.js";
 import { signBody } from "./security.js";
+import { checkLimits, recordSend, getDailyCount } from "./rate-limiter.js";
+import {
+  recordDisconnect, resetAll, isDisconnectTripped,
+  recordBackendFailure, recordBackendSuccess, isBackendDown,
+} from "./circuit-breaker.js";
 
 const DEFAULT_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0";
@@ -60,6 +65,14 @@ export class ZaloPersonalManager {
     return {
       ...session.status,
       has_credentials: Boolean(session.credentials),
+      rate_limit: {
+        daily_count: getDailyCount(session.botId),
+        daily_limit: 200,
+      },
+      circuit_breaker: {
+        disconnect_tripped: isDisconnectTripped(session.botId),
+        backend_down: isBackendDown(session.botId),
+      },
     };
   }
 
@@ -139,6 +152,8 @@ export class ZaloPersonalManager {
       replyPolicy: options.replyPolicy || session.options.replyPolicy || "mention_only",
       threadWhitelist: options.threadWhitelist || session.options.threadWhitelist || [],
     };
+    resetAll(botId);
+
     session.status.reply_policy = session.options.replyPolicy;
     session.status.thread_whitelist = session.options.threadWhitelist;
     session.status.status = "connecting";
@@ -172,6 +187,8 @@ export class ZaloPersonalManager {
       reply_policy: session.options.replyPolicy,
       thread_whitelist: session.options.threadWhitelist,
     };
+
+    resetAll(botId);
 
     if (session.api?.listener) {
       session.api.listener.stop();
@@ -275,6 +292,17 @@ export class ZaloPersonalManager {
       session.status.status =
         code === CloseReason.DuplicateConnection ? "duplicate_connection" : "disconnected";
       session.status.last_error = reason || `listener closed with code ${code}`;
+
+      const { tripped, reason: tripReason } = recordDisconnect(botId);
+      if (tripped) {
+        session.status.status = "relogin_required";
+        session.status.last_error = tripReason;
+        this.postInbound(botId, {
+          kind: "status_change",
+          bot_id: botId,
+          data: { status: "relogin_required", reason: tripReason },
+        }).catch(() => {});
+      }
     });
 
     api.listener.on("error", (error) => {
@@ -316,6 +344,10 @@ export class ZaloPersonalManager {
   }
 
   async postInbound(botId, payload) {
+    if (isBackendDown(botId) && payload.kind === "message") {
+      return;
+    }
+
     if (!settings.inboundSecret) {
       throw new Error("INBOUND_SECRET is not configured");
     }
@@ -333,7 +365,22 @@ export class ZaloPersonalManager {
       },
     );
     if (!response.ok) {
+      const tripped = recordBackendFailure(botId);
+      if (tripped) {
+        const session = this.get(botId);
+        if (session) {
+          session.status.status = "backend_down";
+          session.status.last_error = "backend unreachable — paused";
+        }
+      }
       throw new Error(`backend inbound failed: ${response.status} ${await response.text()}`);
+    }
+
+    recordBackendSuccess(botId);
+    const session = this.get(botId);
+    if (session && session.status.status === "backend_down") {
+      session.status.status = "connected";
+      session.status.last_error = null;
     }
   }
 
@@ -342,8 +389,13 @@ export class ZaloPersonalManager {
     if (!session?.api) {
       throw new Error("bot session is not loaded");
     }
+    const { allowed, reason } = checkLimits(botId);
+    if (!allowed) {
+      throw new Error(`rate_limited: ${reason}`);
+    }
     const zcaThreadType = threadType === "group" ? ThreadType.Group : ThreadType.User;
     const result = await session.api.sendMessage({ msg: text }, String(threadId), zcaThreadType);
+    recordSend(botId);
     return { ok: true, result };
   }
 
