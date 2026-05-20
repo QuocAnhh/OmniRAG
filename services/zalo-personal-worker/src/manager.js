@@ -41,9 +41,9 @@ export class ZaloPersonalManager {
     return path.join(settings.sessionsDir, `${botId}.json`);
   }
 
-  defaultStatus(botId) {
+  defaultStatus(accountId) {
     return {
-      bot_id: botId,
+      bot_id: accountId,
       status: "disconnected",
       uid: "",
       name: "",
@@ -66,25 +66,33 @@ export class ZaloPersonalManager {
       ...session.status,
       has_credentials: Boolean(session.credentials),
       rate_limit: {
-        daily_count: getDailyCount(session.botId),
+        daily_count: getDailyCount(session.accountId),
         daily_limit: 200,
       },
       circuit_breaker: {
-        disconnect_tripped: isDisconnectTripped(session.botId),
-        backend_down: isBackendDown(session.botId),
+        disconnect_tripped: isDisconnectTripped(session.accountId),
+        backend_down: isBackendDown(session.accountId),
       },
     };
   }
 
-  get(botId) {
-    return this.sessions.get(botId) || null;
+  get(accountId) {
+    return this.sessions.get(accountId) || null;
   }
 
-  getOrCreate(botId) {
-    let session = this.sessions.get(botId);
+  getByBotId(botId) {
+    for (const session of this.sessions.values()) {
+      if (session.botId === botId) return session;
+    }
+    return null;
+  }
+
+  getOrCreate(accountId, botId) {
+    let session = this.sessions.get(accountId);
     if (!session) {
       session = {
-        botId,
+        accountId,
+        botId: botId || accountId,
         api: null,
         credentials: null,
         loginPromise: null,
@@ -92,30 +100,31 @@ export class ZaloPersonalManager {
           replyPolicy: "mention_only",
           threadWhitelist: [],
         },
-        status: this.defaultStatus(botId),
+        status: this.defaultStatus(accountId),
       };
-      this.sessions.set(botId, session);
+      this.sessions.set(accountId, session);
     }
     return session;
   }
 
-  async saveCredentials(botId, credentials) {
+  async saveCredentials(accountId, credentials, botId) {
     await this.ensureSessionsDir();
-    const file = this.sessionPath(botId);
-    await fs.writeFile(file, JSON.stringify(credentials, null, 2), { mode: 0o600 });
+    const file = this.sessionPath(accountId);
+    const payload = { ...credentials, botId, accountId };
+    await fs.writeFile(file, JSON.stringify(payload, null, 2), { mode: 0o600 });
     await fs.chmod(file, 0o600);
   }
 
-  async deleteCredentials(botId) {
+  async deleteCredentials(accountId) {
     try {
-      await fs.unlink(this.sessionPath(botId));
+      await fs.unlink(this.sessionPath(accountId));
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }
   }
 
-  async loadCredentials(botId) {
-    const raw = await fs.readFile(this.sessionPath(botId), "utf-8");
+  async loadCredentials(accountId) {
+    const raw = await fs.readFile(this.sessionPath(accountId), "utf-8");
     const credentials = JSON.parse(raw);
     if (!credentials?.cookie || !credentials?.imei || !credentials?.userAgent) {
       throw new Error("saved credentials are incomplete");
@@ -130,14 +139,17 @@ export class ZaloPersonalManager {
       files
         .filter((file) => file.endsWith(".json"))
         .map(async (file) => {
-          const botId = file.slice(0, -5);
+          const fileId = file.slice(0, -5);
           try {
-            const credentials = await this.loadCredentials(botId);
-            const session = this.getOrCreate(botId);
+            const credentials = await this.loadCredentials(fileId);
+            const accountId = credentials.accountId || fileId;
+            const botId = credentials.botId || fileId;
+            const session = this.getOrCreate(accountId, botId);
             session.credentials = credentials;
-            await this.loginWithCredentials(botId, credentials, session.options);
+            await this.loginWithCredentials(accountId, botId, credentials, session.options);
           } catch (error) {
-            const session = this.getOrCreate(botId);
+            const accountId = fileId;
+            const session = this.getOrCreate(accountId, null);
             session.status.status = "relogin_required";
             session.status.last_error = safeError(error);
             session.status.error_count += 1;
@@ -146,13 +158,14 @@ export class ZaloPersonalManager {
     );
   }
 
-  async loginWithCredentials(botId, credentials, options = {}) {
-    const session = this.getOrCreate(botId);
+  async loginWithCredentials(accountId, botId, credentials, options = {}) {
+    const session = this.getOrCreate(accountId, botId);
+    if (botId) session.botId = botId;
     session.options = {
       replyPolicy: options.replyPolicy || session.options.replyPolicy || "mention_only",
       threadWhitelist: options.threadWhitelist || session.options.threadWhitelist || [],
     };
-    resetAll(botId);
+    resetAll(accountId);
 
     session.status.reply_policy = session.options.replyPolicy;
     session.status.thread_whitelist = session.options.threadWhitelist;
@@ -175,20 +188,21 @@ export class ZaloPersonalManager {
     }
   }
 
-  async startQrLogin(botId, options = {}) {
-    const session = this.getOrCreate(botId);
+  async startQrLogin(accountId, botId, options = {}) {
+    const session = this.getOrCreate(accountId, botId);
+    if (botId) session.botId = botId;
     session.options = {
       replyPolicy: options.replyPolicy || "mention_only",
       threadWhitelist: options.threadWhitelist || [],
     };
     session.status = {
-      ...this.defaultStatus(botId),
+      ...this.defaultStatus(accountId),
       status: "connecting",
       reply_policy: session.options.replyPolicy,
       thread_whitelist: session.options.threadWhitelist,
     };
 
-    resetAll(botId);
+    resetAll(accountId);
 
     if (session.api?.listener) {
       session.api.listener.stop();
@@ -247,7 +261,7 @@ export class ZaloPersonalManager {
           throw new Error("login completed without credentials");
         }
 
-        await this.saveCredentials(botId, loginCredentials);
+        await this.saveCredentials(accountId, loginCredentials, botId);
         session.credentials = loginCredentials;
         await this.attachApi(session, api);
       } catch (error) {
@@ -293,13 +307,14 @@ export class ZaloPersonalManager {
         code === CloseReason.DuplicateConnection ? "duplicate_connection" : "disconnected";
       session.status.last_error = reason || `listener closed with code ${code}`;
 
-      const { tripped, reason: tripReason } = recordDisconnect(botId);
+      const { tripped, reason: tripReason } = recordDisconnect(session.accountId);
       if (tripped) {
         session.status.status = "relogin_required";
         session.status.last_error = tripReason;
-        this.postInbound(botId, {
+        this.postInbound(session.accountId, session.botId, {
           kind: "status_change",
-          bot_id: botId,
+          bot_id: session.botId,
+          account_id: session.accountId,
           data: { status: "relogin_required", reason: tripReason },
         }).catch(() => {});
       }
@@ -336,15 +351,16 @@ export class ZaloPersonalManager {
       raw: message.data || {},
     };
 
-    await this.postInbound(session.botId, {
+    await this.postInbound(session.accountId, session.botId, {
       kind: "message",
       bot_id: session.botId,
+      account_id: session.accountId,
       data,
     });
   }
 
-  async postInbound(botId, payload) {
-    if (isBackendDown(botId) && payload.kind === "message") {
+  async postInbound(accountId, botId, payload) {
+    if (isBackendDown(accountId) && payload.kind === "message") {
       return;
     }
 
@@ -365,9 +381,9 @@ export class ZaloPersonalManager {
       },
     );
     if (!response.ok) {
-      const tripped = recordBackendFailure(botId);
+      const tripped = recordBackendFailure(accountId);
       if (tripped) {
-        const session = this.get(botId);
+        const session = this.get(accountId);
         if (session) {
           session.status.status = "backend_down";
           session.status.last_error = "backend unreachable — paused";
@@ -376,44 +392,44 @@ export class ZaloPersonalManager {
       throw new Error(`backend inbound failed: ${response.status} ${await response.text()}`);
     }
 
-    recordBackendSuccess(botId);
-    const session = this.get(botId);
+    recordBackendSuccess(accountId);
+    const session = this.get(accountId);
     if (session && session.status.status === "backend_down") {
       session.status.status = "connected";
       session.status.last_error = null;
     }
   }
 
-  async send(botId, threadId, text, threadType = "user") {
-    const session = this.get(botId);
+  async send(accountId, threadId, text, threadType = "user") {
+    const session = this.get(accountId);
     if (!session?.api) {
       throw new Error("bot session is not loaded");
     }
-    const { allowed, reason } = checkLimits(botId);
+    const { allowed, reason } = checkLimits(accountId);
     if (!allowed) {
       throw new Error(`rate_limited: ${reason}`);
     }
     const zcaThreadType = threadType === "group" ? ThreadType.Group : ThreadType.User;
     const result = await session.api.sendMessage({ msg: text }, String(threadId), zcaThreadType);
-    recordSend(botId);
+    recordSend(accountId);
     return { ok: true, result };
   }
 
-  async unload(botId, { deleteSession = true } = {}) {
-    const session = this.get(botId);
+  async unload(accountId, { deleteSession = true } = {}) {
+    const session = this.get(accountId);
     if (!session) return false;
     if (session.api?.listener) {
       session.api.listener.stop();
     }
     if (deleteSession) {
-      await this.deleteCredentials(botId);
+      await this.deleteCredentials(accountId);
     }
-    this.sessions.delete(botId);
+    this.sessions.delete(accountId);
     return true;
   }
 
   async stopAll() {
-    await Promise.all([...this.sessions.keys()].map((botId) => this.unload(botId, { deleteSession: false })));
+    await Promise.all([...this.sessions.keys()].map((accountId) => this.unload(accountId, { deleteSession: false })));
   }
 }
 

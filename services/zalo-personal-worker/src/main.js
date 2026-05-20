@@ -31,10 +31,54 @@ app.get("/health", async () => ({
   loaded_bots: manager.sessions.size,
 }));
 
+// ── New routes (accountId-based) ────────────────────────────────────────
+
+app.post("/accounts/:account_id/login/start", { preHandler: requireBearer }, async (request) => {
+  const { account_id: accountId } = request.params;
+  const body = request.body || {};
+  const status = await manager.startQrLogin(accountId, body.bot_id, {
+    replyPolicy: body.reply_policy || "mention_only",
+    threadWhitelist: body.thread_whitelist || [],
+    userAgent: body.user_agent,
+  });
+  return { ok: true, status };
+});
+
+app.get("/accounts/:account_id/login/status", { preHandler: requireBearer }, async (request) => {
+  const { account_id: accountId } = request.params;
+  const session = manager.get(accountId);
+  return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(accountId) };
+});
+
+app.get("/accounts/:account_id/status", { preHandler: requireBearer }, async (request) => {
+  const { account_id: accountId } = request.params;
+  const session = manager.get(accountId);
+  return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(accountId) };
+});
+
+app.post("/accounts/:account_id/send", { preHandler: requireBearer }, async (request, reply) => {
+  const { account_id: accountId } = request.params;
+  const { thread_id: threadId, text, thread_type: threadType = "user" } = request.body || {};
+  if (!threadId || !text) {
+    reply.code(400).send({ error: "thread_id and text are required" });
+    return;
+  }
+  return manager.send(accountId, threadId, text, threadType);
+});
+
+app.post("/accounts/:account_id/unload", { preHandler: requireBearer }, async (request) => {
+  const { account_id: accountId } = request.params;
+  const removed = await manager.unload(accountId);
+  return { ok: true, removed };
+});
+
+// ── Legacy routes (botId-based, backward compat for single-account bots) ──
+
 app.post("/bots/:bot_id/login/start", { preHandler: requireBearer }, async (request) => {
   const { bot_id: botId } = request.params;
   const body = request.body || {};
-  const status = await manager.startQrLogin(botId, {
+  // Legacy: use botId as accountId
+  const status = await manager.startQrLogin(botId, botId, {
     replyPolicy: body.reply_policy || "mention_only",
     threadWhitelist: body.thread_whitelist || [],
     userAgent: body.user_agent,
@@ -44,13 +88,13 @@ app.post("/bots/:bot_id/login/start", { preHandler: requireBearer }, async (requ
 
 app.get("/bots/:bot_id/login/status", { preHandler: requireBearer }, async (request) => {
   const { bot_id: botId } = request.params;
-  const session = manager.get(botId);
+  const session = manager.get(botId) || manager.getByBotId(botId);
   return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(botId) };
 });
 
 app.get("/bots/:bot_id/status", { preHandler: requireBearer }, async (request) => {
   const { bot_id: botId } = request.params;
-  const session = manager.get(botId);
+  const session = manager.get(botId) || manager.getByBotId(botId);
   return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(botId) };
 });
 
@@ -61,12 +105,16 @@ app.post("/bots/:bot_id/send", { preHandler: requireBearer }, async (request, re
     reply.code(400).send({ error: "thread_id and text are required" });
     return;
   }
-  return manager.send(botId, threadId, text, threadType);
+  const session = manager.get(botId) || manager.getByBotId(botId);
+  const accountId = session ? session.accountId : botId;
+  return manager.send(accountId, threadId, text, threadType);
 });
 
 app.post("/bots/:bot_id/unload", { preHandler: requireBearer }, async (request) => {
   const { bot_id: botId } = request.params;
-  const removed = await manager.unload(botId);
+  const session = manager.get(botId) || manager.getByBotId(botId);
+  const accountId = session ? session.accountId : botId;
+  const removed = await manager.unload(accountId);
   return { ok: true, removed };
 });
 

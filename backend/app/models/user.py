@@ -23,3 +23,4 @@ class User(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant", back_populates="users", lazy="selectin")
+    channel_account_accesses = relationship("ChannelAccountAccess", back_populates="user", cascade="all, delete-orphan", lazy="selectin")

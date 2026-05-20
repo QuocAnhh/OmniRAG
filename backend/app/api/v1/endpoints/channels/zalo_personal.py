@@ -1,5 +1,6 @@
 """
 Zalo Personal Account Channel — connect/status/disconnect + worker inbound.
+Supports both legacy single-account (bot.config) and multi-account (channel_accounts table).
 """
 import asyncio
 import hashlib
@@ -10,7 +11,7 @@ from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,11 +20,22 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.api.deps import get_current_user, get_db
 from app.core.config import settings
 from app.models.bot import Bot as BotModel
+from app.models.channel_account import ChannelAccount
 from app.models.user import User
+from app.schemas.channel_account import (
+    ChannelAccountCreate,
+    ChannelAccountUpdate,
+    ChannelAccountResponse,
+    ChannelAccountAccessCreate,
+    ChannelAccountAccessUpdate,
+    ChannelAccountAccessResponse,
+)
 from app.services.channels.zalo_personal_service import get_zalo_personal_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+CHANNEL_TYPE = "zalo_personal"
 
 
 class ZaloPersonalConnectStartRequest(BaseModel):
@@ -53,12 +65,252 @@ def _verify_inbound_signature(body: bytes, signature_header: str | None) -> bool
     return hmac.compare_digest(expected, signature_header)
 
 
-def _parse_bot_uuid(bot_id: str):
+def _parse_uuid(id_str: str, label: str = "ID") -> UUID:
     try:
-        return UUID(bot_id)
+        return UUID(id_str)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid bot ID format")
+        raise HTTPException(status_code=400, detail=f"Invalid {label} format")
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NEW: Multi-Account Endpoints
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/bots/{bot_id}/accounts", response_model=list[dict])
+async def list_accounts(
+    bot_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    bot_uuid = _parse_uuid(bot_id, "bot ID")
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == bot_uuid,
+            BotModel.tenant_id == current_user.tenant_id,
+        )
+    ).scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return await get_zalo_personal_service().list_accounts(bot_id)
+
+
+@router.post("/bots/{bot_id}/accounts", status_code=201)
+async def create_account(
+    bot_id: str,
+    data: ChannelAccountCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    bot_uuid = _parse_uuid(bot_id, "bot ID")
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == bot_uuid,
+            BotModel.tenant_id == current_user.tenant_id,
+        )
+    ).scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    try:
+        return await get_zalo_personal_service().create_and_start_login(
+            bot_id=str(bot.id),
+            tenant_id=current_user.tenant_id,
+            reply_policy=data.reply_policy,
+            thread_whitelist=data.thread_whitelist,
+        )
+    except Exception as e:
+        logger.error("zalo_personal_create_account_failed bot=%s err=%s", bot.id, e, exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Create account failed: {e}")
+
+
+@router.get("/accounts/{account_id}")
+async def get_account(
+    account_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    result = await get_zalo_personal_service().get_account(account_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return result
+
+
+@router.delete("/accounts/{account_id}")
+async def delete_account(
+    account_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    deleted = await get_zalo_personal_service().delete_account(account_id)
+    if not deleted:
+        raise HTTPException(status_code=500, detail="Failed to delete account")
+    return {"status": "deleted"}
+
+
+@router.put("/accounts/{account_id}")
+async def update_account(
+    account_id: str,
+    data: ChannelAccountUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    result = await get_zalo_personal_service().update_account(
+        account_id,
+        reply_policy=data.reply_policy,
+        thread_whitelist=data.thread_whitelist,
+    )
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to update account")
+    return result
+
+
+@router.get("/accounts/{account_id}/login-status")
+async def account_login_status(
+    account_id: str,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    try:
+        status_data = await get_zalo_personal_service().account_login_status(account_id)
+    except Exception as e:
+        logger.warning("zalo_personal_account_login_status_failed account=%s err=%s", account_id, e)
+        raise HTTPException(status_code=502, detail=f"Worker status failed: {e}")
+
+    return {"connected": status_data.get("status") == "connected", "worker": status_data}
+
+
+@router.get("/accounts/{account_id}/status")
+async def account_status(
+    account_id: str,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    worker_status = None
+    try:
+        worker_status = await get_zalo_personal_service().account_status(account_id)
+    except Exception as e:
+        logger.warning("zalo_personal_account_status_worker_unreachable account=%s err=%s", account_id, e)
+
+    return {
+        "connected": (worker_status or {}).get("status") == "connected" or account.status == "connected",
+        "config": await get_zalo_personal_service().get_account(account_id),
+        "worker": worker_status,
+    }
+
+
+# ── ACL endpoints ────────────────────────────────────────────────────────
+
+@router.get("/accounts/{account_id}/access")
+async def list_account_access(
+    account_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return await get_zalo_personal_service().list_access(account_id)
+
+
+@router.post("/accounts/{account_id}/access", status_code=201)
+async def grant_account_access(
+    account_id: str,
+    data: ChannelAccountAccessCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    # Verify target user belongs to same tenant
+    target_user = db.execute(
+        select(User).where(User.id == data.user_id, User.tenant_id == current_user.tenant_id)
+    ).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found in this tenant")
+
+    return await get_zalo_personal_service().grant_access(account_id, data.user_id, data.permission)
+
+
+@router.delete("/accounts/{account_id}/access/{access_id}")
+async def revoke_account_access(
+    account_id: str,
+    access_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_enabled()
+    account_uuid = _parse_uuid(account_id, "account ID")
+    account = db.execute(
+        select(ChannelAccount).where(ChannelAccount.id == account_uuid)
+    ).scalar_one_or_none()
+    if not account or account.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    deleted = await get_zalo_personal_service().revoke_access(access_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Access entry not found")
+    return {"status": "revoked"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LEGACY: Backward-compatible single-account endpoints
+# ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/connect/start")
 async def start_zalo_personal_login(
@@ -66,9 +318,9 @@ async def start_zalo_personal_login(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Start QR login for a Zalo Personal Account worker session."""
+    """Start QR login for a Zalo Personal Account worker session (legacy)."""
     _ensure_enabled()
-    bot_uuid = _parse_bot_uuid(data.bot_id)
+    bot_uuid = _parse_uuid(data.bot_id, "bot ID")
     bot = db.execute(
         select(BotModel).where(
             BotModel.id == bot_uuid,
@@ -111,11 +363,11 @@ async def zalo_personal_login_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Poll QR login status and persist public metadata when connected."""
+    """Poll QR login status and persist public metadata when connected (legacy)."""
     _ensure_enabled()
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
 
-    bot_uuid = _parse_bot_uuid(bot_id)
+    bot_uuid = _parse_uuid(bot_id, "bot ID")
     bot = db.execute(
         select(BotModel).where(BotModel.id == bot_uuid, BotModel.tenant_id == current_user.tenant_id)
     ).scalar_one_or_none()
@@ -147,11 +399,11 @@ async def zalo_personal_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Return saved config plus live worker status for a Zalo Personal session."""
+    """Return saved config plus live worker status for a Zalo Personal session (legacy)."""
     _ensure_enabled()
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
 
-    bot_uuid = _parse_bot_uuid(bot_id)
+    bot_uuid = _parse_uuid(bot_id, "bot ID")
     bot = db.execute(
         select(BotModel).where(BotModel.id == bot_uuid, BotModel.tenant_id == current_user.tenant_id)
     ).scalar_one_or_none()
@@ -178,9 +430,9 @@ async def disconnect_zalo_personal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Disconnect and remove the worker-side saved session."""
+    """Disconnect and remove the worker-side saved session (legacy)."""
     _ensure_enabled()
-    bot_uuid = _parse_bot_uuid(bot_id)
+    bot_uuid = _parse_uuid(bot_id, "bot ID")
     bot = db.execute(
         select(BotModel).where(BotModel.id == bot_uuid, BotModel.tenant_id == current_user.tenant_id)
     ).scalar_one_or_none()

@@ -17,6 +17,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ZaloBotGuidePage = lazy(() => import('./pages/Docs/ZaloBotGuidePage'));
+const ZaloPersonalAccountsPage = lazy(() => import('./pages/ZaloPersonalAccountsPage'));
 
 // Premium loading component
 function LoadingScreen() {
@@ -140,6 +141,11 @@ function App() {
           <Route path="/bots/:id/graph" element={
             <ProtectedRoute>
               <KnowledgeGraphPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/bots/:id/zalo-accounts" element={
+            <ProtectedRoute>
+              <ZaloPersonalAccountsPage />
             </ProtectedRoute>
           } />
           {/* Generic :id — redirect to chat */}

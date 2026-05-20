@@ -142,6 +142,41 @@ export interface RegisterRequest {
   tenant_settings?: Record<string, any>;
 }
 
+export interface ChannelAccount {
+  id: string;
+  bot_id: string;
+  tenant_id: string;
+  channel_type: 'zalo_personal' | 'facebook_messenger';
+  display_name?: string;
+  channel_uid?: string;
+  avatar_url?: string;
+  status: string;
+  reply_policy: 'mention_only' | 'all';
+  thread_whitelist?: string[];
+  connected_at?: string;
+  last_event_at?: string;
+  last_error?: string;
+  error_count: number;
+  is_active: boolean;
+  rate_limit?: {
+    daily_count: number;
+    daily_limit: number;
+  };
+  circuit_breaker?: {
+    disconnect_tripped: boolean;
+    backend_down: boolean;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChannelAccountAccess {
+  id: string;
+  account_id: string;
+  user_id: string;
+  permission: 'read' | 'chat' | 'admin';
+}
+
 export interface DashboardStats {
   total_bots: number;
   active_sessions: number;
