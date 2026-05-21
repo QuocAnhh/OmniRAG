@@ -254,7 +254,11 @@ export default function ZaloPersonalAccountsPage() {
             <h2 className="text-lg font-semibold mb-4">Scan QR Code with Zalo</h2>
             <div className="flex items-center justify-center mb-4">
               {qrImage ? (
-                <img src={qrImage} alt="Zalo QR" className="w-56 h-56 border border-border rounded-lg" />
+                <img
+                  src={qrImage.startsWith('data:') ? qrImage : `data:image/png;base64,${qrImage}`}
+                  alt="Zalo QR"
+                  className="w-56 h-56 border border-border rounded-lg"
+                />
               ) : (
                 <div className="w-56 h-56 border border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-sm">
                   Generating QR...
