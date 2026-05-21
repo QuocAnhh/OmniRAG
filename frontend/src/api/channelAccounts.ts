@@ -1,6 +1,6 @@
 import apiClient from './client';
 
-const ZALO_PERSONAL_PREFIX = '/channels/zalo-personal';
+const ZALO_PERSONAL_PREFIX = '/api/v1/channels/zalo-personal';
 
 export const channelAccountsApi = {
   // ── Zalo Personal ──────────────────────────────────────────────────
