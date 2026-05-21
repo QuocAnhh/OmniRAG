@@ -253,6 +253,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
+      - VITE_BACKEND_URL=http://backend:8000
       - VITE_API_URL=http://localhost:8080
       - VITE_ENABLE_ZALO_PERSONAL=${VITE_ENABLE_ZALO_PERSONAL:-false}
     depends_on:
