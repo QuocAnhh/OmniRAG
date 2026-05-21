@@ -76,7 +76,7 @@ def _parse_uuid(id_str: str, label: str = "ID") -> UUID:
 # NEW: Multi-Account Endpoints
 # ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/bots/{bot_id}/accounts", response_model=list[dict])
+@router.get("/bots/{bot_id}/accounts")
 async def list_accounts(
     bot_id: str,
     current_user: User = Depends(get_current_user),
