@@ -1,296 +1,153 @@
-# Startup Guide — OmniRAG
+# Startup Guide
 
-Hướng dẫn chi tiết để setup và chạy OmniRAG ở môi trường local/production.
+Tài liệu này mô tả các cách khởi động OmniRAG cho dev/ops. Mặc định nên chạy qua Docker Compose và gọi API qua gateway `http://localhost:8080`.
 
----
+## Topology khi chạy Docker
 
-## Prerequisites
+| Service | Container port | Host port | Vai trò |
+| --- | ---: | ---: | --- |
+| gateway | `8080` | `8080` | Entrypoint HTTP chính |
+| backend | `8000` | `8001` | FastAPI direct access |
+| frontend | `5173` | `5173` | React dev server |
+| db | `5432` | `5433` | PostgreSQL database |
+| mongodb | `27017` | `27017` | Conversations, sessions, integrations |
+| redis | `6379` | `6380` | Broker/cache |
+| minio | `9000`, `9001` | `9000`, `9001` | Object storage |
+| qdrant | `6333` | `6333` | Vector store |
+| opendataloader-hybrid | `5002` | `5002` | PDF/Office parsing service |
 
-- Docker 24+ & Docker Compose v2
-- OpenRouter API Key (bắt buộc) — đăng ký tại openrouter.ai
-- macOS/Linux (Windows: dùng WSL2)
+Backend trong Docker lắng nghe `8000`, nhưng host dùng `8001`. Local uvicorn ngoài Docker mới dùng `8000`.
 
----
+## Env backend
 
-## 1. Environment Configuration
+Không dùng lệnh `cp .env.example .env` trong nhánh này vì repo không có `backend/.env.example`.
 
-Tạo file `backend/.env` từ template:
+Tạo file:
 
 ```bash
 cd backend
-cp .env.example .env
+touch .env
 ```
 
-### Biến bắt buộc
+Biến tối thiểu:
 
 ```env
-# AI Provider — đây là key chính, thay thế OpenAI
-OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxx
-
-# JWT secret — generate với: openssl rand -hex 32
-SECRET_KEY=your_64_char_hex_string_here
-
-# Môi trường
-ENVIRONMENT=development
-```
-
-### Biến tuỳ chọn (có default)
-
-```env
-# Models (có thể override per-bot trong config)
-OPENROUTER_CHAT_MODEL=openai/gpt-4o-mini
-OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
-
-# Knowledge Graph — LLM dùng để extract entities
-LIGHTRAG_LLM_MODEL=openai/gpt-5.4-nano
-
-# Mem0 — persistent memory
-MEM0_ENABLED=true
-MEM0_MEMORY_MODEL=openai/gpt-4o-mini
-MEM0_TOP_K=5
-
-# Local embeddings (thay thế OpenRouter cho embeddings, tốn RAM hơn)
-USE_LOCAL_EMBEDDINGS=false
-LOCAL_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-
-# Database — default phù hợp với docker-compose
-POSTGRES_SERVER=db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=password
-POSTGRES_DB=omnirag
-
+SECRET_KEY=change-me
+OPENROUTER_API_KEY=sk-or-v1-your-key
+OPENAI_API_KEY=sk-your-openai-key
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/omnirag
 MONGODB_URL=mongodb://admin:password@mongodb:27017
 REDIS_URL=redis://redis:6379/0
-
+QDRANT_URL=http://qdrant:6333
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-
-QDRANT_HOST=qdrant
-QDRANT_PORT=6333
-
-# Zalo Integration (chỉ cần nếu dùng Zalo bot)
-PUBLIC_URL=https://your-domain.com
-FUNC_API_URL=https://func.vn/api/...
-FUNC_API_TOKEN=your_func_token
-
-# Facebook Messenger Integration (chỉ cần nếu dùng Facebook channel)
-FB_WORKER_API_TOKEN=replace-with-random-token
-FB_INBOUND_SECRET=replace-with-random-hmac-secret
 ```
 
-> **Production:** Bắt buộc đổi `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY`, `SECRET_KEY`. Set `ENVIRONMENT=production`.
+Biến channel tùy chọn:
 
----
+```env
+ZALO_BOT_APP_ID=
+ZALO_BOT_APP_SECRET=
+ZALO_BOT_VERIFY_TOKEN=
+ZALO_HUB_VERIFY_TOKEN=
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+FACEBOOK_VERIFY_TOKEN=
+```
 
-## 2. Chạy với Docker Compose (Recommended)
+Model mặc định cần hiểu rõ:
 
-### Development
+- Trong code, internal/default LightRAG model là `openai/gpt-5.4-nano`.
+- `docker-compose.yml` override `LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini` cho backend và Celery worker.
+- Nếu muốn đổi model runtime, set `LIGHTRAG_LLM_MODEL` trong env/compose.
+
+## Chạy bằng Docker Compose
 
 ```bash
-# Từ root project
 docker compose up -d --build
+```
 
-# Xem logs
+Theo dõi log:
+
+```bash
 docker compose logs -f backend
-docker compose logs -f fb-channel-worker
+docker compose logs -f celery-worker
 docker compose logs -f gateway
-docker compose logs -f celery_worker
 ```
 
-### Chỉ build lại backend (khi sửa requirements)
+Kiểm tra health:
 
 ```bash
-docker compose build backend celery_worker
-docker compose up -d backend celery_worker
+curl http://localhost:8080/health
+curl http://localhost:8001/health
 ```
 
-### Chỉ build lại Facebook Messenger channel
+Swagger:
+
+- Qua gateway: `http://localhost:8080/docs`
+- Direct backend Docker: `http://localhost:8001/docs`
+- Local uvicorn: `http://localhost:8000/docs`
+
+## Chạy backend ngoài Docker
+
+Dùng khi cần debug Python trực tiếp. Vẫn có thể dùng Postgres/Redis/MinIO/Qdrant từ Docker.
+
+1. Khởi động dependencies:
 
 ```bash
-docker compose build backend fb-channel-worker
-docker compose up -d backend fb-channel-worker
+docker compose up -d db mongodb redis minio qdrant opendataloader-hybrid
 ```
 
-### Production
-
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
----
-
-## 3. Chạy local (không Docker)
-
-### Backend
+2. Tạo virtualenv và cài dependency:
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# Chạy migrations
-alembic upgrade head
-
-# Start API server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Start Celery worker (terminal riêng)
-celery -A app.worker worker --loglevel=info
 ```
 
-### Frontend
+3. Điều chỉnh env trỏ về host:
+
+```env
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@localhost:5433/omnirag
+MONGODB_URL=mongodb://admin:password@localhost:27017
+REDIS_URL=redis://localhost:6380/0
+CELERY_BROKER_URL=redis://localhost:6380/0
+CELERY_RESULT_BACKEND=redis://localhost:6380/0
+QDRANT_URL=http://localhost:6333
+MINIO_ENDPOINT=localhost:9000
+OPENDATALOADER_BASE_URL=http://localhost:5002
+```
+
+4. Chạy migration và server:
+
+```bash
+alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## Chạy frontend ngoài Docker
 
 ```bash
 cd frontend
 npm install
-npm run dev        # Dev server tại :5173
-npm run build      # Production build → dist/
-npm run lint       # ESLint check
+npm run dev
 ```
 
-### Gateway
+Frontend dùng `VITE_API_URL=http://localhost:8080` khi chạy cùng Docker gateway. Nếu gọi backend direct, đổi sang `http://localhost:8001`.
 
-```bash
-cd gateway
-go mod download
-go run main.go
-# Hoặc build binary
-go build -o gateway && ./gateway
-```
+## Checklist vận hành
 
----
+- Gateway là entrypoint public cho frontend và API.
+- Backend direct host port là `8001`, không phải `8000`, khi chạy Docker.
+- Redis host port là `6380`, Postgres host port là `5433`.
+- Celery worker phải chạy thì upload tài liệu mới được ingest.
+- OpenRouter/OpenAI key phải hợp lệ trước khi test RAG/chat.
+- Gateway cache chỉ áp dụng cho `GET`; chat cache nằm trong backend.
+- Không đưa Zalo Personal/ZCA vào cấu hình chính của snapshot này.
 
-## 4. Port Map
+## Troubleshooting
 
-| Service | External Port | Internal Port | Notes |
-|---------|--------------|--------------|-------|
-| Frontend | 5173 | 5173 | Vite dev server |
-| Gateway | 8080 | 8080 | Điểm vào chính cho client |
-| Backend | 8000 | 8000 | FastAPI |
-| PostgreSQL | **5433** | 5432 | Dùng 5433 để tránh conflict |
-| MongoDB | 27017 | 27017 | |
-| Redis | **6380** | 6379 | Dùng 6380 để tránh conflict |
-| Qdrant | 6333 | 6333 | Vector DB UI tại /dashboard |
-| MinIO API | 9000 | 9000 | S3-compatible endpoint |
-| MinIO UI | 9001 | 9001 | Web console |
-
-> Client (frontend/postman) cần gọi qua **Gateway (:8080)**. Backend (:8000) là internal.
-
----
-
-## 5. Database Migrations
-
-```bash
-cd backend
-source venv/bin/activate
-
-# Apply all pending migrations
-alembic upgrade head
-
-# Rollback 1 migration
-alembic downgrade -1
-
-# Tạo migration mới (sau khi sửa models)
-alembic revision --autogenerate -m "add_new_field_to_bots"
-
-# Xem lịch sử
-alembic history
-```
-
----
-
-## 6. Health Checks
-
-```bash
-# Gateway (kiểm tra cả Redis + Backend)
-curl http://localhost:8080/health
-
-# Backend trực tiếp
-curl http://localhost:8000/api/v1/health
-
-# PostgreSQL
-docker exec omnirag-db-1 pg_isready -U postgres -d omnirag
-
-# Redis
-docker exec omnirag-redis-1 redis-cli ping
-
-# Qdrant
-curl http://localhost:6333/collections
-```
-
-Expected khi mọi thứ healthy:
-```json
-{
-  "status": "healthy",
-  "redis": "healthy",
-  "backend": "healthy",
-  "service": "omnirag-gateway"
-}
-```
-
----
-
-## 7. Ollama (Local LLM — Optional)
-
-Dự án có hỗ trợ Ollama cho môi trường không có internet hoặc muốn chạy model local.
-
-**macOS (M1/M2/M3 — Recommended, Metal GPU):**
-```bash
-brew install ollama
-ollama serve
-ollama pull qwen2.5:14b  # Hoặc model khác
-```
-
-**Linux (Docker):** Uncomment block `ollama` trong `docker-compose.yml`.
-
-Sau đó set env:
-```env
-LIGHTRAG_LLM_MODEL=qwen2.5:14b
-```
-Và cấu hình backend trỏ về `http://localhost:11434`.
-
----
-
-## 8. Logs & Debugging
-
-```bash
-# Tất cả services
-docker compose logs -f
-
-# Chỉ backend
-docker compose logs -f backend
-
-# Celery worker (document processing)
-docker compose logs -f celery_worker
-
-# Filter lỗi
-docker compose logs backend 2>&1 | grep -i "error\|exception"
-
-# LightRAG knowledge graph
-docker compose logs backend 2>&1 | grep -i "lightrag\|graph"
-```
-
----
-
-## 9. Reset & Clean
-
-```bash
-# Restart một service
-docker compose restart backend
-
-# Rebuild + restart
-docker compose up -d --build backend
-
-# Xoá toàn bộ (WARNING: mất dữ liệu)
-docker compose down -v
-docker system prune -a --volumes
-
-# Xoá chỉ knowledge graph data
-rm -rf backend/rag_storage/
-```
-
----
-
-Gặp lỗi? Xem [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+Xem [Troubleshooting](TROUBLESHOOTING.md).

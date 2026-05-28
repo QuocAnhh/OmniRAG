@@ -1,95 +1,84 @@
 # OmniRAG
 
-OmniRAG is a production-ready RAG (Retrieval-Augmented Generation) platform that lets you create, manage, and chat with AI agents grounded in your own data.
+OmniRAG là nền tảng xây dựng chatbot RAG đa tenant, có quản trị bot, ingest tài liệu bất đồng bộ, OpenRouter/LightRAG, Knowledge Graph, dashboard analytics và các kênh tích hợp như Zalo Bot Platform, Facebook Messenger.
 
-## Architecture Overview
+Tài liệu này phản ánh snapshot `refactor/backend-perf-p1-observability`.
 
-```
-Browser → Go Gateway (:8080) → FastAPI Backend (:8000) → Data Stores
-```
+## Stack chính
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Frontend (React + Vite) | 5173 | Main UI |
-| Go API Gateway | 8080 | CORS, caching, rate limiting |
-| FastAPI Backend | 8000 | Core API & RAG logic |
-| PostgreSQL 15 | 5433 | Users, bots, documents metadata |
-| MongoDB 7 | 27017 | Chat logs, conversation history |
-| Redis 7 | 6380 | Celery broker, gateway cache |
-| Qdrant | 6333 | Vector embeddings |
-| MinIO | 9000/9001 | File storage (S3-compatible) |
-| Facebook Messenger Worker | 9100 | Isolated Messenger bridge (`fbchat-muqit`, internal only) |
+- Backend: FastAPI, SQLAlchemy async, Alembic, PostgreSQL, Redis, Celery.
+- RAG: LightRAG, Qdrant, OpenRouter, pipeline PDF/Office qua OpenDataLoader hybrid build service.
+- Gateway: Go proxy tại port `8080`, là entrypoint chính cho frontend và API khi chạy Docker.
+- Frontend: React 19, React Router 7, Zustand, Tailwind CSS 4, Vite.
+- Observability: `structlog`, Prometheus metrics, slow request logging, SlowAPI rate limit.
 
-## Quick Start
+## Chạy nhanh bằng Docker
 
-### Prerequisites
-- Docker & Docker Compose
-- OpenRouter API Key (get one at openrouter.ai)
-
-### 1. Configure
+Tạo `backend/.env` thủ công. Nhánh này không có `backend/.env.example`.
 
 ```bash
 cd backend
-cp .env.example .env
-# Edit .env — at minimum set:
-#   OPENROUTER_API_KEY=sk-or-...
-#   SECRET_KEY=$(openssl rand -hex 32)
+touch .env
 ```
 
-### 2. Run
+Các biến tối thiểu thường dùng:
+
+```env
+SECRET_KEY=change-me
+OPENROUTER_API_KEY=sk-or-v1-your-key
+OPENAI_API_KEY=sk-your-openai-key
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/omnirag
+MONGODB_URL=mongodb://admin:password@mongodb:27017
+REDIS_URL=redis://redis:6379/0
+QDRANT_URL=http://qdrant:6333
+MINIO_ENDPOINT=minio:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+```
+
+Khởi động stack:
 
 ```bash
-cd ..
 docker compose up -d --build
 ```
 
-### 3. Access
+Các endpoint quan trọng:
 
-| URL | Description |
-|-----|-------------|
-| http://localhost:5173 | Frontend UI |
-| http://localhost:8080 | API Gateway |
-| http://localhost:8000/docs | Swagger / ReDoc |
-| http://localhost:9001 | MinIO Console (minioadmin/minioadmin) |
-| http://localhost:6333/dashboard | Qdrant Dashboard |
+| Service | URL | Ghi chú |
+| --- | --- | --- |
+| Frontend | `http://localhost:5173` | App React |
+| Gateway | `http://localhost:8080` | Entrypoint chính |
+| API qua gateway | `http://localhost:8080/api/v1` | Frontend dùng URL này |
+| Swagger qua gateway | `http://localhost:8080/docs` | Proxy tới backend |
+| Backend direct Docker | `http://localhost:8001` | Host port map `8001:8000` |
+| Backend local uvicorn | `http://localhost:8000` | Chỉ khi chạy ngoài Docker |
+| MinIO Console | `http://localhost:9001` | Object storage |
+| Qdrant | `http://localhost:6333` | Vector store |
 
-## Key Features
+## Luồng vận hành
 
-### AI & RAG
-- **Domain-Aware RAG** — 4 specialized domains: General, Education (sentence chunking + KG), Legal (article chunking + hybrid KG), Sales (dense retrieval)
-- **Query Rewriting** — rewrites user query into search-engine optimised form before retrieval
-- **Contextual Retrieval** — Anthropic technique: situating context prepended to each chunk at index time
-- **CRAG** — Corrective RAG: classify retrieval quality, prevent hallucination when KB lacks an answer
-- **Parent-Child Chunking** — child chunks for precise matching, parent text returned to LLM for full context
-- **Hybrid Search** — vector (semantic) + BM25 keyword, merged via RRF, reranked by Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`; `BAAI/bge-reranker-v2-m3` for multilingual)
-- **Knowledge Graph** — LightRAG entity/relationship extraction + interactive graph visualisation
-- **Persistent Memory** — Mem0 cross-session fact extraction and retrieval
-- **Multi-level Caching** — Redis caches query embeddings, rewrite results, and CRAG verdicts
-- **400+ AI Models** via OpenRouter (GPT-4o, Claude, Gemini, Llama, ...)
+1. User đăng nhập qua `/api/v1/auth/*`.
+2. Frontend gọi gateway `http://localhost:8080`.
+3. Gateway proxy tới backend service nội bộ `http://backend:8000`.
+4. Backend xử lý tenant, bot, tài liệu, chat, analytics và integrations.
+5. Ingest tài liệu chạy qua Celery worker, Redis broker, PostgreSQL, MinIO, Qdrant và OpenDataLoader hybrid service.
 
-### Platform
-- **Bot Wizard** — guided creation with domain selector (General / Education / Legal / Sales)
-- **Dashboard** — real-time stats, recent conversations, agent status panel
-- **Streaming Chat** — SSE-based streaming responses
-- **Document Processing** — PDF, DOCX, PPTX, TXT via Celery async jobs
-- **Multi-tenancy** — full data isolation per organisation
-- **Zalo Bot Integration** — webhook-based Zalo Bot Platform integration with typing indicator
-- **Facebook Messenger Integration** — isolated worker for cookie-based Messenger group/DM replies with image coalescing
-- **Go API Gateway** — Redis caching (1h TTL), rate limiting (100 rps), structured logging
+Gateway chỉ cache các response `GET` đủ điều kiện. Cache chat/RAG nằm trong backend RAG service, không phải gateway.
 
-## Documentation
+## Tài liệu nên đọc
 
-All detailed guides live in `docs/`:
+- [Quick Start](docs/QUICK_START.md)
+- [Startup Guide](docs/STARTUP_GUIDE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [API Reference](docs/API_REFERENCE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Frontend Integration](docs/FRONTEND_INTEGRATION.md)
+- [Gateway Quickstart](docs/GATEWAY_QUICKSTART.md)
+- [Zalo Bot Platform](docs/ZALO_BOT_INTEGRATION_PLAN.md)
+- [Facebook Messenger](docs/FACEBOOK_MESSENGER_INTEGRATION.md)
 
-| File | Description |
-|------|-------------|
-| [QUICK_START.md](docs/QUICK_START.md) | 5-minute workflow walkthrough |
-| [STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md) | Full setup & env config |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, RAG pipeline, ingestion flow |
-| [FEATURES.md](docs/FEATURES.md) | Complete feature list |
-| [ADVANCED_RAG_FEATURES.md](docs/ADVANCED_RAG_FEATURES.md) | RAG pipeline deep-dive (Query Rewriting, Hybrid Search, CRAG, etc.) |
-| [API_REFERENCE.md](docs/API_REFERENCE.md) | All API endpoints |
-| [GATEWAY_QUICKSTART.md](docs/GATEWAY_QUICKSTART.md) | Go Gateway setup |
-| [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | Database access & queries |
-| [ZALO_BOT_INTEGRATION_PLAN.md](docs/ZALO_BOT_INTEGRATION_PLAN.md) | Zalo channel integration |
-| [FACEBOOK_MESSENGER_INTEGRATION.md](docs/FACEBOOK_MESSENGER_INTEGRATION.md) | Facebook Messenger worker integration |
+## Known gaps của snapshot này
+
+- Frontend có client cho document update/preview, nhưng backend chưa có `PUT /api/v1/bots/{bot_id}/documents/{doc_id}` hoặc endpoint preview. Không document hai endpoint này như API supported.
+- Frontend route Knowledge Graph là `/bots/:id/graph`; backend API vẫn là `/api/v1/bots/{bot_id}/knowledge-graph`.
+- PR Zalo Personal/ZCA chưa nằm trong snapshot này. Tài liệu chính chỉ mô tả Zalo Bot Platform hiện có.

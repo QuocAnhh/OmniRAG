@@ -1,92 +1,180 @@
-# 🗄️ OmniRAG Database Management Guide
+# Database Guide
 
-Tài liệu này hướng dẫn cách kết nối và kiểm tra dữ liệu trong các loại database của dự án OmniRAG.
+Tài liệu này mô tả các datastore đang được dùng trong OmniRAG và cách kiểm tra nhanh khi chạy bằng Docker Compose.
 
----
+## PostgreSQL
 
-## 🏗️ 1. PostgreSQL (Cấu trúc & Cấu hình)
-Lưu trữ thông tin: Bots, Users, Tenants, Documents (metadata), Folders.
+Service compose: `db`.
 
-### Truy cập qua Docker Terminal:
+Vai trò:
+
+- Users, tenants, bots.
+- Document metadata.
+- Folders.
+- Alembic migrations.
+
+Kết nối trong Docker:
+
 ```bash
-docker exec -it omnirag-db-1 psql -U postgres -d omnirag
+docker compose exec db psql -U postgres -d omnirag
 ```
 
-### Các câu lệnh SQL hữu ích:
-*   **Xem danh sách bot:** `SELECT name, id, is_active FROM bots;`
-*   **Kiểm tra cấu hình Bot (JSONB):** `SELECT name, config->>'model' as model FROM bots;`
-*   **Xem file đang lỗi:** `SELECT filename, error_message FROM documents WHERE status = 'failed';`
-*   **Xem cấu trúc bảng:** `\dt` hoặc `\d <tên_bảng>`
+Kết nối từ host:
 
-### Kết nối qua DataGrip/DBeaver:
-*   **Host:** `localhost` (hoặc IP Server)
-*   **Port:** `5433` (Ánh xạ từ 5432)
-*   **User:** `postgres`
-*   **Password:** `password`
-*   **Database:** `omnirag`
+| Field | Value |
+| --- | --- |
+| Host | `localhost` |
+| Port | `5433` |
+| User | `postgres` |
+| Password | `password` |
+| Database | `omnirag` |
 
----
+URI local:
 
-## 🍃 2. MongoDB (Lịch sử chat & Analytics)
-Lưu trữ thông tin: Tin nhắn hội thoại (conversations), Phiên làm việc (sessions).
-
-### Truy cập qua Docker Terminal:
-```bash
-docker exec -it omnirag-mongodb-1 mongosh -u admin -p password --authenticationDatabase admin
+```env
+SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@localhost:5433/omnirag
 ```
 
-### Các câu lệnh MQL hữu ích:
-*   **Chọn Database:** `use omnirag`
-*   **Xem các bảng:** `show collections`
-*   **Xem tin nhắn mới nhất:** `db.conversations.find().sort({timestamp: -1}).limit(1).pretty()`
-*   **Tìm tin nhắn theo Bot ID:** `db.conversations.find({bot_id: "uuid-cua-bot"})`
+Backend dùng sync URI này cho Alembic/Celery và tự derive async URI cho FastAPI endpoints.
 
-### Kết nối qua DataGrip/MongoDB Compass:
-*   **URI:** `mongodb://admin:password@localhost:27017`
+SQL hữu ích:
 
----
-
-## ⚡ 3. Redis (Cache & Session tạm)
-Lưu trữ dữ liệu tạm thời, cache kết quả chat từ LLM để tăng tốc.
-
-### Truy cập qua Docker Terminal:
-```bash
-docker exec -it omnirag-redis-1 redis-cli
+```sql
+select id, email, is_active from users order by created_at desc limit 10;
+select id, name, is_active from bots order by created_at desc limit 10;
+select id, filename, status, error_message from documents order by created_at desc limit 10;
+select id, name, bot_id from folders order by created_at desc limit 10;
 ```
 
-### Các câu lệnh hữu ích:
-*   **Liệt kê key:** `keys *`
-*   **Xem nội dung một key:** `get <tên_key>`
-*   **Xóa toàn bộ cache:** `FLUSHALL`
+## MongoDB
 
-### Kết nối qua Redis Insight:
-*   **Port:** `6380` (Ánh xạ từ 6379)
+Service compose: `mongodb`.
 
----
+Vai trò:
 
-## 🧠 4. Qdrant (Database Vector)
-Lưu trữ các đoạn văn bản (chunks) đã được chuyển hóa thành Vector để tìm kiếm ngữ nghĩa.
+- Conversations.
+- Sessions.
+- API keys.
+- Integrations.
+- Message feedback.
+- Một phần context cho channel integrations.
 
-### Kiểm tra qua Browser/Curl:
-*   **Dashboard:** [http://localhost:6333/dashboard](http://localhost:6333/dashboard)
-*   **Xem danh sách Collection:**
+Kết nối trong Docker:
+
 ```bash
+docker compose exec mongodb mongosh -u admin -p password --authenticationDatabase admin
+```
+
+Kết nối từ host:
+
+```text
+mongodb://admin:password@localhost:27017
+```
+
+MQL hữu ích:
+
+```javascript
+use omnirag
+show collections
+db.conversations.find().sort({timestamp: -1}).limit(3).pretty()
+db.sessions.find().sort({updated_at: -1}).limit(3).pretty()
+db.integrations.find().limit(5).pretty()
+db.api_keys.find().limit(5).pretty()
+```
+
+## Redis
+
+Service compose: `redis`.
+
+Vai trò:
+
+- Gateway GET cache.
+- Backend RAG cache.
+- Celery broker/result backend.
+- Embedding/rewrite/CRAG cache.
+
+Kết nối:
+
+```bash
+docker compose exec redis redis-cli
+```
+
+Host port:
+
+```text
+localhost:6380
+```
+
+Lệnh hữu ích:
+
+```redis
+PING
+KEYS gateway:cache:*
+KEYS rag:chat:*
+KEYS emb:*
+KEYS rewrite:*
+KEYS crag:*
+```
+
+Cẩn thận với `FLUSHALL` trên môi trường shared vì sẽ xóa cả cache và dữ liệu Celery runtime.
+
+## Qdrant
+
+Service compose: `qdrant`.
+
+Vai trò:
+
+- Vector collections cho chunks.
+- Hybrid retrieval data.
+
+Kiểm tra:
+
+```bash
+curl http://localhost:6333/
 curl http://localhost:6333/collections
 ```
 
----
+Dashboard:
 
-## 📁 5. MinIO (Lưu trữ file vật lý)
-Lưu trữ các file PDF, TXT gốc mà người dùng upload.
+```text
+http://localhost:6333/dashboard
+```
 
-*   **Console UI:** [http://localhost:9001](http://localhost:9001)
-*   **User:** `minioadmin`
-*   **Password:** `minioadmin`
+## MinIO
 
----
+Service compose: `minio`.
 
-## 💡 Lưu ý về tên Container
-Nếu chạy trên môi trường khác mà lệnh `docker exec` báo lỗi `No such container`, hãy dùng lệnh sau để kiểm tra chính xác tên container hiện tại:
+Vai trò:
+
+- Lưu file upload gốc.
+- Lưu artifact parsing nếu flow cần.
+
+Console:
+
+```text
+http://localhost:9001
+```
+
+Credential dev:
+
+| Field | Value |
+| --- | --- |
+| User | `minioadmin` |
+| Password | `minioadmin` |
+
+Health:
+
 ```bash
-docker ps --format "table {{.Names}}\t{{.Image}}"
+curl http://localhost:9000/minio/health/live
+```
+
+## Container names
+
+Không hardcode tên container kiểu `omnirag-db-1` trong script. Dùng Compose service name:
+
+```bash
+docker compose ps
+docker compose exec db psql -U postgres -d omnirag
+docker compose exec mongodb mongosh -u admin -p password --authenticationDatabase admin
+docker compose exec redis redis-cli
 ```

@@ -1,255 +1,160 @@
-# OmniRAG Architecture
+# Architecture
 
-## Request Flow
+Tài liệu này mô tả kiến trúc hiện tại của OmniRAG trên snapshot `refactor/backend-perf-p1-observability`.
 
-```
+## Tổng quan
+
+```text
 Browser
-  │
-  ↓
-Go API Gateway  (port 8080)
-  │  CORS  │  Rate Limiting (100 rps)  │  Redis Cache (1h TTL)  │  Structured Logging
-  ↓
-FastAPI Backend  (port 8000)
-  │
-  ├── Auth API          /api/v1/auth/*
-  ├── Bot API           /api/v1/bots/*
-  ├── Bot Templates     /api/v1/bot-templates/*
-  ├── Documents         /api/v1/bots/{id}/documents
-  ├── OpenRouter RAG    /api/v1/openrouter/*
-  ├── Analytics         /api/v1/analytics/*
-  ├── Dashboard         /api/v1/dashboard/*
-  ├── Users             /api/v1/users/*
-  ├── Integrations      /api/v1/integrations/*
-  ├── Zalo Hub          /api/v1/channels/zalo/*
-  ├── Zalo Bot          /api/v1/channels/zalo-bot/*
-  └── Facebook          /api/v1/channels/facebook/*
-  │
-  ├── fb-channel-worker (port 9100) — isolated Messenger bridge
-  ├── PostgreSQL  (port 5433) — Users, Bots, Documents metadata
-  ├── MongoDB     (port 27017) — Chat logs, conversation history
-  ├── Redis       (port 6380) — Celery broker, gateway cache
-  ├── Qdrant      (port 6333) — Vector embeddings (HNSW)
-  ├── MinIO       (port 9000) — File storage
-  └── Celery Worker — Async document processing
+  |
+  v
+React Frontend :5173
+  |
+  | VITE_API_URL=http://localhost:8080
+  v
+Go Gateway :8080
+  |
+  | PYTHON_BACKEND_URL=http://backend:8000
+  v
+FastAPI Backend :8000 container / :8001 host
+  |
+  +-- PostgreSQL db:5432       metadata, users, tenants, bots, documents
+  +-- MongoDB mongodb:27017    conversations, sessions, api keys, integrations
+  +-- Redis redis:6379         cache, Celery broker/result backend
+  +-- MinIO minio:9000         uploaded file objects
+  +-- Qdrant qdrant:6333       vector search
+  +-- Celery worker            async document ingestion
+  +-- OpenDataLoader :5002     hybrid PDF/Office parsing
+  +-- OpenRouter/OpenAI        LLM, embeddings, vision
 ```
 
-## Services
+## Components
 
-| Service | Technology | Port | Description |
-|---------|------------|------|-------------|
-| Frontend | React 19 + TypeScript + Vite | 5173 | Main UI |
-| Gateway | Go 1.21 + Gin | 8080 | API gateway |
-| Backend | Python 3.11 + FastAPI | 8000 | Core API & logic |
-| PostgreSQL | 15-alpine | 5433 | Relational data |
-| MongoDB | 7.0 | 27017 | Logs & analytics |
-| Redis | 7-alpine | 6380 | Cache & task broker |
-| Qdrant | latest | 6333 | Vector DB |
-| MinIO | latest | 9000/9001 | Object storage |
-| fb-channel-worker | Python 3.11 + FastAPI | 9100 | Isolated Facebook Messenger bridge |
+| Component | Path | Vai trò |
+| --- | --- | --- |
+| Backend API | `backend/app` | FastAPI API, auth, tenants, bots, documents, chat, analytics, integrations |
+| Gateway | `gateway` | Go HTTP proxy, CORS, rate limit, health/readiness/metrics, GET cache |
+| Frontend | `frontend` | React 19 SPA, protected routes, API clients |
+| Celery worker | `backend/app/tasks` | Xử lý ingest tài liệu bất đồng bộ |
+| RAG service | `backend/app/services/openrouter_rag_service.py` | Chunking, embedding, retrieval, rerank, rewrite, CRAG, chat, cache |
+| LightRAG service | `backend/app/services/lightrag_service.py` | Knowledge Graph và LightRAG mode |
+| OpenDataLoader hybrid | `backend/Dockerfile.hybrid` | OCR/formula/chart/table/image extraction service |
+| Facebook worker | `services/fb-channel-worker` | Messenger bridge tách riêng runtime GPL |
 
-## Backend Structure (`backend/app/`)
+## Ports
 
-```
-app/
-├── main.py                  — FastAPI app factory, CORS, lifespan
-├── worker.py                — Celery worker entrypoint
-├── api/
-│   ├── api.py               — Router registration
-│   ├── deps.py              — Shared dependencies (DB, auth)
-│   └── v1/endpoints/
-│       ├── auth.py          — Register, login, /me
-│       ├── bots.py          — Bot CRUD + document upload (domain profile resolution)
-│       ├── bot_templates.py — Pre-built templates (domain defaults propagated)
-│       ├── openrouter.py    — RAG chat + streaming endpoints
-│       ├── analytics.py     — Conversation & usage analytics
-│       ├── dashboard.py     — Dashboard stats (stats, recent convos)
-│       ├── users.py         — User management
-│       ├── integrations.py  — External integration hooks
-│       └── channels/
-│           ├── zalo_hub.py  — Zalo Hub webhook receiver
-│           ├── zalo_bot.py  — Zalo bot webhook receiver + connect/disconnect (in-process via asyncio.create_task)
-│           └── facebook_messenger.py — Facebook connect/disconnect/status + signed worker inbound
-├── services/
-│   ├── openrouter_rag_service.py  — Main RAG pipeline (see RAG Pipeline below)
-│   ├── domain_config.py           — Domain profile registry (general/education/legal/sales)
-│   ├── openrouter_service.py      — OpenRouter HTTP wrapper (chat + embeddings)
-│   ├── lightrag_service.py        — LightRAG knowledge graph (entity/rel extraction)
-│   ├── memory_service.py          — Mem0 persistent conversation memory
-│   ├── bot_templates.py           — Bot template business logic
-│   ├── cache_service.py           — Redis cache wrapper
-│   ├── storage_service.py         — MinIO file storage
-│   └── channels/                  — Channel services (Zalo, Facebook Messenger)
-├── models/                  — SQLAlchemy ORM (Bot, Document, Tenant, User)
-├── schemas/                 — Pydantic v2 schemas; BotConfig includes domain + chunk fields
-├── tasks/
-│   ├── document_tasks.py    — Celery: chunk → contextual prefix → embed → Qdrant
-│   ├── zalo_bot_tasks.py    — Celery: Zalo bot async message tasks
-│   └── zalo_tasks.py        — Celery: Zalo integration tasks
-├── db/                      — DB connections (PostgreSQL, MongoDB, Redis)
-└── core/
-    ├── config.py            — Settings (pydantic-settings, reads .env); includes RERANKER_MODEL
-    └── security.py          — JWT utilities
-```
+| Service | Host | Container/Internal |
+| --- | ---: | ---: |
+| Frontend | `5173` | `5173` |
+| Gateway | `8080` | `8080` |
+| Backend | `8001` | `8000` |
+| PostgreSQL | `5433` | `5432` |
+| MongoDB | `27017` | `27017` |
+| Redis | `6380` | `6379` |
+| MinIO API | `9000` | `9000` |
+| MinIO Console | `9001` | `9001` |
+| Qdrant | `6333` | `6333` |
+| OpenDataLoader hybrid | `5002` | `5002` |
+| Facebook worker | internal | `9100` |
 
-## Facebook Messenger Worker Flow
+## Backend runtime
 
-Facebook Messenger is intentionally separated from the backend because it uses
-the unofficial GPL-licensed `fbchat-muqit` library.
+Backend dùng SQLAlchemy theo hai mode:
 
-```
-Messenger MQTT events
-  ↓
-fb-channel-worker
-  ├─ echo guard / thread whitelist / mention-only policy
-  ├─ text + image event coalescing
-  ├─ raw + normalized attachment payload
-  └─ HMAC-signed POST to backend inbound route
-       ↓
-FacebookMessengerService
-  ├─ group context and participant lookup
-  ├─ image description via OpenRouter vision
-  ├─ RAG + memory pipeline
-  └─ worker send/react/leave calls
-```
+- Sync engine cho Alembic và Celery tasks.
+- Async engine cho FastAPI endpoints qua async session.
 
-See [FACEBOOK_MESSENGER_INTEGRATION.md](FACEBOOK_MESSENGER_INTEGRATION.md) for
-operational details.
+`SQLALCHEMY_DATABASE_URI` nên dùng dạng sync `postgresql://...`; code tự derive URI async `postgresql+asyncpg://...`.
 
-## Advanced RAG Pipeline
+Startup backend:
 
-Main endpoints:
-- `POST /api/v1/bots/{bot_id}/chat` — standard response
-- `POST /api/v1/bots/{bot_id}/chat-stream` — SSE streaming
+1. Configure `structlog` JSON logging.
+2. Kết nối MongoDB.
+3. Khởi tạo FastAPI middleware, CORS, SlowAPI, request id.
+4. Mount routers dưới `/api/v1`.
+5. Expose `/health`, `/docs`, `/openapi.json`, `/metrics`.
 
-All steps are parallelised for minimum latency (~2.8s to first token):
+## Observability
 
-```
-t=0:    ┌─ embed(query)      ─────────────────────────────┐
-        └─ rewrite(query)    ───────────────────────────┐ │
-                                                        │ ↓
-t=~0.4: ┌─ hybrid_search()  ───────────────────────┐   │ (embed done)
-        └─ lightrag_query() ─────────────────────┐ │   │ (if KG bot)
-                                                 │ ↓   │
-t=~1.7:   CRAG classify()   ─────────────────┐  │ ↓   │ (search done)
-                                             ↓  ↓ ↓   ↓
-t=~2.8:   context assembled ← all tasks done
-  +       memory_search() ── concurrent with rag prep
-t=~2.8:   LLM streaming begins
-```
+Backend hiện có:
 
-Pipeline steps:
-1. **Embed + Rewrite** — concurrent at t=0; embed fires original query (no HyDE), rewrite runs alongside
-2. **Hybrid Search + LightRAG** — start as soon as embedding is ready (not waiting for rewrite)
-3. **CRAG** — starts immediately after search; LightRAG keeps running concurrently
-4. **Memory Search** — runs concurrent with entire RAG prep via `asyncio.gather`
-5. **Context Assembly** — `[[n]]`-cited blocks; uses `parent_text` if Parent-Child chunking
-6. **LLM Generation** — OpenRouter with domain prompt suffix + CRAG signal injected
-7. **Memory Update** — `asyncio.create_task` (non-blocking, after response)
+- Structured logs qua `structlog`.
+- Request ID middleware để trace request.
+- Prometheus metrics tại `/metrics`.
+- SlowAPI rate limiting.
+- Health check tổng hợp cho PostgreSQL, MongoDB, Redis và các dependency chính.
 
-## Document Ingestion Pipeline
+Gateway hiện có:
 
-```
-File Upload (PDF/TXT)
-  │
-  ├── MinIO storage
-  │
-  └── Celery task dispatched
-        │
-        ├── PDF parsing: _load_pdf_opendataloader()  ← FULL MODE
-        │     opendataloader-pdf with:
-        │       format="markdown-with-images,json"
-        │       table_method="cluster" (border + cluster detection)
-        │       image_output="external" (extract PNG/JPEG)
-        │       markdown_page_separator (preserve page boundaries)
-        │       hybrid="docling-fast" (OCR, SmolVLM image descriptions, formulas)
-        │     Fallback: hybrid→local→PyPDFLoader
-        │     │
-        │     ├── Markdown-with-images  → chunking pipeline (see below)
-        │     ├── JSON (tables, bbox)   → MinIO upload
-        │     └── Images (PNG/JPEG)     → MinIO upload
-        │
-        ├── domain profile resolved (chunk_size, strategy from bot.config.domain)
-        │
-        ├── _chunk_documents()
-        │     recursive | sentence | article | parent_child
-        │
-        ├── Contextual Retrieval
-        │     _generate_contextual_prefix_batch()
-        │     → 1-2 sentence context per chunk (parallel, capped at 50)
-        │     → enriched_text = prefix + "\n\n" + chunk_text (for embedding)
-        │
-        ├── embed_batch_async(enriched_texts)
-        │     OpenRouter text-embedding-3-small
-        │
-        ├── Qdrant upsert
-        │     payload: { text, parent_text, context_prefix, source, bot_id }
-        │
-        └── LightRAG ingestion (if enable_knowledge_graph)
-```
+- Zap logging.
+- `/health`, `/readiness`, `/metrics`.
+- Redis readiness/metrics.
+- Rate limit middleware.
 
-> **PDF parsing chi tiết:** xem [PDF_PARSING.md](PDF_PARSING.md)
+## Cache
 
-## Domain Profiles (`domain_config.py`)
+Phân biệt rõ hai lớp cache:
 
-| Domain | Strategy | Chunk | K | LightRAG | KG Auto |
-|--------|----------|-------|---|----------|---------|
-| `general` | recursive | 512 | 10 | naive | No |
-| `education` | sentence | 384 | 12 | local | Yes |
-| `legal` | article | 1024 | 8 | hybrid | Yes |
-| `sales` | recursive | 256 | 15 | naive | No |
+- Gateway cache chỉ áp dụng cho `GET` request đủ điều kiện, có tính `Authorization` vào cache key để tránh leak cross-user. Gateway không cache `POST /chat` hoặc streaming.
+- Backend RAG cache dùng Redis cho chat result, embeddings, query rewrite, CRAG verdict và invalidation theo bot khi knowledge base thay đổi.
 
-## Knowledge Graph (LightRAG)
+## Document ingestion
 
-- Triggered during document ingestion — extracts entities & relationships
-- Stored in `backend/rag_storage/lightrag_{bot_id}/` (local, untracked by git)
-- LLM for extraction: configurable via `LIGHTRAG_LLM_MODEL` (default `openai/gpt-5.4-nano`)
-- Frontend visualisation: `KnowledgeGraphPage` using `@react-sigma/core` + `graphology`
-- Query runs concurrently with hybrid search — no added latency
+Luồng upload tài liệu:
 
-## Authentication
+1. `POST /api/v1/bots/{bot_id}/documents` nhận multipart files.
+2. Backend lưu metadata PostgreSQL và object vào MinIO.
+3. Backend enqueue Celery task.
+4. Celery gọi OpenDataLoader/local parser để parse file.
+5. Service chunk tài liệu theo strategy hiệu lực.
+6. Embeddings được ghi vào Qdrant, metadata cập nhật vào PostgreSQL.
+7. Nếu bật Knowledge Graph, LightRAG xử lý graph data.
 
-```
-POST /api/v1/auth/login
-  → JWT token (HS256, 30-min expiry)
-  → Stored in Zustand + localStorage (frontend)
-  → All requests: Authorization: Bearer <token>
-  → Gateway passes token through to backend
-```
+Chunk strategies hiện hỗ trợ:
 
-## Go Gateway
+- `recursive`
+- `sentence`
+- `article`
+- `parent_child`
+- `semantic`
 
-| Feature | Detail |
-|---------|--------|
-| Proxy | All `/api/*` forwarded to backend:8000 |
-| Cache | Redis-backed, 1-hour TTL, `X-Cache: HIT/MISS` header |
-| Rate limit | 100 req/s per IP (dev), 200 req/s (prod) |
-| Health | `GET /health`, `GET /readiness` |
-| CORS | Handled at gateway layer |
-| Logging | Structured JSON via Zap |
+Domain templates hiện dùng các strategy trong `domain_config.py`: `recursive`, `article`, `sentence`, `parent_child`.
 
-## Frontend Structure (`frontend/src/`)
+## Model defaults
 
-```
-src/
-├── api/              — Axios clients (client.ts auto-attaches Bearer token)
-├── pages/
-│   ├── DashboardPage.tsx     — Stats tiles, recent convos, agent status
-│   ├── BotsPage.tsx          — Bot list (Chat = primary CTA)
-│   ├── BotWizardPage.tsx     — Template → Domain selector → Config → Review
-│   ├── BotConfigPage.tsx     — Full advanced config, KG auto-enable from domain
-│   ├── ChatPage.tsx          — SSE streaming chat
-│   ├── KnowledgeGraphPage.tsx
-│   ├── SettingsPage.tsx
-│   ├── AuthPage.tsx
-│   ├── LandingPage.tsx
-│   └── Docs/ZaloBotGuidePage.tsx
-├── components/
-│   ├── Layout/               — Sidebar (Home+AI Agents+Settings nav), ChatLayout
-│   ├── bots/                 — TemplateSelector (domain badges, Blueprint cards)
-│   └── ui/                   — Primitives
-├── store/            — Zustand (authStore: JWT + user)
-├── utils/
-│   └── domainHelpers.ts      — DOMAIN_META map + getDomainMeta() utility
-└── types/
-    └── api.ts                — BotConfig: domain, chunking_strategy, chunk_size, chunk_overlap
-```
+- Code internal model: `openai/gpt-5.4-nano`.
+- `backend/app/services/lightrag_service.py` default `LIGHTRAG_LLM_MODEL=openai/gpt-5.4-nano`.
+- Docker Compose override `LIGHTRAG_LLM_MODEL=openai/gpt-4.1-mini` cho backend và Celery worker.
+- Embedding mặc định qua OpenRouter/OpenAI theo config hiện tại.
+
+## Frontend routing
+
+Routes chính:
+
+- `/dashboard`
+- `/bots`
+- `/bots/new`
+- `/bots/:id/edit`
+- `/bots/:id/config`
+- `/bots/:id/chat`
+- `/bots/:id/graph`
+- `/settings`
+- `/docs/zalo-bot`
+
+API Knowledge Graph vẫn là `/api/v1/bots/{bot_id}/knowledge-graph`; chỉ route frontend là `/bots/:id/graph`.
+
+## Channel integrations
+
+Snapshot này có:
+
+- Zalo Hub webhook: `/api/v1/channels/zalo/hub-webhook`
+- Zalo Bot Platform: connect/disconnect/status/webhook dưới `/api/v1/channels/zalo-bot/*`
+- Facebook Messenger bridge: connect/disconnect/status/inbound dưới `/api/v1/channels/facebook/*`
+
+Zalo Personal/ZCA chưa thuộc snapshot này và chỉ nên ghi là future/pending nếu cần.
+
+## Known gaps
+
+- Backend chưa expose document update/preview endpoint dù frontend client có hàm tương ứng.
+- Gateway cache không cache chat responses. Nếu cần đo cache chat, xem backend RAG cache.
+- Một số route OpenRouter trong `/api/v1/openrouter/*` là utility/test route, không phải flow chính của frontend.

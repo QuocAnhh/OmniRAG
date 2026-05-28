@@ -55,7 +55,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@mycompany.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"John Doe\",\n  \"tenant_name\": \"My Company\",\n  \"tenant_settings\": {\n    \"industry\": \"Technology\",\n    \"max_bots\": 10\n  }\n}"
+							"raw": "{\n  \"email\": \"admin@mycompany.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"John Doe\",\n  \"tenant_name\": \"My Company\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/register",
@@ -239,7 +239,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Customer Support Bot\",\n  \"description\": \"AI assistant for customer inquiries\",\n  \"config\": {\n    \"llm_model\": \"gpt-4\",\n    \"temperature\": 0.7,\n    \"max_tokens\": 500,\n    \"system_prompt\": \"You are a helpful customer support assistant. Be polite and professional.\"\n  }\n}"
+							"raw": "{\n  \"name\": \"Customer Support Bot\",\n  \"description\": \"AI assistant for customer inquiries\",\n  \"config\": {\n    \"model\": \"openai/gpt-4o-mini\",\n    \"temperature\": 0.7,\n    \"max_tokens\": 1000,\n    \"system_prompt\": \"You are a helpful customer support assistant. Be polite and professional.\",\n    \"chunking_strategy\": \"recursive\"\n  }\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/bots",
@@ -290,7 +290,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Customer Support Bot V2\",\n  \"description\": \"Enhanced AI assistant\",\n  \"config\": {\n    \"llm_model\": \"gpt-3.5-turbo\",\n    \"temperature\": 0.5,\n    \"system_prompt\": \"You are an expert customer support agent specializing in technical issues.\"\n  }\n}"
+							"raw": "{\n  \"name\": \"Customer Support Bot V2\",\n  \"description\": \"Enhanced AI assistant\",\n  \"config\": {\n    \"model\": \"openai/gpt-4o-mini\",\n    \"temperature\": 0.5,\n    \"system_prompt\": \"You are an expert customer support agent specializing in technical issues.\"\n  }\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/bots/{{bot_id}}",
@@ -357,6 +357,11 @@
 									"key": "chunking_strategy",
 									"value": "recursive",
 									"type": "text"
+								},
+								{
+									"key": "enable_knowledge_graph",
+									"value": "false",
+									"type": "text"
 								}
 							]
 						},
@@ -385,6 +390,11 @@
 								{
 									"key": "chunking_strategy",
 									"value": "semantic",
+									"type": "text"
+								},
+								{
+									"key": "enable_knowledge_graph",
+									"value": "false",
 									"type": "text"
 								}
 							]
@@ -484,8 +494,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Response faster than 500ms (cache hit)\", function () {",
-									"    pm.expect(pm.response.responseTime).to.be.below(500);",
+									"pm.test(\"Response completed\", function () {",
+									"    pm.response.to.have.status(200);",
 									"});",
 									"",
 									"pm.test(\"Has response and sources\", function () {",
@@ -515,7 +525,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "bots", "{{bot_id}}", "chat"]
 						},
-						"description": "Send exact same query to test Redis caching (should be <500ms)"
+						"description": "Send exact same query to observe backend Redis RAG cache. Gateway does not cache POST chat."
 					},
 					"response": []
 				}
@@ -545,7 +555,7 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://localhost:8000",
+			"value": "http://localhost:8080",
 			"type": "string"
 		},
 		{
