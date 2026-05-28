@@ -322,6 +322,52 @@ Response:
 | `POST` | `/channels/zalo-bot/disconnect` | Disconnect and remove Zalo credentials from bot config |
 | `GET` | `/channels/zalo-bot/status/{bot_id}` | Zalo bot connection status |
 
+### Zalo Personal Account (internal `zca-js` worker)
+
+Zalo Personal uses an isolated internal worker. Frontend clients should call
+the backend routes below; worker routes are for backend-to-worker traffic
+inside the Docker network.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/channels/zalo-personal/bots/{bot_id}/accounts` | List Zalo Personal accounts for a bot |
+| `POST` | `/channels/zalo-personal/bots/{bot_id}/accounts` | Create an account and start QR login |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}` | Get one account config |
+| `PUT` | `/channels/zalo-personal/accounts/{account_id}` | Update reply policy or thread whitelist |
+| `DELETE` | `/channels/zalo-personal/accounts/{account_id}` | Unload worker session and delete account |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/login-status` | Poll QR login status |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/status` | Return saved config plus live worker status |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/access` | List account access grants |
+| `POST` | `/channels/zalo-personal/accounts/{account_id}/access` | Grant a user access to the account |
+| `DELETE` | `/channels/zalo-personal/accounts/{account_id}/access/{access_id}` | Revoke one access grant |
+| `POST` | `/channels/zalo-personal/inbound/{bot_id}` | HMAC-protected worker webhook; not intended for frontend calls |
+
+`POST /channels/zalo-personal/bots/{bot_id}/accounts` body:
+
+```json
+{
+  "channel_type": "zalo_personal",
+  "reply_policy": "mention_only",
+  "thread_whitelist": []
+}
+```
+
+Worker base URL is normally `http://zalo-personal-worker:9200`.
+Authenticated worker routes require
+`Authorization: Bearer <ZALO_PERSONAL_WORKER_API_TOKEN>`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Worker liveness and loaded account count |
+| `POST` | `/accounts/{account_id}/login/start` | Start QR login for one account |
+| `GET` | `/accounts/{account_id}/login/status` | QR/login state |
+| `GET` | `/accounts/{account_id}/status` | Worker runtime status |
+| `POST` | `/accounts/{account_id}/send` | Send a text reply |
+| `POST` | `/accounts/{account_id}/unload` | Stop listener and remove saved session |
+
+See [ZALO_PERSONAL_INTEGRATION.md](ZALO_PERSONAL_INTEGRATION.md) for
+configuration, QR flow, limitations, and troubleshooting.
+
 ---
 
 ## Channels — Facebook Messenger

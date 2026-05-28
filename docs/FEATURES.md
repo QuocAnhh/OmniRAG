@@ -58,6 +58,7 @@
 | Celery | — | — | Async document processing worker |
 | OpenDataLoader Hybrid | opendataloader/pdf-hybrid | 5002 | PDF OCR, SmolVLM image descriptions, formula extraction |
 | Facebook Messenger Worker | Python 3.11 + FastAPI | 9100 | Isolated Messenger bridge using `fbchat-muqit` |
+| Zalo Personal Worker | Node.js 20 + Fastify | 9200 | Isolated Zalo personal account bridge using `zca-js` |
 
 ## Integrations & Channels
 
@@ -66,6 +67,8 @@
 | Zalo Bot | ✅ | Webhook-based Zalo Bot Platform integration (`bot-api.zapps.me`) |
 | Zalo Bot Typing Indicator | ✅ | `sendChatAction` typing sent before RAG processing |
 | Zalo Bot In-Process | ✅ | Webhook processed via `asyncio.create_task` in FastAPI process (not Celery) |
+| Zalo Personal | ✅ | QR-login Zalo personal account worker with multi-account support |
+| Zalo Personal Safety | ✅ | Per-account rate limiting, mention-only group policy, HMAC inbound events, and circuit breaker |
 | Facebook Messenger | ✅ | Cookie-based Messenger bridge with group/DM replies through isolated worker |
 | Facebook Image Coalescing | ✅ | Merges split text + image MQTT events and normalizes attachments before backend processing |
 | Facebook Group Context | ✅ | Fetches members, nicknames, recent messages, and supports real `@Name` mentions |
@@ -84,5 +87,6 @@
 | Bot Config | `/bots/:id/config` | Full advanced controls, domain badge, KG auto-enable |
 | Chat | `/bots/:id/chat` | Streaming RAG chat interface |
 | Knowledge Graph | `/bots/:id/graph` | Interactive entity/relationship visualisation |
+| Zalo Personal Accounts | `/bots/:id/zalo-accounts` | Manage QR-login Zalo personal accounts for a bot |
 | Settings | `/settings` | User & tenant settings |
 | Zalo Bot Guide | `/docs/zalo-bot` | Public integration guide |

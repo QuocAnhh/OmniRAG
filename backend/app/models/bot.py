@@ -27,5 +27,6 @@ class Bot(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant", back_populates="bots", lazy="selectin")
+    channel_accounts = relationship("ChannelAccount", back_populates="bot", cascade="all, delete-orphan", lazy="selectin")
     documents = relationship("Document", back_populates="bot", cascade="all, delete-orphan", lazy="selectin")
     folders = relationship("Folder", back_populates="bot", cascade="all, delete-orphan", lazy="selectin")

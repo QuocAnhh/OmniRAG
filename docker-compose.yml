@@ -94,6 +94,10 @@ services:
       - PDF_IMAGE_OUTPUT=external
       - PDF_HYBRID_MODE=docling-fast
       - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
+      - ZALO_PERSONAL_ENABLED=${ZALO_PERSONAL_ENABLED:-false}
+      - ZALO_PERSONAL_WORKER_URL=http://zalo-personal-worker:9200
+      - ZALO_PERSONAL_WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
+      - ZALO_PERSONAL_INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -170,6 +174,34 @@ services:
       retries: 3
       start_period: 10s
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # zalo-personal-worker — Zalo personal account bridge (unofficial zca-js)
+  # Experimental. Use a dedicated Zalo account and do not open Zalo Web/PC with
+  # that same account while the listener is running.
+  # ─────────────────────────────────────────────────────────────────────────
+  zalo-personal-worker:
+    build: ./services/zalo-personal-worker
+    image: omnirag-zalo-personal-worker
+    restart: unless-stopped
+    expose:
+      - "9200"
+    volumes:
+      - zalo_personal_sessions:/sessions
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
+      - INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
+      - LOG_LEVEL=info
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   qdrant:
     image: qdrant/qdrant:latest
     restart: unless-stopped
@@ -221,7 +253,9 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
+      - VITE_BACKEND_URL=http://backend:8000
       - VITE_API_URL=http://localhost:8080
+      - VITE_ENABLE_ZALO_PERSONAL=${VITE_ENABLE_ZALO_PERSONAL:-false}
     depends_on:
       - gateway
 
@@ -233,3 +267,4 @@ volumes:
   qdrant_data:
   huggingface_cache:
   ollama_data:
+  zalo_personal_sessions:

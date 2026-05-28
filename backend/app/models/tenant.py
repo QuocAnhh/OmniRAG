@@ -22,3 +22,4 @@ class Tenant(Base):
 
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan", lazy="selectin")
     bots = relationship("Bot", back_populates="tenant", cascade="all, delete-orphan", lazy="selectin")
+    channel_accounts = relationship("ChannelAccount", back_populates="tenant", cascade="all, delete-orphan", lazy="selectin")
