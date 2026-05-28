@@ -137,6 +137,12 @@ class Settings(BaseSettings):
     ZALO_HUB_WEBHOOK_SECRET: str = ""  # Secret for verifying incoming hub webhooks (set in .env)
 
     # ============================================================
+    # Telegram Bot Channel
+    # ============================================================
+    TELEGRAM_BOT_TOKEN: str = ""       # Default bot token (optional; per-bot tokens stored in bot.config)
+    TELEGRAM_WEBHOOK_SECRET: str = ""  # Fallback webhook secret (optional)
+
+    # ============================================================
     # Facebook Messenger Channel (via fb-channel-worker)
     # ============================================================
     FB_WORKER_URL: str = "http://fb-channel-worker:9100"
