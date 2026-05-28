@@ -1,18 +1,32 @@
-# 🧪 Testing with Postman
+# Postman Guide
 
-## 1. Import Collection
-Import the provided Postman collection JSON file (see `docs/POSTMAN_COLLECTION.json`).
+Guide này dùng collection `docs/POSTMAN_COLLECTION.json` để test API hiện tại.
 
-## 2. Environment Setup
-Create a new Environment in Postman with these variables:
-- `base_url`: `http://localhost:8000`
-- `access_token`: (Leave empty initially)
-- `bot_id`: (Leave empty initially)
+## Environment variables
 
-## 3. Workflow
+Tạo Postman environment:
 
-### Step 1: Register User
-**POST** `{{base_url}}/api/v1/auth/register`
+| Variable | Default |
+| --- | --- |
+| `base_url` | `http://localhost:8080` |
+| `access_token` | để trống |
+| `bot_id` | để trống |
+| `doc_id` | để trống nếu cần delete document |
+
+`base_url` mặc định là gateway. Nếu muốn bypass gateway:
+
+- Docker direct backend: `http://localhost:8001`
+- Local uvicorn: `http://localhost:8000`
+
+## Workflow nhanh
+
+### 1. Register
+
+```http
+POST {{base_url}}/api/v1/auth/register
+Content-Type: application/json
+```
+
 ```json
 {
   "email": "admin@example.com",
@@ -22,36 +36,81 @@ Create a new Environment in Postman with these variables:
 }
 ```
 
-### Step 2: Login
-**POST** `{{base_url}}/api/v1/auth/login`
-- Body (x-www-form-urlencoded):
-  - `username`: admin@example.com
-  - `password`: SecurePassword123!
-- **Action**: Copy `access_token` from response to Environment variable `access_token`.
+### 2. Login
 
-### Step 3: Create Bot
-**POST** `{{base_url}}/api/v1/bots`
-- Headers: `Authorization: Bearer {{access_token}}`
+```http
+POST {{base_url}}/api/v1/auth/login
+Content-Type: application/x-www-form-urlencoded
+```
+
+Form fields:
+
+```text
+username=admin@example.com
+password=SecurePassword123!
+```
+
+Lưu `access_token` vào environment. Collection đã có Bearer auth ở cấp collection.
+
+### 3. Create Bot
+
+```http
+POST {{base_url}}/api/v1/bots/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+```
+
 ```json
 {
   "name": "My RAG Bot",
+  "description": "Bot test bằng Postman",
   "config": {
-    "llm_model": "gpt-4o-mini"
+    "model": "openai/gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 1000,
+    "system_prompt": "Trả lời bằng tiếng Việt.",
+    "chunking_strategy": "recursive"
   }
 }
 ```
-- **Action**: Copy `id` to Environment variable `bot_id`.
 
-### Step 4: Upload Document
-**POST** `{{base_url}}/api/v1/bots/{{bot_id}}/documents`
-- Body (form-data):
-  - `file`: (Select file)
-  - `chunking_strategy`: `recursive`
+Lưu `id` từ response vào `bot_id`.
 
-### Step 5: Chat
-**POST** `{{base_url}}/api/v1/bots/{{bot_id}}/chat`
+### 4. Upload Document
+
+```http
+POST {{base_url}}/api/v1/bots/{{bot_id}}/documents
+Authorization: Bearer {{access_token}}
+Content-Type: multipart/form-data
+```
+
+Form-data:
+
+| Key | Type | Value |
+| --- | --- | --- |
+| `file` | File | Chọn PDF/DOCX/TXT |
+| `chunking_strategy` | Text | `recursive` |
+| `enable_knowledge_graph` | Text | `false` |
+
+Ingestion chạy bất đồng bộ qua Celery. Nếu upload xong nhưng chat chưa thấy context, kiểm tra log `celery_worker`.
+
+### 5. Chat
+
+```http
+POST {{base_url}}/api/v1/bots/{{bot_id}}/chat
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+```
+
 ```json
 {
-  "message": "What is in the document?"
+  "message": "Tóm tắt nội dung tài liệu",
+  "session_id": "postman-demo"
 }
 ```
+
+## Notes
+
+- Backend host port Docker là `8001`, không phải `8000`.
+- Gateway cache chỉ áp dụng cho `GET`, không dùng để test cache chat.
+- Không có endpoint document update/preview trong backend snapshot này.
