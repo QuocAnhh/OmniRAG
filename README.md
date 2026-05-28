@@ -19,6 +19,7 @@ Browser → Go Gateway (:8080) → FastAPI Backend (:8000) → Data Stores
 | Qdrant | 6333 | Vector embeddings |
 | MinIO | 9000/9001 | File storage (S3-compatible) |
 | Facebook Messenger Worker | 9100 | Isolated Messenger bridge (`fbchat-muqit`, internal only) |
+| Zalo Personal Worker | 9200 | Isolated Zalo personal account bridge (`zca-js`, internal only) |
 
 ## Quick Start
 
@@ -74,6 +75,7 @@ docker compose up -d --build
 - **Document Processing** — PDF, DOCX, PPTX, TXT via Celery async jobs
 - **Multi-tenancy** — full data isolation per organisation
 - **Zalo Bot Integration** — webhook-based Zalo Bot Platform integration with typing indicator
+- **Zalo Personal Integration** — QR-login personal account worker with multi-account support
 - **Facebook Messenger Integration** — isolated worker for cookie-based Messenger group/DM replies with image coalescing
 - **Go API Gateway** — Redis caching (1h TTL), rate limiting (100 rps), structured logging
 
@@ -92,4 +94,5 @@ All detailed guides live in `docs/`:
 | [GATEWAY_QUICKSTART.md](docs/GATEWAY_QUICKSTART.md) | Go Gateway setup |
 | [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | Database access & queries |
 | [ZALO_BOT_INTEGRATION_PLAN.md](docs/ZALO_BOT_INTEGRATION_PLAN.md) | Zalo channel integration |
+| [ZALO_PERSONAL_INTEGRATION.md](docs/ZALO_PERSONAL_INTEGRATION.md) | Zalo Personal worker integration |
 | [FACEBOOK_MESSENGER_INTEGRATION.md](docs/FACEBOOK_MESSENGER_INTEGRATION.md) | Facebook Messenger worker integration |

@@ -3,8 +3,10 @@
  * Ported from ZaloCRM zalo-rate-limiter.ts.
  */
 
-const DAILY_LIMIT = 200;
-const BURST_LIMIT = 5;
+import { settings } from "./config.js";
+
+const DAILY_LIMIT = settings.rateLimitDaily;
+const BURST_LIMIT = settings.rateLimitBurst;
 const BURST_WINDOW_MS = 30_000;
 
 const dailyCounts = new Map();

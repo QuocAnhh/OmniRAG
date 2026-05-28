@@ -77,6 +77,13 @@ FUNC_API_TOKEN=your_func_token
 # Facebook Messenger Integration (chỉ cần nếu dùng Facebook channel)
 FB_WORKER_API_TOKEN=replace-with-random-token
 FB_INBOUND_SECRET=replace-with-random-hmac-secret
+
+# Zalo Personal Integration (chỉ cần nếu dùng Zalo personal account)
+ZALO_PERSONAL_ENABLED=false
+ZALO_PERSONAL_WORKER_URL=http://zalo-personal-worker:9200
+ZALO_PERSONAL_WORKER_API_TOKEN=replace-with-random-token
+ZALO_PERSONAL_INBOUND_SECRET=replace-with-random-hmac-secret
+VITE_ENABLE_ZALO_PERSONAL=false
 ```
 
 > **Production:** Bắt buộc đổi `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY`, `SECRET_KEY`. Set `ENVIRONMENT=production`.
@@ -94,6 +101,7 @@ docker compose up -d --build
 # Xem logs
 docker compose logs -f backend
 docker compose logs -f fb-channel-worker
+docker compose logs -f zalo-personal-worker
 docker compose logs -f gateway
 docker compose logs -f celery_worker
 ```
@@ -110,6 +118,13 @@ docker compose up -d backend celery_worker
 ```bash
 docker compose build backend fb-channel-worker
 docker compose up -d backend fb-channel-worker
+```
+
+### Chỉ build lại Zalo Personal channel
+
+```bash
+docker compose build backend frontend zalo-personal-worker
+docker compose up -d backend frontend zalo-personal-worker
 ```
 
 ### Production

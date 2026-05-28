@@ -3,9 +3,11 @@
  * Ported from ZaloCRM zalo-pool.ts disconnectHistory + backend failure tracking.
  */
 
-const DISCONNECT_THRESHOLD = 5;
+import { settings } from "./config.js";
+
+const DISCONNECT_THRESHOLD = settings.disconnectThreshold;
 const DISCONNECT_WINDOW_MS = 300_000; // 5 minutes
-const BACKEND_FAILURE_THRESHOLD = 10;
+const BACKEND_FAILURE_THRESHOLD = settings.backendFailureThreshold;
 
 const disconnectHistory = new Map();
 const backendFailureCount = new Map();

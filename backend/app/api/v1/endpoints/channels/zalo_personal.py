@@ -112,6 +112,8 @@ async def create_account(
     ).scalar_one_or_none()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
+    if data.channel_type != CHANNEL_TYPE:
+        raise HTTPException(status_code=400, detail="channel_type must be zalo_personal")
 
     try:
         return await get_zalo_personal_service().create_and_start_login(
@@ -302,7 +304,7 @@ async def revoke_account_access(
     if not account or account.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    deleted = await get_zalo_personal_service().revoke_access(access_id)
+    deleted = await get_zalo_personal_service().revoke_access(account_id, access_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Access entry not found")
     return {"status": "revoked"}

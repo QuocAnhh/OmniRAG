@@ -191,7 +191,7 @@ services:
       - BACKEND_URL=http://backend:8000
       - WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
       - INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
-      - LOG_LEVEL=INFO
+      - LOG_LEVEL=info
     depends_on:
       backend:
         condition: service_started

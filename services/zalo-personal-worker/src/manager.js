@@ -44,6 +44,7 @@ export class ZaloPersonalManager {
   defaultStatus(accountId) {
     return {
       bot_id: accountId,
+      account_id: accountId,
       status: "disconnected",
       uid: "",
       name: "",
@@ -104,13 +105,26 @@ export class ZaloPersonalManager {
       };
       this.sessions.set(accountId, session);
     }
+    session.status.account_id = accountId;
+    if (botId) {
+      session.botId = botId;
+      session.status.bot_id = botId;
+    }
     return session;
   }
 
-  async saveCredentials(accountId, credentials, botId) {
+  async saveCredentials(accountId, credentials, botId, options = {}) {
     await this.ensureSessionsDir();
     const file = this.sessionPath(accountId);
-    const payload = { ...credentials, botId, accountId };
+    const payload = {
+      ...credentials,
+      botId,
+      accountId,
+      options: {
+        replyPolicy: options.replyPolicy || "mention_only",
+        threadWhitelist: options.threadWhitelist || [],
+      },
+    };
     await fs.writeFile(file, JSON.stringify(payload, null, 2), { mode: 0o600 });
     await fs.chmod(file, 0o600);
   }
@@ -144,9 +158,13 @@ export class ZaloPersonalManager {
             const credentials = await this.loadCredentials(fileId);
             const accountId = credentials.accountId || fileId;
             const botId = credentials.botId || fileId;
+            const options = {
+              replyPolicy: credentials.options?.replyPolicy || credentials.replyPolicy || "mention_only",
+              threadWhitelist: credentials.options?.threadWhitelist || credentials.threadWhitelist || [],
+            };
             const session = this.getOrCreate(accountId, botId);
             session.credentials = credentials;
-            await this.loginWithCredentials(accountId, botId, credentials, session.options);
+            await this.loginWithCredentials(accountId, botId, credentials, options);
           } catch (error) {
             const accountId = fileId;
             const session = this.getOrCreate(accountId, null);
@@ -261,7 +279,7 @@ export class ZaloPersonalManager {
           throw new Error("login completed without credentials");
         }
 
-        await this.saveCredentials(accountId, loginCredentials, botId);
+        await this.saveCredentials(accountId, loginCredentials, botId, session.options);
         session.credentials = loginCredentials;
         await this.attachApi(session, api);
       } catch (error) {

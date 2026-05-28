@@ -13,6 +13,7 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import httpx
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -93,15 +94,28 @@ class ZaloPersonalService:
         finally:
             db.close()
 
-        result = await self._post(
-            f"/accounts/{account_id}/login/start",
-            {
-                "bot_id": bot_id,
-                "reply_policy": reply_policy,
-                "thread_whitelist": thread_whitelist or [],
-            },
-            timeout=30.0,
-        )
+        try:
+            result = await self._post(
+                f"/accounts/{account_id}/login/start",
+                {
+                    "bot_id": bot_id,
+                    "reply_policy": reply_policy,
+                    "thread_whitelist": thread_whitelist or [],
+                },
+                timeout=30.0,
+            )
+        except Exception:
+            db = SessionLocal()
+            try:
+                account = db.execute(
+                    select(ChannelAccount).where(ChannelAccount.id == account_id)
+                ).scalar_one_or_none()
+                if account:
+                    db.delete(account)
+                    db.commit()
+            finally:
+                db.close()
+            raise
         return self._account_from_worker_status(str(account_id), result.get("status") or {})
 
     async def account_login_status(self, account_id: str) -> dict[str, Any]:
@@ -224,13 +238,25 @@ class ZaloPersonalService:
     async def grant_access(self, account_id: str, user_id: UUID, permission: str) -> dict[str, Any]:
         db = SessionLocal()
         try:
+            account_uuid = UUID(account_id)
             access = ChannelAccountAccess(
-                account_id=UUID(account_id),
+                account_id=account_uuid,
                 user_id=user_id,
                 permission=permission,
             )
             db.add(access)
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                access = db.execute(
+                    select(ChannelAccountAccess).where(
+                        ChannelAccountAccess.account_id == account_uuid,
+                        ChannelAccountAccess.user_id == user_id,
+                    )
+                ).scalar_one()
+                access.permission = permission
+                db.commit()
             db.refresh(access)
             return {
                 "id": str(access.id),
@@ -241,11 +267,15 @@ class ZaloPersonalService:
         finally:
             db.close()
 
-    async def revoke_access(self, access_id: str) -> bool:
+    async def revoke_access(self, account_id: str, access_id: str) -> bool:
         db = SessionLocal()
         try:
+            account_uuid = UUID(account_id)
             access = db.execute(
-                select(ChannelAccountAccess).where(ChannelAccountAccess.id == UUID(access_id))
+                select(ChannelAccountAccess).where(
+                    ChannelAccountAccess.id == UUID(access_id),
+                    ChannelAccountAccess.account_id == account_uuid,
+                )
             ).scalar_one_or_none()
             if not access:
                 return False
@@ -420,6 +450,14 @@ class ZaloPersonalService:
                 ).scalar_one_or_none()
                 if not account:
                     return {"status": "account_not_found"}
+                if account.bot_id != bot.id or account.tenant_id != bot.tenant_id or account.channel_type != CHANNEL_TYPE:
+                    logger.warning(
+                        "zalo_personal_account_bot_mismatch bot=%s account=%s account_bot=%s",
+                        bot_id,
+                        account_id,
+                        account.bot_id,
+                    )
+                    return {"status": "account_bot_mismatch"}
                 if account.status not in {"connected", "connecting"}:
                     return {"status": "inactive"}
                 account.last_event_at = datetime.utcnow()
