@@ -12,6 +12,7 @@ File này thay thế nội dung “complete checklist” cũ bằng trạng thá
 | RAG | OpenRouter RAG service, LightRAG, Qdrant, Redis cache, Celery ingestion |
 | Frontend | React app with protected dashboard/bots/chat/graph/settings routes |
 | Zalo Bot Platform | Connect/disconnect/status/webhook |
+| Zalo Personal | QR-login worker, multi-account APIs, access grants, HMAC inbound |
 | Facebook Messenger | Isolated worker integration |
 | Observability | `structlog`, Prometheus metrics, request id, SlowAPI, gateway metrics |
 
@@ -42,7 +43,7 @@ File này thay thế nội dung “complete checklist” cũ bằng trạng thá
 - No backend document update endpoint.
 - No backend document preview endpoint.
 - Frontend folder API client lacks `/api/v1` prefix.
-- Zalo Personal/ZCA is not part of this branch.
+- Zalo Personal is present but disabled by default unless the required env flags/secrets are configured.
 - Production deployment still needs environment-specific secrets, TLS, backups, alerting and log retention.
 
 ## Recommended smoke test

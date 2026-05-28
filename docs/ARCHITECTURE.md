@@ -138,6 +138,7 @@ Routes chính:
 - `/bots/:id/config`
 - `/bots/:id/chat`
 - `/bots/:id/graph`
+- `/bots/:id/zalo-accounts`
 - `/settings`
 - `/docs/zalo-bot`
 
@@ -149,9 +150,8 @@ Snapshot này có:
 
 - Zalo Hub webhook: `/api/v1/channels/zalo/hub-webhook`
 - Zalo Bot Platform: connect/disconnect/status/webhook dưới `/api/v1/channels/zalo-bot/*`
+- Zalo Personal worker: account CRUD/login/status/access/inbound dưới `/api/v1/channels/zalo-personal/*`
 - Facebook Messenger bridge: connect/disconnect/status/inbound dưới `/api/v1/channels/facebook/*`
-
-Zalo Personal/ZCA chưa thuộc snapshot này và chỉ nên ghi là future/pending nếu cần.
 
 ## Known gaps
 

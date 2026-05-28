@@ -1,6 +1,6 @@
 # Features
 
-Danh sách tính năng hiện có trên snapshot `refactor/backend-perf-p1-observability`.
+Danh sách tính năng hiện có trên snapshot hiện tại của `refactor/backend-perf-p1-observability`.
 
 ## Core platform
 
@@ -32,6 +32,22 @@ Chunk strategies:
 - `parent_child`
 - `semantic`
 
+## Runtime components
+
+| Component | Technology | Port | Notes |
+| --- | --- | ---: | --- |
+| API Gateway | Go + Gin | `8080` | Rate limit, Redis GET cache, metrics |
+| Backend API | Python 3.11 + FastAPI | `8000` internal, `8001` host | SQLAlchemy, Pydantic, Celery |
+| Frontend | React 19 + TypeScript + Vite | `5173` | Tailwind CSS 4, Zustand |
+| PostgreSQL | 15-alpine | `5433` host | Relational store |
+| MongoDB | 7.0 | `27017` | Conversations, sessions, integrations |
+| Redis | 7-alpine | `6380` host | Celery broker, gateway/backend cache |
+| Qdrant | latest | `6333` | Vector DB |
+| MinIO | latest | `9000/9001` | S3-compatible storage |
+| OpenDataLoader hybrid | local build | `5002` | PDF/Office parsing |
+| Facebook worker | Python + FastAPI | `9100` internal | `fbchat-muqit` isolated bridge |
+| Zalo Personal worker | Node.js + Fastify | `9200` internal | `zca-js` isolated bridge |
+
 ## PDF và tài liệu
 
 - PDF/Office parsing qua OpenDataLoader.
@@ -45,7 +61,8 @@ Chunk strategies:
 - React 19, React Router 7, Zustand, Tailwind CSS 4.
 - Protected routes cho dashboard/bots/settings.
 - API clients trong `frontend/src/api`.
-- Pages chính: dashboard, bots list, bot form, bot config, chat, graph, settings.
+- Pages chính: dashboard, bots list, bot wizard, bot config, chat, graph, settings.
+- Zalo Personal accounts page tại `/bots/:id/zalo-accounts`.
 - Zalo Bot docs page tại `/docs/zalo-bot`.
 
 ## Gateway và performance
@@ -73,6 +90,17 @@ Chunk strategies:
 - Reply text và typing action qua Zalo Bot API.
 - Guide hiện trạng: [Zalo Bot Integration](ZALO_BOT_INTEGRATION_PLAN.md).
 
+### Zalo Personal
+
+- QR-login personal account worker.
+- Multi-account support qua `channel_accounts`.
+- Reply policy `mention_only | all`.
+- Thread whitelist.
+- Per-account access grants.
+- Worker inbound bảo vệ bằng HMAC.
+- Circuit breaker và rate limiting ở worker.
+- Mặc định tắt bằng env/feature flag; xem [Zalo Personal Integration](ZALO_PERSONAL_INTEGRATION.md).
+
 ### Facebook Messenger
 
 - Worker riêng `fb-channel-worker`.
@@ -80,8 +108,8 @@ Chunk strategies:
 - Group mention policy, DM replies, attachment normalization, image understanding, typing/reactions.
 - Guide: [Facebook Messenger Integration](FACEBOOK_MESSENGER_INTEGRATION.md).
 
-## Future/pending
+## Known gaps
 
-- Zalo Personal/ZCA không thuộc snapshot này.
 - Backend document update/preview endpoint chưa có.
+- Zalo Personal là integration không chính thức, nên cần account riêng và vận hành cẩn trọng.
 - Nếu cần public production hardening, cần bổ sung TLS, secret management, log retention và alerting ngoài scope code hiện tại.

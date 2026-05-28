@@ -110,7 +110,7 @@ curl -X POST http://localhost:8080/api/v1/bots/<bot_id>/documents \
 Ingestion chạy bất đồng bộ qua Celery. Theo dõi log:
 
 ```bash
-docker compose logs -f celery-worker
+docker compose logs -f celery_worker
 ```
 
 ## 6. Chat

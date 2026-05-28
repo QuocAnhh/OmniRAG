@@ -1,6 +1,6 @@
 # Zalo Bot Platform Integration
 
-File này giữ nguyên path cũ để tránh link gãy, nhưng nội dung đã chuyển từ implementation checklist sang guide hiện trạng. Snapshot này chỉ document Zalo Bot Platform hiện có, không document Zalo Personal/ZCA.
+File này giữ nguyên path cũ để tránh link gãy, nhưng nội dung đã chuyển từ implementation checklist sang guide hiện trạng cho Zalo Bot Platform. Zalo Personal là integration riêng và được document tại `docs/ZALO_PERSONAL_INTEGRATION.md`.
 
 ## Trạng thái hiện tại
 
@@ -14,7 +14,6 @@ File này giữ nguyên path cũ để tránh link gãy, nhưng nội dung đã 
 | Typing indicator | Supported |
 | Trả lời bằng RAG pipeline | Supported |
 | Lưu config trong `bot.config.zalo_bot` | Supported |
-| Zalo Personal/ZCA | Pending/future, không thuộc snapshot này |
 
 ## Backend routes
 
@@ -146,6 +145,9 @@ Lỗi thường gặp:
 - Zalo gọi webhook nhưng bot không reply: kiểm tra `OPENROUTER_API_KEY`, bot active, log RAG và network tới `bot-api.zapps.me`.
 - Upload tài liệu chưa index: kiểm tra Celery worker, không phải Zalo service.
 
-## Không thuộc snapshot này
+## Phân biệt với Zalo Personal
 
-Zalo Personal/ZCA, login QR/cookie và personal account messaging không nằm trong branch `refactor/backend-perf-p1-observability`. Nếu PR Zalo Personal được merge sau này, cần tạo guide riêng hoặc cập nhật file này với section phân biệt rõ Zalo Bot Platform và Zalo Personal.
+Zalo Bot Platform dùng bot token và webhook chính thức kiểu `bot-api.zapps.me`.
+Zalo Personal dùng worker `zca-js`, QR-login personal account, feature flag riêng và route `/api/v1/channels/zalo-personal/*`.
+
+Xem [Zalo Personal Integration](ZALO_PERSONAL_INTEGRATION.md) nếu cần vận hành personal account channel.

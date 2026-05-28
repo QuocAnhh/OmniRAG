@@ -92,7 +92,7 @@ docker compose logs --tail=100 opendataloader-hybrid
 Kiểm tra Celery:
 
 ```bash
-docker compose logs -f celery-worker
+docker compose logs -f celery_worker
 ```
 
 Kiểm tra document status:

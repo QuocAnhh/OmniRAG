@@ -92,7 +92,7 @@ Form-data:
 | `chunking_strategy` | Text | `recursive` |
 | `enable_knowledge_graph` | Text | `false` |
 
-Ingestion chạy bất đồng bộ qua Celery. Nếu upload xong nhưng chat chưa thấy context, kiểm tra log `celery-worker`.
+Ingestion chạy bất đồng bộ qua Celery. Nếu upload xong nhưng chat chưa thấy context, kiểm tra log `celery_worker`.
 
 ### 5. Chat
 

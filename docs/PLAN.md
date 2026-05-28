@@ -46,7 +46,8 @@ OmniRAG tập trung vào:
 4. Improve channel admin UX.
    - Zalo Bot connect/status UI polish.
    - Facebook worker health/status UX.
-   - Clear separation between official bot platform channels and future personal-account channels.
+   - Zalo Personal account management UX, access grants and login/status visibility.
+   - Clear separation between official bot platform channels and personal-account channels.
 
 5. Expand automated verification.
    - API contract tests from route inventory.
@@ -55,7 +56,6 @@ OmniRAG tập trung vào:
 
 ## Future/pending
 
-- Zalo Personal/ZCA integration is pending/future and not documented as current capability on this branch.
 - Additional channels such as Telegram/Slack/WhatsApp should remain roadmap items unless code lands.
 - WebSocket APIs should not be listed as supported until backend/frontend implement them.
 

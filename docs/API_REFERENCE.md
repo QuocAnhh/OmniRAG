@@ -1,6 +1,6 @@
 # API Reference
 
-API reference này được đối chiếu với router hiện có trong `backend/app/api/v1/endpoints` trên snapshot `refactor/backend-perf-p1-observability`.
+API reference này được đối chiếu với router hiện có trong `backend/app/api/v1/endpoints` trên snapshot hiện tại của `refactor/backend-perf-p1-observability`.
 
 ## Base URL
 
@@ -241,13 +241,43 @@ Integrations lưu cấu hình kênh/provider ở backend. Webhook channel cụ t
 | `POST` | `/channels/zalo-bot/disconnect/{bot_id}` | Ngắt kết nối |
 | `GET` | `/channels/zalo-bot/status/{bot_id}` | Trạng thái kết nối |
 
-PR Zalo Personal/ZCA không thuộc snapshot này.
+### Zalo Personal
+
+Zalo Personal dùng worker nội bộ `zalo-personal-worker:9200`, mặc định tắt nếu `ZALO_PERSONAL_ENABLED=false`. Frontend/backend gọi các route backend dưới đây; worker route chỉ dành cho backend gọi trong Docker network.
+
+| Method | Path | Mô tả |
+| --- | --- | --- |
+| `GET` | `/channels/zalo-personal/bots/{bot_id}/accounts` | Liệt kê accounts của bot |
+| `POST` | `/channels/zalo-personal/bots/{bot_id}/accounts` | Tạo account và start QR login |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}` | Lấy cấu hình một account |
+| `PUT` | `/channels/zalo-personal/accounts/{account_id}` | Cập nhật reply policy/thread whitelist |
+| `DELETE` | `/channels/zalo-personal/accounts/{account_id}` | Xóa account và unload worker session |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/login-status` | Poll QR login status theo account |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/status` | Trạng thái saved config + worker runtime |
+| `GET` | `/channels/zalo-personal/accounts/{account_id}/access` | Liệt kê access grants |
+| `POST` | `/channels/zalo-personal/accounts/{account_id}/access` | Grant user access |
+| `DELETE` | `/channels/zalo-personal/accounts/{account_id}/access/{access_id}` | Revoke access grant |
+| `POST` | `/channels/zalo-personal/connect/start` | Legacy single-account QR login |
+| `GET` | `/channels/zalo-personal/login-status/{bot_id}` | Legacy poll login status |
+| `GET` | `/channels/zalo-personal/status/{bot_id}` | Legacy status |
+| `POST` | `/channels/zalo-personal/disconnect/{bot_id}` | Legacy disconnect |
+| `POST` | `/channels/zalo-personal/inbound/{bot_id}` | HMAC-protected worker webhook |
+
+Tạo account:
+
+```json
+{
+  "channel_type": "zalo_personal",
+  "reply_policy": "mention_only",
+  "thread_whitelist": []
+}
+```
 
 ### Facebook Messenger
 
 | Method | Path | Mô tả |
 | --- | --- | --- |
-| `POST` | `/channels/facebook/inbound/{bot_id}` | Webhook inbound cho bot |
+| `POST` | `/channels/facebook/inbound/{bot_id}` | HMAC-protected worker webhook |
 | `POST` | `/channels/facebook/connect` | Kết nối Messenger worker bằng cookies |
 | `POST` | `/channels/facebook/disconnect/{bot_id}` | Ngắt kết nối |
 | `GET` | `/channels/facebook/status/{bot_id}` | Trạng thái kết nối |

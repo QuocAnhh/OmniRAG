@@ -51,6 +51,7 @@ Nguồn đối chiếu: `frontend/src/App.tsx`.
 | `/bots/:id/config` | protected | Bot config |
 | `/bots/:id/chat` | protected | Chat |
 | `/bots/:id/graph` | protected | Knowledge Graph |
+| `/bots/:id/zalo-accounts` | protected | Zalo Personal accounts |
 | `/bots/:id` | protected redirect | Redirect to `chat` |
 | `/settings` | protected | Settings |
 
@@ -77,6 +78,7 @@ Không dùng route frontend `/bots/:id/knowledge-graph`. Backend API vẫn là `
 | `tenants.ts` | `/api/v1/tenants/me` |
 | `users.ts` | `/api/v1/users/me` và API keys |
 | `integrations.ts` | `/api/v1/integrations/*` |
+| `channelAccounts.ts` | `/api/v1/channels/zalo-personal/*` |
 | `retrieval.ts` | `/api/v1/bots/{bot_id}/retrieve` |
 | `folders.ts` | intended folders API, xem known gaps |
 
@@ -105,5 +107,6 @@ Không sửa code trong đợt docs refresh này, nhưng cần ghi nhận để 
 3. Đăng ký/đăng nhập qua `/auth`.
 4. Xác nhận frontend gọi gateway `http://localhost:8080`.
 5. Test `/dashboard`, `/bots`, `/bots/:id/chat`, `/bots/:id/graph`.
-6. Nếu upload tài liệu xong nhưng chat chưa thấy context, kiểm tra `celery-worker`.
-7. Nếu graph page 404, kiểm tra route UI là `/bots/:id/graph`.
+6. Nếu bật Zalo Personal, test `/bots/:id/zalo-accounts` với `VITE_ENABLE_ZALO_PERSONAL=true`.
+7. Nếu upload tài liệu xong nhưng chat chưa thấy context, kiểm tra `celery_worker`.
+8. Nếu graph page 404, kiểm tra route UI là `/bots/:id/graph`.

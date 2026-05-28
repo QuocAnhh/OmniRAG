@@ -15,6 +15,8 @@ Tài liệu này mô tả các cách khởi động OmniRAG cho dev/ops. Mặc �
 | minio | `9000`, `9001` | `9000`, `9001` | Object storage |
 | qdrant | `6333` | `6333` | Vector store |
 | opendataloader-hybrid | `5002` | `5002` | PDF/Office parsing service |
+| fb-channel-worker | `9100` | internal | Facebook Messenger bridge |
+| zalo-personal-worker | `9200` | internal | Zalo Personal bridge |
 
 Backend trong Docker lắng nghe `8000`, nhưng host dùng `8001`. Local uvicorn ngoài Docker mới dùng `8000`.
 
@@ -39,6 +41,8 @@ SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/omnirag
 MONGODB_URL=mongodb://admin:password@mongodb:27017
 REDIS_URL=redis://redis:6379/0
 QDRANT_URL=http://qdrant:6333
+QDRANT_HOST=qdrant
+QDRANT_PORT=6333
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
@@ -47,13 +51,29 @@ MINIO_SECRET_KEY=minioadmin
 Biến channel tùy chọn:
 
 ```env
-ZALO_BOT_APP_ID=
-ZALO_BOT_APP_SECRET=
-ZALO_BOT_VERIFY_TOKEN=
-ZALO_HUB_VERIFY_TOKEN=
-FACEBOOK_APP_ID=
-FACEBOOK_APP_SECRET=
-FACEBOOK_VERIFY_TOKEN=
+# Public URL cho webhook registration
+PUBLIC_URL=https://your-domain.example.com
+
+# Zalo Hub / Func.vn
+FUNC_API_URL=
+FUNC_API_TOKEN=
+ZALO_HUB_WEBHOOK_SECRET=
+
+# Facebook Messenger worker
+FB_WORKER_API_TOKEN=replace-with-random-token
+FB_INBOUND_SECRET=replace-with-random-hmac-secret
+
+# Zalo Personal worker
+ZALO_PERSONAL_ENABLED=false
+ZALO_PERSONAL_WORKER_URL=http://zalo-personal-worker:9200
+ZALO_PERSONAL_WORKER_API_TOKEN=replace-with-random-token
+ZALO_PERSONAL_INBOUND_SECRET=replace-with-random-hmac-secret
+```
+
+Biến frontend liên quan Zalo Personal:
+
+```env
+VITE_ENABLE_ZALO_PERSONAL=false
 ```
 
 Model mặc định cần hiểu rõ:
@@ -72,8 +92,10 @@ Theo dõi log:
 
 ```bash
 docker compose logs -f backend
-docker compose logs -f celery-worker
+docker compose logs -f celery_worker
 docker compose logs -f gateway
+docker compose logs -f fb-channel-worker
+docker compose logs -f zalo-personal-worker
 ```
 
 Kiểm tra health:
@@ -89,17 +111,32 @@ Swagger:
 - Direct backend Docker: `http://localhost:8001/docs`
 - Local uvicorn: `http://localhost:8000/docs`
 
-## Chạy backend ngoài Docker
+## Chạy một phần stack
 
-Dùng khi cần debug Python trực tiếp. Vẫn có thể dùng Postgres/Redis/MinIO/Qdrant từ Docker.
-
-1. Khởi động dependencies:
+Khởi động dependencies cho backend local:
 
 ```bash
 docker compose up -d db mongodb redis minio qdrant opendataloader-hybrid
 ```
 
-2. Tạo virtualenv và cài dependency:
+Build lại riêng Zalo Personal channel:
+
+```bash
+docker compose build backend frontend zalo-personal-worker
+docker compose up -d backend frontend zalo-personal-worker
+```
+
+Production compose:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+## Chạy backend ngoài Docker
+
+Dùng khi cần debug Python trực tiếp. Vẫn có thể dùng Postgres/Redis/MinIO/Qdrant từ Docker.
+
+1. Tạo virtualenv và cài dependency:
 
 ```bash
 cd backend
@@ -108,7 +145,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Điều chỉnh env trỏ về host:
+2. Điều chỉnh env trỏ về host:
 
 ```env
 SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@localhost:5433/omnirag
@@ -117,11 +154,13 @@ REDIS_URL=redis://localhost:6380/0
 CELERY_BROKER_URL=redis://localhost:6380/0
 CELERY_RESULT_BACKEND=redis://localhost:6380/0
 QDRANT_URL=http://localhost:6333
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
 MINIO_ENDPOINT=localhost:9000
 OPENDATALOADER_BASE_URL=http://localhost:5002
 ```
 
-4. Chạy migration và server:
+3. Chạy migration và server:
 
 ```bash
 alembic upgrade head
@@ -146,7 +185,7 @@ Frontend dùng `VITE_API_URL=http://localhost:8080` khi chạy cùng Docker gate
 - Celery worker phải chạy thì upload tài liệu mới được ingest.
 - OpenRouter/OpenAI key phải hợp lệ trước khi test RAG/chat.
 - Gateway cache chỉ áp dụng cho `GET`; chat cache nằm trong backend.
-- Không đưa Zalo Personal/ZCA vào cấu hình chính của snapshot này.
+- Zalo Personal mặc định tắt; chỉ bật khi đã cấu hình worker token, inbound secret và frontend flag.
 
 ## Troubleshooting
 

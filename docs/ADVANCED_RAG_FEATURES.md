@@ -24,7 +24,7 @@ Upload document
 
 - Worker phải chạy thì tài liệu mới sẵn sàng cho chat.
 - Khi knowledge base thay đổi, backend invalidates cache theo bot.
-- Lỗi parse/embedding thường nằm trong log `celery-worker`, không chỉ log backend.
+- Lỗi parse/embedding thường nằm trong log `celery_worker`, không chỉ log backend.
 
 ## Chunking strategies
 

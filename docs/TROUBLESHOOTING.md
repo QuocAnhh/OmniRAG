@@ -60,8 +60,8 @@ Khi chạy backend ngoài Docker, đổi `SQLALCHEMY_DATABASE_URI` sang `postgre
 Upload tài liệu chỉ tạo job, Celery worker mới xử lý parsing/chunking/indexing.
 
 ```bash
-docker compose ps redis celery-worker
-docker compose logs -f celery-worker
+docker compose ps redis celery_worker
+docker compose logs -f celery_worker
 ```
 
 Trong Docker dùng `REDIS_URL=redis://redis:6379/0`. Khi chạy local, dùng `redis://localhost:6380/0`.

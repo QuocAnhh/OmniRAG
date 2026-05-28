@@ -83,9 +83,18 @@ Supported:
 - Secret header validation.
 - Text inbound -> RAG -> reply.
 
-Pending/future:
+### Zalo Personal
 
-- Zalo Personal/ZCA không thuộc snapshot này.
+Supported:
+
+- QR-login personal account worker.
+- Multi-account CRUD theo bot.
+- Login/status polling.
+- Reply policy và thread whitelist.
+- Per-account access grants.
+- HMAC-protected inbound webhook.
+
+Disabled by default unless `ZALO_PERSONAL_ENABLED=true` and `VITE_ENABLE_ZALO_PERSONAL=true`.
 
 ### Facebook Messenger
 
