@@ -105,6 +105,11 @@ class Settings(BaseSettings):
     # Qdrant Vector DB
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: int = 6333
+    RAG_COLLECTION_NAME: str = "omnirag_openrouter_collection_v2"
+    RAG_LEGACY_COLLECTION_NAME: str = "omnirag_openrouter_collection"
+    QDRANT_SPARSE_MODEL: str = "Qdrant/bm25"
+    QDRANT_SPARSE_LANGUAGE: str = "english"
+    QDRANT_SPARSE_DISABLE_STEMMER: bool = True
 
     # MongoDB
     MONGODB_URL: str = "mongodb://admin:password@mongodb:27017"

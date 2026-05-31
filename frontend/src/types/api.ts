@@ -1,3 +1,5 @@
+export type ChunkingStrategy = 'recursive' | 'semantic' | 'sentence' | 'article' | 'parent_child';
+
 export interface User {
   id: string;
   email: string;
@@ -37,14 +39,16 @@ export interface Bot {
     similarity_threshold?: number;
     // Domain-aware RAG fields
     domain?: 'general' | 'education' | 'legal' | 'sales';
-    chunking_strategy?: string;
+    chunking_strategy?: ChunkingStrategy;
     chunk_size?: number;
     chunk_overlap?: number;
     enable_knowledge_graph?: boolean;
     enrich_picture_description?: boolean;
     zalo_personal?: Record<string, any> | null;
+    zalo_integration?: any;
     zalo_bot?: Record<string, any> | null;
     facebook?: Record<string, any> | null;
+    [key: string]: any;
   };
   created_at: string;
   updated_at: string;
@@ -61,7 +65,7 @@ export interface Document {
   tags?: string[];
   doc_metadata?: {
     num_chunks?: number;
-    chunking_strategy?: string;
+    chunking_strategy?: ChunkingStrategy;
     enable_knowledge_graph?: boolean;
     kg_status?: 'processing' | 'completed' | 'failed';
   };

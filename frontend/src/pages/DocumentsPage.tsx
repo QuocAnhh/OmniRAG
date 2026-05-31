@@ -220,7 +220,7 @@ export default function DocumentsPage() {
                   <span className="material-symbols-outlined text-[20px] mr-2">add</span>
                   {uploading ? 'Uploading...' : 'Upload Document'}
                 </Button>
-                <input type="file" className="hidden" onChange={handleUpload} accept=".pdf,.txt" />
+                <input type="file" className="hidden" onChange={handleUpload} accept=".pdf,.txt,.md,.csv,.docx,.pptx,.xlsx" />
               </label>
             </div>
           </div>
@@ -244,7 +244,7 @@ export default function DocumentsPage() {
 
           {/* Upload Zone */}
           <div className={`group relative flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed transition-all overflow-hidden py-14 px-4 mb-10 ${selectedBotId ? (uploading ? 'border-primary/50 bg-primary/5' : 'border-border-light dark:border-border-dark hover:border-primary/50 hover:bg-primary/5 cursor-pointer') : 'border-border-light dark:border-border-dark opacity-60 cursor-not-allowed bg-surface-light dark:bg-surface-dark'}`}>
-            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleUpload} accept=".pdf,.txt" disabled={!selectedBotId || uploading} />
+            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleUpload} accept=".pdf,.txt,.md,.csv,.docx,.pptx,.xlsx" disabled={!selectedBotId || uploading} />
 
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEgMWgyMHYyMEgxVjF6IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMTI4LDEyOCwxMjgsMC4wNSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==')] opacity-50 pointer-events-none"></div>

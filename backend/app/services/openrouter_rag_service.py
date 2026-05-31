@@ -47,6 +47,7 @@ except Exception as e:
 import time
 import uuid
 import asyncio
+import csv
 from typing import List, Dict, Any, Optional, AsyncGenerator, Union
 from datetime import datetime
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -58,7 +59,7 @@ from langchain_core.documents import Document as LangChainDocument
 from langchain_community.document_loaders import TextLoader
 from qdrant_client import QdrantClient, AsyncQdrantClient
 from qdrant_client.http import models as rest
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, MatchText
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 
 from app.core.config import settings
 from app.db.mongodb import get_mongodb
@@ -221,7 +222,10 @@ class OpenRouterRAGService:
         self.openrouter = get_openrouter_service()
         self.qdrant_client = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
         self.async_qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
-        self.collection_name = "omnirag_openrouter_collection"
+        self.collection_name = settings.RAG_COLLECTION_NAME
+        self.legacy_collection_name = settings.RAG_LEGACY_COLLECTION_NAME
+        self.dense_vector_name = "dense"
+        self.sparse_vector_name = "bm25"
         
         # Redis caching via async client (shared from app.db.redis)
         from app.services.cache_service import cache_service
@@ -229,6 +233,7 @@ class OpenRouterRAGService:
         
         # Get embedding dimensions (typically 1536 for text-embedding-3-small)
         self.embedding_dim = 1536  # Will be auto-detected on first embedding
+        self._sparse_embedder = None
         
         self._ensure_collection()
         
@@ -239,20 +244,26 @@ class OpenRouterRAGService:
         logger.info("OpenRouterRAGService initialized successfully (reranker loads on demand)")
     
     def _ensure_collection(self):
-        """Ensure Qdrant collection exists with proper configuration (Quantization + Indexing)."""
+        """Ensure Qdrant collection exists with dense+sparse named vectors."""
         try:
             self.qdrant_client.get_collection(self.collection_name)
             logger.info(f"Collection '{self.collection_name}' already exists")
         except Exception:
-            logger.info(f"Creating collection '{self.collection_name}' with Scalar Quantization")
-            
-            # Create collection with Scalar Quantization (like notebook step 3)
+            logger.info(f"Creating collection '{self.collection_name}' with dense+sparse vectors")
+
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=rest.VectorParams(
-                    size=self.embedding_dim,
-                    distance=rest.Distance.COSINE
-                ),
+                vectors_config={
+                    self.dense_vector_name: rest.VectorParams(
+                        size=self.embedding_dim,
+                        distance=rest.Distance.COSINE,
+                    )
+                },
+                sparse_vectors_config={
+                    self.sparse_vector_name: rest.SparseVectorParams(
+                        modifier=rest.Modifier.IDF
+                    )
+                },
                 quantization_config=rest.ScalarQuantization(
                     scalar=rest.ScalarQuantizationConfig(
                         type=rest.ScalarType.INT8,
@@ -261,16 +272,22 @@ class OpenRouterRAGService:
                     )
                 )
             )
-            
-            # Create payload indexes for speed and keyword search
-            logger.info("Creating payload indexes...")
-            self.qdrant_client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="bot_id",
-                field_schema=rest.PayloadSchemaType.KEYWORD
-            )
-            
-            # Enable Full Text Search on the content field (Keyword search capability)
+            logger.info(f"Collection '{self.collection_name}' created successfully")
+
+        self._ensure_payload_indexes()
+
+    def _ensure_payload_indexes(self):
+        """Create payload indexes if missing; tolerate already-existing indexes."""
+        for field_name in ("bot_id", "document_id", "source"):
+            try:
+                self.qdrant_client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=rest.PayloadSchemaType.KEYWORD,
+                )
+            except Exception:
+                logger.debug("qdrant_payload_index_exists_or_failed", extra={"field": field_name})
+        try:
             self.qdrant_client.create_payload_index(
                 collection_name=self.collection_name,
                 field_name="text",
@@ -279,20 +296,174 @@ class OpenRouterRAGService:
                     tokenizer=rest.TokenizerType.MULTILINGUAL,
                     lowercase=True,
                     min_token_len=2,
-                    max_token_len=20
-                )
+                    max_token_len=20,
+                ),
             )
-            logger.info(f"Collection '{self.collection_name}' created successfully with indexes")
+        except Exception:
+            logger.debug("qdrant_text_index_exists_or_failed")
+
+    def _get_sparse_embedder(self):
+        """Lazy BM25 sparse embedder used for Qdrant hybrid search."""
+        if self._sparse_embedder is not None:
+            return self._sparse_embedder
+        try:
+            from fastembed import SparseTextEmbedding
+
+            kwargs = {
+                "model_name": settings.QDRANT_SPARSE_MODEL,
+                "language": settings.QDRANT_SPARSE_LANGUAGE,
+                "disable_stemmer": settings.QDRANT_SPARSE_DISABLE_STEMMER,
+            }
+            try:
+                self._sparse_embedder = SparseTextEmbedding(**kwargs)
+            except TypeError:
+                self._sparse_embedder = SparseTextEmbedding(model_name=settings.QDRANT_SPARSE_MODEL)
+            logger.info("sparse_embedder_loaded", extra={"model": settings.QDRANT_SPARSE_MODEL})
+            return self._sparse_embedder
+        except Exception as e:
+            logger.error("sparse_embedder_load_failed", extra={"error": str(e)})
+            raise
+
+    @staticmethod
+    def _to_qdrant_sparse_vector(sparse_embedding):
+        """Convert FastEmbed SparseEmbedding to Qdrant SparseVector."""
+        indices = getattr(sparse_embedding, "indices", [])
+        values = getattr(sparse_embedding, "values", [])
+        if hasattr(indices, "tolist"):
+            indices = indices.tolist()
+        if hasattr(values, "tolist"):
+            values = values.tolist()
+        return rest.SparseVector(
+            indices=[int(i) for i in indices],
+            values=[float(v) for v in values],
+        )
+
+    def _embed_sparse_texts(self, texts: List[str]) -> List[Any]:
+        if not texts:
+            return []
+        embedder = self._get_sparse_embedder()
+        return [
+            self._to_qdrant_sparse_vector(embedding)
+            for embedding in embedder.embed(texts)
+        ]
+
+    def _embed_sparse_query(self, query: str) -> Any:
+        vectors = self._embed_sparse_texts([query])
+        return vectors[0] if vectors else rest.SparseVector(indices=[], values=[])
+
+    @staticmethod
+    def _build_named_vector(dense: List[float], sparse: Any) -> Dict[str, Any]:
+        return {
+            "dense": dense,
+            "bm25": sparse,
+        }
+
+    @staticmethod
+    def _build_rrf_query():
+        """Use modern RRF query shape, with FusionQuery fallback for older clients."""
+        if hasattr(rest, "FusionQuery") and hasattr(rest, "Fusion"):
+            return rest.FusionQuery(fusion=rest.Fusion.RRF)
+        return rest.RrfQuery(rrf=rest.Rrf())
     
     def _load_document(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
         """Load document based on file type."""
-        if filename.endswith(".pdf"):
+        suffix = Path(filename).suffix.lower()
+        if suffix == ".pdf":
             return self._load_pdf_opendataloader(file_path, filename, enrich_picture_description=enrich_picture_description)
-        elif filename.endswith(".txt"):
-            loader = TextLoader(file_path)
+        elif suffix in {".txt", ".md"}:
+            loader = TextLoader(file_path, encoding="utf-8")
             return loader.load()
+        elif suffix == ".csv":
+            return self._load_csv(file_path, filename)
+        elif suffix == ".docx":
+            return self._load_docx(file_path, filename)
+        elif suffix == ".pptx":
+            return self._load_pptx(file_path, filename)
+        elif suffix == ".xlsx":
+            return self._load_xlsx(file_path, filename)
+        elif suffix in {".doc", ".ppt", ".xls"}:
+            raise ValueError(
+                f"Unsupported legacy Office file type: {suffix}. "
+                "Please convert to .docx, .pptx, or .xlsx and upload again."
+            )
         else:
             raise ValueError(f"Unsupported file type: {filename}")
+
+    def _load_csv(self, file_path: str, filename: str) -> List[LangChainDocument]:
+        rows = []
+        with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                rows.append(" | ".join(cell.strip() for cell in row))
+        text = "\n".join(row for row in rows if row.strip())
+        return [LangChainDocument(page_content=text, metadata={"source": filename, "page": 0})]
+
+    def _load_docx(self, file_path: str, filename: str) -> List[LangChainDocument]:
+        from docx import Document as DocxDocument
+
+        doc = DocxDocument(file_path)
+        parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        for table in doc.tables:
+            for row in table.rows:
+                cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
+                line = " | ".join(cell for cell in cells if cell)
+                if line:
+                    parts.append(line)
+        return [
+            LangChainDocument(
+                page_content="\n\n".join(parts),
+                metadata={"source": filename, "page": 0},
+            )
+        ]
+
+    def _load_pptx(self, file_path: str, filename: str) -> List[LangChainDocument]:
+        from pptx import Presentation
+
+        prs = Presentation(file_path)
+        documents = []
+        for idx, slide in enumerate(prs.slides, start=1):
+            parts = []
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    parts.append(shape.text.strip())
+                if getattr(shape, "has_table", False):
+                    for row in shape.table.rows:
+                        cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
+                        line = " | ".join(cell for cell in cells if cell)
+                        if line:
+                            parts.append(line)
+            text = "\n\n".join(parts).strip()
+            if text:
+                documents.append(
+                    LangChainDocument(
+                        page_content=text,
+                        metadata={"source": filename, "page": idx},
+                    )
+                )
+        return documents or [LangChainDocument(page_content="", metadata={"source": filename, "page": 0})]
+
+    def _load_xlsx(self, file_path: str, filename: str) -> List[LangChainDocument]:
+        from openpyxl import load_workbook
+
+        wb = load_workbook(file_path, read_only=True, data_only=True)
+        documents = []
+        for ws in wb.worksheets:
+            lines = []
+            for row in ws.iter_rows(values_only=True):
+                cells = ["" if value is None else str(value).strip() for value in row]
+                line = " | ".join(cell for cell in cells if cell)
+                if line:
+                    lines.append(line)
+            text = "\n".join(lines).strip()
+            if text:
+                documents.append(
+                    LangChainDocument(
+                        page_content=f"# Sheet: {ws.title}\n\n{text}",
+                        metadata={"source": filename, "sheet": ws.title, "page": 0},
+                    )
+                )
+        wb.close()
+        return documents or [LangChainDocument(page_content="", metadata={"source": filename, "page": 0})]
 
     def _load_pdf_opendataloader(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
         """Parse PDF using opendataloader-pdf with full feature set.
@@ -662,90 +833,76 @@ class OpenRouterRAGService:
         rerank: bool = True,
     ) -> List[Dict]:
         """
-        True Hybrid retrieval: Vector (semantic) + Full-Text Search (Qdrant BM25-style)
-        merged via RRF (Reciprocal Rank Fusion), then re-ranked with Cross-Encoder.
+        True hybrid retrieval: dense OpenRouter vectors + sparse BM25 vectors
+        fused inside Qdrant via RRF, then optionally re-ranked with Cross-Encoder.
 
         rerank=False skips the Cross-Encoder pass (used for multi-query variants where
         the caller does one final rerank after merging all variant results).
         """
         reranker = self._get_reranker() if rerank else None
-        initial_limit = top_k * 2
+        initial_limit = max(top_k * 4, 20)
         
         bot_filter = Filter(
             must=[FieldCondition(key="bot_id", match=MatchValue(value=bot_id))]
         )
 
-        # 1. Vector search (Semantic)
-        vector_response = await self.async_qdrant_client.query_points(
-            collection_name=self.collection_name,
-            query=query_embedding,
-            query_filter=bot_filter,
-            limit=initial_limit,
-            with_payload=True
-        )
-        vector_results = vector_response.points
-
-        # 2. Full-Text Search (uses the text payload index — NOT scroll)
-        fts_results = []
-        if query.strip():
-            try:
-                fts_response = await self.async_qdrant_client.query_points(
-                    collection_name=self.collection_name,
-                    query_filter=Filter(
-                        must=[
-                            FieldCondition(key="bot_id", match=MatchValue(value=bot_id)),
-                            FieldCondition(key="text", match=MatchText(text=query)),
-                        ]
+        try:
+            sparse_query = await asyncio.to_thread(self._embed_sparse_query, query)
+            response = await self.async_qdrant_client.query_points(
+                collection_name=self.collection_name,
+                prefetch=[
+                    rest.Prefetch(
+                        query=query_embedding,
+                        using=self.dense_vector_name,
+                        limit=initial_limit,
                     ),
-                    limit=initial_limit,
-                    with_payload=True,
-                    with_vectors=False,
-                )
-                fts_results = fts_response.points
-                logger.debug(f"FTS found {len(fts_results)} results for query: {query[:50]}")
-            except Exception as e:
-                logger.warning(f"FTS search failed, using vector-only: {e}")
-
-        # 3. Merge via Reciprocal Rank Fusion (RRF)
-        rrf_k = 60  # standard RRF constant
-        scores: Dict[str, float] = {}
-        payloads: Dict[str, dict] = {}
-
-        for rank, point in enumerate(vector_results):
-            key = point.payload.get("text", "")[:200]  # content fingerprint
-            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
-            payloads[key] = {
-                "text": point.payload["text"],
-                "parent_text": point.payload.get("parent_text"),
-                "source": point.payload.get("source", "unknown"),
-                "initial_score": point.score,
-                "metadata": point.payload.get("metadata", {})
-            }
-
-        for rank, point in enumerate(fts_results):
-            key = point.payload.get("text", "")[:200]
-            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
-            if key not in payloads:
-                payloads[key] = {
-                    "text": point.payload["text"],
-                    "parent_text": point.payload.get("parent_text"),
-                    "source": point.payload.get("source", "unknown"),
-                    "initial_score": 0.5,  # FTS hit, no cosine score
-                    "metadata": point.payload.get("metadata", {})
-                }
+                    rest.Prefetch(
+                        query=sparse_query,
+                        using=self.sparse_vector_name,
+                        limit=initial_limit,
+                    ),
+                ],
+                query=self._build_rrf_query(),
+                query_filter=bot_filter,
+                limit=initial_limit,
+                with_payload=True,
+                with_vectors=False,
+            )
+            points = response.points
+            logger.debug(f"Qdrant dense+sparse RRF found {len(points)} candidates for query: {query[:50]}")
+        except Exception as e:
+            logger.warning(f"Qdrant hybrid search failed, falling back to dense-only: {e}")
+            response = await self.async_qdrant_client.query_points(
+                collection_name=self.collection_name,
+                query=query_embedding,
+                using=self.dense_vector_name,
+                query_filter=bot_filter,
+                limit=initial_limit,
+                with_payload=True,
+                with_vectors=False,
+            )
+            points = response.points
 
         candidates = []
-        for key, rrf_score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-            c = payloads[key].copy()
-            c["rrf_score"] = rrf_score
-            candidates.append(c)
+        for point in points:
+            payload = point.payload or {}
+            candidates.append({
+                "id": str(point.id),
+                "text": payload.get("text", ""),
+                "parent_text": payload.get("parent_text"),
+                "source": payload.get("source", "unknown"),
+                "document_id": payload.get("document_id"),
+                "context_prefix": payload.get("context_prefix"),
+                "initial_score": point.score,
+                "rrf_score": point.score,
+                "metadata": payload.get("metadata", {}),
+            })
 
         if not candidates:
             return []
 
         # 4. Re-ranking (Cross-Encoder) if available
         import numpy as np
-        reranker = self._get_reranker()
         if reranker:
             try:
                 pairs = [[query, c["text"]] for c in candidates]
@@ -761,7 +918,7 @@ class OpenRouterRAGService:
                     c["rerank_raw"] = float(rerank_scores[i])
 
                 candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
-                logger.info(f"Hybrid reranked {len(candidates)} items (vec+fts+ce). Top: {candidates[0]['hybrid_score']:.4f}")
+                logger.info(f"Hybrid reranked {len(candidates)} items (dense+bm25+ce). Top: {candidates[0]['hybrid_score']:.4f}")
 
             except Exception as e:
                 logger.warning(f"Reranking failed: {e}. Falling back to RRF order.")
@@ -867,30 +1024,30 @@ Answer:"""
             ]
             # ─────────────────────────────────────────────────────────────────
 
-            # Generate embeddings for all chunks (using enriched text for better semantic match)
-            logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter")
-            embeddings = self.openrouter.embed_batch(enriched_texts, batch_size=100)
+            # Generate dense + sparse embeddings for all chunks.
+            logger.info(f"Generating dense+sparse embeddings for {len(chunks)} chunks")
+            embeddings, sparse_embeddings = await asyncio.gather(
+                self.openrouter.embed_batch_async(enriched_texts, batch_size=100),
+                asyncio.to_thread(self._embed_sparse_texts, enriched_texts),
+            )
+            if len(embeddings) != len(chunks) or len(sparse_embeddings) != len(chunks):
+                raise OpenRouterAPIError(
+                    f"Embedding count mismatch: chunks={len(chunks)}, dense={len(embeddings)}, sparse={len(sparse_embeddings)}"
+                )
             
             # Auto-detect embedding dimensions
             if embeddings:
                 detected_dim = len(embeddings[0])
                 if detected_dim != self.embedding_dim:
-                    logger.warning(
+                    raise OpenRouterAPIError(
                         f"Embedding dimension mismatch. Expected {self.embedding_dim}, "
-                        f"got {detected_dim}. Recreating collection..."
+                        f"got {detected_dim}. Refusing to mutate Qdrant collection."
                     )
-                    self.embedding_dim = detected_dim
-                    # Recreate collection with correct dimensions
-                    try:
-                        await self.async_qdrant_client.delete_collection(self.collection_name)
-                    except Exception as del_err:
-                        logger.warning(f"Could not delete Qdrant collection during dimension reset: {del_err}")
-                    await asyncio.to_thread(self._ensure_collection)
             
             # Insert into Qdrant
             logger.info(f"Inserting {len(chunks)} vectors into Qdrant")
             points = []
-            for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+            for idx, (chunk, embedding, sparse_embedding) in enumerate(zip(chunks, embeddings, sparse_embeddings)):
                 point_id = hashlib.md5(
                     f"{bot_id}_{file.filename}_{idx}_{chunk.page_content[:100]}".encode()
                 ).hexdigest()
@@ -898,9 +1055,10 @@ Answer:"""
                 points.append(
                     PointStruct(
                         id=point_id,
-                        vector=embedding,
+                        vector=self._build_named_vector(embedding, sparse_embedding),
                         payload={
                             "bot_id": bot_id,
+                            "document_id": None,
                             "source": file.filename,
                             "text": chunk.page_content,
                             "parent_text": chunk.metadata.get("parent_text"),
@@ -946,6 +1104,7 @@ Answer:"""
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         preloaded_documents=None,
+        document_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Synchronous file ingestion for Celery worker.
@@ -987,39 +1146,40 @@ Answer:"""
             enriched = [
                 f"{p}\n\n{t}" if p else t for p, t in zip(prefixes, chunk_texts)
             ]
-            embeddings = await self.openrouter.embed_batch_async(enriched, batch_size=100)
-            return prefixes, embeddings
+            dense_task = self.openrouter.embed_batch_async(enriched, batch_size=100)
+            sparse_task = asyncio.to_thread(self._embed_sparse_texts, enriched)
+            embeddings, sparse_embeddings = await asyncio.gather(dense_task, sparse_task)
+            return prefixes, embeddings, sparse_embeddings
 
-        logger.info(f"Generating embeddings for {len(chunks)} chunks using OpenRouter (async)")
-        context_prefixes, embeddings = asyncio.run(_contextual_ingest_async())
+        logger.info(f"Generating dense+sparse embeddings for {len(chunks)} chunks")
+        context_prefixes, embeddings, sparse_embeddings = asyncio.run(_contextual_ingest_async())
+        if len(embeddings) != len(chunks) or len(sparse_embeddings) != len(chunks):
+            raise OpenRouterAPIError(
+                f"Embedding count mismatch: chunks={len(chunks)}, dense={len(embeddings)}, sparse={len(sparse_embeddings)}"
+            )
         # ─────────────────────────────────────────────────────────────────────
 
         if embeddings:
             detected_dim = len(embeddings[0])
             if detected_dim != self.embedding_dim:
-                logger.warning(
+                raise OpenRouterAPIError(
                     f"Embedding dimension mismatch. Expected {self.embedding_dim}, "
-                    f"got {detected_dim}. Recreating collection..."
+                    f"got {detected_dim}. Refusing to mutate Qdrant collection."
                 )
-                self.embedding_dim = detected_dim
-                try:
-                    self.qdrant_client.delete_collection(self.collection_name)
-                except Exception:
-                    logger.warning("qdrant_collection_delete_failed", extra={"collection": self.collection_name})
-                self._ensure_collection()
 
         points = []
-        for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+        for idx, (chunk, embedding, sparse_embedding) in enumerate(zip(chunks, embeddings, sparse_embeddings)):
             point_id = hashlib.md5(
-                f"{bot_id}_{filename}_{idx}_{chunk.page_content[:100]}".encode()
+                f"{bot_id}_{document_id or filename}_{idx}_{chunk.page_content[:100]}".encode()
             ).hexdigest()
 
             points.append(
                 PointStruct(
                     id=point_id,
-                    vector=embedding,
+                    vector=self._build_named_vector(embedding, sparse_embedding),
                     payload={
                         "bot_id": bot_id,
+                        "document_id": document_id,
                         "source": filename,
                         "text": chunk.page_content,
                         "parent_text": chunk.metadata.get("parent_text"),
@@ -1034,10 +1194,14 @@ Answer:"""
         batches = [points[i:i + UPSERT_BATCH_SIZE] for i in range(0, len(points), UPSERT_BATCH_SIZE)]
         from app.services.qdrant_gateway import get_qdrant_gateway
         gw = get_qdrant_gateway()
-        asyncio.run(asyncio.gather(*[
-            gw.upsert(self.collection_name, batch)
-            for batch in batches
-        ]))
+
+        async def _upsert_batches():
+            await asyncio.gather(*[
+                gw.upsert(self.collection_name, batch)
+                for batch in batches
+            ])
+
+        asyncio.run(_upsert_batches())
 
         elapsed_time = time.time() - start_time
 
@@ -1426,6 +1590,64 @@ Answer:"""
                 result[idx] = prefix
         return result
 
+    async def _get_kb_version(self, bot_id: str) -> int:
+        """Knowledge-base version used to scope cached RAG/CRAG responses."""
+        try:
+            redis = self.cache.redis if self.cache else None
+            if redis is None:
+                return 0
+            value = await redis.get(f"kb_version:{bot_id}")
+            if value is None:
+                return 0
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+            return int(value)
+        except Exception:
+            logger.warning("kb_version_read_failed", extra={"bot_id": bot_id})
+            return 0
+
+    async def _bump_kb_version(self, bot_id: str) -> int:
+        """Increment bot KB version after ingest/delete/reindex."""
+        try:
+            redis = self.cache.redis if self.cache else None
+            if redis is None:
+                return 0
+            return int(await redis.incr(f"kb_version:{bot_id}"))
+        except Exception:
+            logger.warning("kb_version_bump_failed", extra={"bot_id": bot_id})
+            return 0
+
+    @staticmethod
+    def _is_response_cache_safe(
+        bot_config: Dict[str, Any],
+        conversation_history: Optional[List[Dict[str, str]]],
+    ) -> bool:
+        """Only cache stateless responses; memory/history/group context are user-scoped."""
+        if conversation_history:
+            return False
+        if bot_config.get("enable_memory", True):
+            return False
+        if bot_config.get("user_id"):
+            return False
+        if bot_config.get("group_participants") or bot_config.get("group_recent_messages"):
+            return False
+        return True
+
+    @staticmethod
+    def _cache_relevant_config(bot_config: Dict[str, Any]) -> Dict[str, Any]:
+        keys = {
+            "model",
+            "temperature",
+            "max_tokens",
+            "system_prompt",
+            "domain",
+            "top_k",
+            "similarity_threshold",
+            "enable_knowledge_graph",
+            "_lightrag_mode",
+        }
+        return {key: bot_config.get(key) for key in sorted(keys) if key in bot_config}
+
     async def chat(
         self,
         bot_id: str,
@@ -1460,9 +1682,22 @@ Answer:"""
             effective_top_k = top_k
             domain_prompt_suffix = ""
 
-        # 1. Check Redis cache
-        cache_key_data = f"{bot_id}:{hashlib.md5(query.encode()).hexdigest()}"
-        if use_cache and self.cache:
+        kb_version = await self._get_kb_version(bot_id)
+        cache_allowed = (
+            use_cache
+            and self.cache
+            and self._is_response_cache_safe(bot_config, conversation_history)
+        )
+        cache_key_data = {
+            "bot_id": bot_id,
+            "query": hashlib.md5(query.encode()).hexdigest(),
+            "config": self._cache_relevant_config(bot_config),
+            "top_k": effective_top_k,
+            "kb_version": kb_version,
+        }
+
+        # 1. Check Redis cache for stateless requests only.
+        if cache_allowed:
             try:
                 cached = await self.cache.get("rag:chat", cache_key_data)
                 if cached:
@@ -1616,7 +1851,7 @@ Answer:"""
             # ─────────────────────────────────────────────────────────────
 
             # 9. Cache response
-            if use_cache and self.cache:
+            if cache_allowed:
                 try:
                     cache_payload = result.copy()
                     cache_payload.pop("session_id", None)
@@ -1786,7 +2021,12 @@ Answer:"""
             chunk_ids = hashlib.sha256(
                 "|".join(c.get("text", "")[:100] for c in chunks[:5]).encode()
             ).hexdigest()[:16]
-            cache_key = f"{bot_id}:{chunk_ids}:{q[:100]}"
+            cache_key = {
+                "bot_id": bot_id,
+                "kb_version": await self._get_kb_version(bot_id),
+                "chunk_ids": chunk_ids,
+                "query": q[:200],
+            }
             cached = await self.cache.get("crag", cache_key)
             if cached is not None:
                 return cached
@@ -2323,11 +2563,10 @@ Answer:"""
             return False
     
     async def invalidate_bot_cache_async(self, bot_id: str):
-        """Invalidate all cached data for a specific bot (chat responses, CRAG, etc.)."""
+        """Invalidate bot-scoped RAG caches by bumping the KB version key."""
         try:
-            await self.cache.clear_prefix(f"rag:chat:{bot_id}")
-            await self.cache.clear_prefix(f"crag:{bot_id}")
-            logger.info("bot_cache_invalidated", bot_id=bot_id)
+            version = await self._bump_kb_version(bot_id)
+            logger.info("bot_cache_invalidated", bot_id=bot_id, kb_version=version)
         except Exception as e:
             logger.error("cache_invalidation_failed", bot_id=bot_id, error=str(e))
 

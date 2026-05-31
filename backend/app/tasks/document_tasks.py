@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from uuid import UUID
 import logging
+from datetime import datetime
 from app.worker import celery_app
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ def process_document_task(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 preloaded_documents=loaded_documents,
+                document_id=document_id,
             )
             num_chunks = ingest_result.get("chunks_created", 0)
 
@@ -232,6 +234,115 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str,
         if document_id:
             _update_kg_status(document_id, "failed",
                             error_msg=f"{type(e).__name__}: {str(e)}")
+
+
+def _resolve_reindex_chunk_config(bot: Bot, doc: DocumentModel) -> tuple[str, int, int, bool]:
+    """Resolve the same chunking/enrichment settings used by normal uploads."""
+    from app.services.domain_config import get_domain_profile
+
+    bot_cfg = bot.config or {}
+    meta = doc.doc_metadata or {}
+    profile = get_domain_profile(bot_cfg.get("domain", "general"))
+    strategy = meta.get("chunking_strategy") or bot_cfg.get("chunking_strategy") or profile.chunk_strategy
+    chunk_size = meta.get("chunk_size") or bot_cfg.get("chunk_size") or profile.chunk_size
+    chunk_overlap = meta.get("chunk_overlap") or bot_cfg.get("chunk_overlap") or profile.chunk_overlap
+    enrich_picture_description = bool(bot_cfg.get("enrich_picture_description", False))
+    return strategy, int(chunk_size), int(chunk_overlap), enrich_picture_description
+
+
+def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> dict:
+    """
+    Rebuild completed documents into the configured RAG collection.
+
+    This is intentionally additive: it does not delete the legacy v1 collection.
+    """
+    db = SessionLocal()
+    processed = 0
+    failed = 0
+    failures: list[dict] = []
+    try:
+        query = select(DocumentModel).where(DocumentModel.status == "completed")
+        if bot_id:
+            query = query.where(DocumentModel.bot_id == UUID(bot_id))
+        query = query.order_by(DocumentModel.created_at)
+        if limit:
+            query = query.limit(limit)
+
+        docs = db.execute(query).scalars().all()
+        rag_service = get_openrouter_rag_service()
+
+        for doc in docs:
+            try:
+                bot = db.execute(select(Bot).where(Bot.id == doc.bot_id)).scalar_one_or_none()
+                if not bot or not doc.file_path:
+                    raise RuntimeError("Missing bot or file_path for reindex")
+
+                strategy, chunk_size, chunk_overlap, enrich_picture_description = _resolve_reindex_chunk_config(bot, doc)
+                file_data = storage_service.download_file(doc.file_path)
+                file_ext = Path(doc.filename).suffix
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                    tmp_file.write(file_data)
+                    tmp_file_path = tmp_file.name
+
+                try:
+                    loaded_documents = rag_service._load_document(
+                        tmp_file_path,
+                        doc.filename,
+                        enrich_picture_description=enrich_picture_description,
+                    )
+                    result = rag_service.process_file_sync(
+                        tmp_file_path,
+                        str(doc.bot_id),
+                        doc.filename,
+                        chunking_strategy=strategy,
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                        preloaded_documents=loaded_documents,
+                        document_id=str(doc.id),
+                    )
+                finally:
+                    if os.path.exists(tmp_file_path):
+                        os.remove(tmp_file_path)
+
+                doc.doc_metadata = {
+                    **(doc.doc_metadata or {}),
+                    "reindex_status": "completed",
+                    "reindex_collection": rag_service.collection_name,
+                    "reindexed_at": datetime.utcnow().isoformat(),
+                    "reindex_chunks": result.get("chunks_created", 0),
+                }
+                db.add(doc)
+                db.commit()
+                processed += 1
+            except Exception as e:
+                failed += 1
+                failures.append({"document_id": str(doc.id), "filename": doc.filename, "error": str(e)})
+                doc.doc_metadata = {
+                    **(doc.doc_metadata or {}),
+                    "reindex_status": "failed",
+                    "reindex_error": str(e),
+                }
+                db.add(doc)
+                db.commit()
+                logger.error(f"Reindex failed for document {doc.id}: {e}")
+
+        if bot_id:
+            rag_service.invalidate_bot_cache(bot_id)
+        return {
+            "status": "completed" if failed == 0 else "partial",
+            "collection": rag_service.collection_name,
+            "processed": processed,
+            "failed": failed,
+            "failures": failures,
+        }
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True, name="reindex_qdrant_v2")
+def reindex_qdrant_v2_task(self, bot_id: str | None = None, limit: int | None = None):
+    return reindex_qdrant_v2(bot_id=bot_id, limit=limit)
 
 
 def _update_document_status(

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Document } from '../types/api';
+import type { ChunkingStrategy, Document } from '../types/api';
 
 export type { Document }; // Re-export for convenience
 
@@ -14,7 +14,7 @@ export const documentsApi = {
   upload: async (
     botId: string,
     file: File,
-    chunkingStrategy: 'recursive' | 'semantic' = 'recursive',
+    chunkingStrategy: ChunkingStrategy = 'recursive',
     enableKnowledgeGraph: boolean = false,
     signal?: AbortSignal
   ): Promise<Document> => {

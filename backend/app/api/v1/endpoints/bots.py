@@ -13,21 +13,20 @@ import json
 from datetime import datetime, timezone
 
 # ─── File upload constants ────────────────────────────────────────────────────
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".md"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".pptx", ".xlsx", ".csv", ".md"}
+LEGACY_OFFICE_EXTENSIONS = {".doc", ".ppt", ".xls"}
+ALLOWED_CHUNKING_STRATEGIES = {"recursive", "semantic", "sentence", "article", "parent_child"}
 MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
 
 # Map allowed extensions → expected MIME type prefixes (loose check, no magic library needed)
 EXTENSION_MIME_MAP = {
-    ".pdf":  "application/pdf",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml",
-    ".doc":  "application/msword",
-    ".txt":  "text/",
-    ".md":   "text/",
-    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml",
-    ".ppt":  "application/vnd.ms-powerpoint",
-    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml",
-    ".xls":  "application/vnd.ms-excel",
-    ".csv":  "text/",
+    ".pdf":  ("application/pdf",),
+    ".docx": ("application/vnd.openxmlformats-officedocument.wordprocessingml",),
+    ".txt":  ("text/",),
+    ".md":   ("text/", "application/octet-stream"),
+    ".pptx": ("application/vnd.openxmlformats-officedocument.presentationml",),
+    ".xlsx": ("application/vnd.openxmlformats-officedocument.spreadsheetml",),
+    ".csv":  ("text/", "application/csv", "application/vnd.ms-excel"),
 }
 
 from pydantic import BaseModel
@@ -132,7 +131,19 @@ async def upload_document(
     if not original_filename:
         raise HTTPException(status_code=400, detail="Filename is required")
 
+    if chunking_strategy not in ALLOWED_CHUNKING_STRATEGIES:
+        allowed_strategies = ", ".join(sorted(ALLOWED_CHUNKING_STRATEGIES))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported chunking_strategy '{chunking_strategy}'. Allowed values: {allowed_strategies}"
+        )
+
     suffix = Path(original_filename).suffix.lower()
+    if suffix in LEGACY_OFFICE_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Legacy Office file '{suffix}' is not supported. Please convert to .docx, .pptx, or .xlsx and upload again."
+        )
     if suffix not in ALLOWED_EXTENSIONS:
         allowed = ", ".join(sorted(ALLOWED_EXTENSIONS))
         raise HTTPException(
@@ -142,8 +153,10 @@ async def upload_document(
 
     # Cross-check content_type against extension (client-supplied, but acts as a sanity check)
     declared_mime = (file.content_type or "").lower()
-    expected_mime_prefix = EXTENSION_MIME_MAP.get(suffix, "")
-    if declared_mime and expected_mime_prefix and not declared_mime.startswith(expected_mime_prefix):
+    expected_mime_prefixes = EXTENSION_MIME_MAP.get(suffix, ())
+    if declared_mime and expected_mime_prefixes and not any(
+        declared_mime.startswith(prefix) for prefix in expected_mime_prefixes
+    ):
         logger.warning(
             f"MIME mismatch on upload: extension={suffix}, content_type={declared_mime}, "
             f"user_id={current_user.id}"
@@ -220,6 +233,15 @@ async def upload_document(
     )
     effective_chunk_size = bot_cfg.get("chunk_size") or domain_profile.chunk_size
     effective_chunk_overlap = bot_cfg.get("chunk_overlap") or domain_profile.chunk_overlap
+    doc.doc_metadata = {
+        **(doc.doc_metadata or {}),
+        "chunking_strategy": effective_strategy,
+        "chunk_size": effective_chunk_size,
+        "chunk_overlap": effective_chunk_overlap,
+    }
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
 
     # Enqueue background processing
     enrich_picture_description = bot_cfg.get("enrich_picture_description", False)
@@ -283,8 +305,8 @@ def delete_document(
                         match=MatchValue(value=str(bot_id))
                     ),
                     FieldCondition(
-                        key="source",
-                        match=MatchValue(value=doc.filename)
+                        key="document_id",
+                        match=MatchValue(value=str(doc.id))
                     )
                 ]
             )
@@ -596,8 +618,7 @@ async def test_retrieval(
     try:
         import asyncio
         query_embedding = await asyncio.to_thread(rag_service._embed_with_retry, request.query)
-        candidates = await asyncio.to_thread(
-            rag_service._hybrid_search,
+        candidates = await rag_service._hybrid_search(
             bot_id, request.query, query_embedding, request.top_k
         )
         results = [
@@ -733,4 +754,3 @@ async def submit_message_feedback(
     except Exception as e:
         logger.error(f"Failed to store feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to save feedback. Please try again.")
-

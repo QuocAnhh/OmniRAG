@@ -953,7 +953,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   onChange={handleUpload}
-                  accept=".pdf,.docx,.txt"
+                  accept=".pdf,.txt,.md,.csv,.docx,.pptx,.xlsx"
                   disabled={isLocked}
                 />
 
