@@ -85,6 +85,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [zaloPersonalPolling, setZaloPersonalPolling] = useState(false);
   const zaloPersonalPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Telegram connect state
+  const [telegramConnecting, setTelegramConnecting] = useState(false);
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+
   // Facebook Messenger connect state
   const [fbConnecting, setFbConnecting] = useState(false);
   const [fbCookiesText, setFbCookiesText] = useState('');
@@ -108,6 +112,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     domain: 'general' as 'general' | 'education' | 'legal' | 'sales',
     zalo_bot: null as any,
     zalo_personal: null as any,
+    telegram: null as any,
     facebook: null as any
   });
 
@@ -132,6 +137,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         enrich_picture_description: botData.config?.enrich_picture_description || false,
         zalo_bot: botData.config?.zalo_bot || null,
         zalo_personal: botData.config?.zalo_personal || null,
+        telegram: botData.config?.telegram || null,
         facebook: botData.config?.facebook || null
       });
     } catch (error) {
@@ -346,6 +352,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           domain: formData.domain,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {}),
           ...(formData.zalo_personal ? { zalo_personal: zaloPersonalConfig } : {}),
+          ...(formData.telegram ? { telegram: formData.telegram } : {}),
           ...(formData.facebook ? { facebook: formData.facebook } : {})
         },
       };
@@ -1343,6 +1350,187 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           {/* Channels Tab */}
           {activeTab === 'channels' && (
             <div className="space-y-6">
+
+              {/* ═══ TELEGRAM BOT ═══ */}
+              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 rounded-xl bg-[#24A1DE]/10 flex items-center justify-center text-[#24A1DE]">
+                      <span className="material-symbols-outlined text-3xl">send</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground">Telegram Bot</h3>
+                      <p className="text-sm text-muted-foreground">Connect your Telegram Bot to this AI agent — instant auto-reply.</p>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.telegram?.is_active
+                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                    <span className={`size-2 rounded-full ${formData.telegram?.is_active ? 'bg-success-500 animate-pulse' : 'bg-muted-foreground'}`}></span>
+                    {formData.telegram?.is_active ? 'CONNECTED' : 'NOT CONNECTED'}
+                  </div>
+                </div>
+
+                {/* Connected State */}
+                {formData.telegram?.bot_token ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <div>
+                          <p className="text-sm font-bold text-success-800">Telegram Bot Connected</p>
+                          <p className="text-xs text-success-700 mt-0.5">
+                            Bot: {formData.telegram.bot_username || formData.telegram.bot_info?.username || formData.telegram.bot_info?.first_name || '(unknown)'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Webhook URL */}
+                    {formData.telegram.webhook_url && (
+                      <div className="p-4 bg-muted/30 border border-border rounded-xl">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Webhook URL</label>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <code className="flex-1 px-3 py-2 bg-muted/50 rounded-lg text-xs font-mono text-foreground break-all">
+                            {formData.telegram.webhook_url}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(formData.telegram.webhook_url);
+                              toast.success('Webhook URL copied!');
+                            }}
+                            className="px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-sm">content_copy</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active toggle + Disconnect */}
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">AI Auto-Reply</p>
+                        <p className="text-xs text-muted-foreground">Bot will automatically reply to incoming Telegram messages.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            telegram: { ...formData.telegram, is_active: !formData.telegram?.is_active }
+                          });
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.telegram?.is_active ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.telegram?.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSaveBasicSettings}
+                        className="flex-1 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all"
+                      >
+                        Save Settings
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!id) return;
+                          if (!confirm('Disconnect Telegram Bot? Your bot will stop responding on Telegram.')) return;
+                          try {
+                            await apiClient.post(`/api/v1/channels/telegram/disconnect/${id}`);
+                            setFormData({ ...formData, telegram: null });
+                            toast.success('Telegram Bot disconnected');
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Failed to disconnect');
+                          }
+                        }}
+                        className="px-6 py-3 bg-red-500/10 text-red-600 font-semibold rounded-xl hover:bg-red-500/20 transition-all border border-red-200"
+                      >
+                        <span className="material-symbols-outlined text-sm mr-1">link_off</span>
+                        Disconnect
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Not Connected State — Connect Form */
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Bot Token</label>
+                        <input
+                          type="password"
+                          placeholder="e.g. 1234567890:ABCdefGHIJklmNOPqrstUVwxyz"
+                          value={telegramBotToken}
+                          onChange={(e) => setTelegramBotToken(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground pl-1">Get this from <strong>@BotFather</strong> on Telegram when you create a bot.</p>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!id || !telegramBotToken.trim()) {
+                            toast.error('Please enter your Bot Token');
+                            return;
+                          }
+                          setTelegramConnecting(true);
+                          const connectToast = toast.loading('Connecting Telegram Bot...');
+                          try {
+                            const res = await apiClient.post('/api/v1/channels/telegram/connect', {
+                              bot_id: id,
+                              bot_token: telegramBotToken.trim(),
+                            });
+                            if (id) await loadBot(id);
+                            setTelegramBotToken('');
+                            toast.success('Telegram Bot connected successfully!', { id: connectToast });
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.detail || 'Connection failed', { id: connectToast });
+                          } finally {
+                            setTelegramConnecting(false);
+                          }
+                        }}
+                        disabled={telegramConnecting || !telegramBotToken.trim()}
+                        className="w-full px-6 py-3 bg-[#24A1DE] text-white font-bold rounded-xl hover:bg-[#24A1DE]/90 transition-all shadow-lg shadow-[#24A1DE]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {telegramConnecting ? (
+                          <><span className="animate-spin">⏳</span> Connecting...</>
+                        ) : (
+                          <><span className="material-symbols-outlined text-sm">link</span> Connect Telegram Bot</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Quick Guide */}
+                    <div className="bg-muted/10 rounded-2xl p-5 border border-border">
+                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-lg">rocket_launch</span>
+                        Quick Setup (30 seconds)
+                      </h4>
+                      <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">1</span>
+                          <p>Open <strong>@BotFather</strong> on Telegram and send <code>/newbot</code> to create a bot.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">2</span>
+                          <p>Copy the <strong>Bot Token</strong> that @BotFather gives you.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">3</span>
+                          <p>Paste the token above and click <strong>Connect</strong> — we'll auto-configure the webhook. Done!</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                        <p className="text-[10px] text-primary-700 font-medium">
+                          <strong>How it works:</strong> We call <code>getMe</code> + <code>setWebhook</code> on the Telegram Bot API automatically. Your bot will start responding to Telegram messages instantly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* ═══ ZALO BOT (New — Direct Integration) ═══ */}
               <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
