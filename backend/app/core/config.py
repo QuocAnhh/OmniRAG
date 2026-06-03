@@ -94,18 +94,27 @@ class Settings(BaseSettings):
     # PDF Parsing — OpenDataLoader PDF Configuration
     # ============================================================
     PDF_TABLE_METHOD: str = "cluster"           # "default" (border-only) | "cluster" (border + cluster detection)
+    PDF_READING_ORDER: str = "xycut"            # "xycut" | "off"
     PDF_IMAGE_OUTPUT: str = "external"          # "off" | "embedded" (base64) | "external" (file references)
     PDF_IMAGE_FORMAT: str = "png"               # "png" | "jpeg"
     PDF_PAGE_SEPARATOR: str = "\n\n--- PAGE %page-number% ---\n\n"
+    PDF_MARKDOWN_WITH_HTML: bool = True         # preserve complex table structures in Markdown
+    PDF_STRUCTURED_CHUNKING: bool = True        # build RAG chunks from OpenDataLoader JSON element metadata
+    PDF_DEFAULT_PARSER_MODE: str = "hybrid_auto"  # "local_fast" | "hybrid_auto" | "hybrid_full"
     PDF_HYBRID_MODE: str = "docling-fast"       # "off" | "docling-fast" (AI-powered: OCR, formulas, chart descriptions)
     PDF_HYBRID_URL: str = "http://opendataloader-hybrid:5002"
     PDF_HYBRID_FALLBACK: bool = True            # fall back to local mode if hybrid server unavailable
     PDF_ENRICH_FORMULA: bool = False            # LaTeX formula extraction (requires hybrid + hybrid_mode=full)
+    PDF_SANITIZE: bool = False
+    PDF_USE_STRUCT_TREE: bool = False
+    PDF_INCLUDE_HEADER_FOOTER: bool = False
+    PDF_DETECT_STRIKETHROUGH: bool = False
+    PDF_THREADS: int = 1
 
     # Qdrant Vector DB
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: int = 6333
-    RAG_COLLECTION_NAME: str = "omnirag_openrouter_collection_v2"
+    RAG_COLLECTION_NAME: str = "omnirag_openrouter_collection_v3"
     RAG_LEGACY_COLLECTION_NAME: str = "omnirag_openrouter_collection"
     QDRANT_SPARSE_MODEL: str = "Qdrant/bm25"
     QDRANT_SPARSE_LANGUAGE: str = "english"

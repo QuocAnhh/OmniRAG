@@ -3,6 +3,9 @@ from typing import Optional, Dict, Any, Literal
 from datetime import datetime
 
 
+PDFParserMode = Literal["local_fast", "hybrid_auto", "hybrid_full"]
+
+
 class BotConfig(BaseModel):
     """Typed config for a Bot. All keys that the RAG pipeline reads must live here."""
     # LLM
@@ -23,6 +26,14 @@ class BotConfig(BaseModel):
     enable_memory: bool = Field(default=True)
     enable_knowledge_graph: bool = Field(default=False, description="Whether a KG has been built for this bot")
     enrich_picture_description: bool = Field(default=False, description="Use SmolVLM (via hybrid server) to generate text descriptions of images/charts in uploaded documents. Slower but much richer context for LLM.")
+    pdf_parser_mode: PDFParserMode = Field(default="hybrid_auto", description="OpenDataLoader parser mode for PDF uploads")
+    pdf_structured_chunking: bool = Field(default=True, description="Use OpenDataLoader JSON elements with page/bbox metadata for PDF chunks")
+    pdf_enrich_formula: bool = Field(default=False, description="Extract LaTeX formulas via OpenDataLoader hybrid full mode")
+    pdf_sanitize: bool = Field(default=False, description="Mask sensitive data during PDF extraction")
+    pdf_use_struct_tree: bool = Field(default=False, description="Prefer tagged PDF structure tree when available")
+    pdf_include_header_footer: bool = Field(default=False, description="Keep headers/footers in PDF extraction output")
+    pdf_detect_strikethrough: bool = Field(default=False, description="Preserve strikethrough markup from PDFs")
+    pdf_threads: int = Field(default=1, ge=1, le=16, description="Native OpenDataLoader local-mode worker threads")
 
     # Domain
     domain: str = Field(default="general", description="RAG domain profile: general | education | legal | sales")

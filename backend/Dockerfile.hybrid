@@ -1,5 +1,5 @@
-# Lightweight image for OpenDataLoader Hybrid Server
-# Only installs opendataloader-pdf[hybrid] — no torch, no backend deps
+# Lightweight CPU image for OpenDataLoader Hybrid Server
+# Installs CPU-only torch first so opendataloader-pdf[hybrid] does not pull CUDA wheels.
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -14,11 +14,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-
 # Install uv for fast pip
 RUN pip install --no-cache-dir uv
 
-# Install ONLY opendataloader-pdf with hybrid extras
-# This pulls in docling + SmolVLM for image/chart descriptions + OCR
-RUN uv pip install --system --no-cache "opendataloader-pdf[hybrid]>=2.0.0"
+# Preinstall CPU-only PyTorch wheels. Without this, PyPI resolution can pull multi-GB
+# nvidia-* CUDA wheels that are unused in the default local Docker deployment.
+RUN uv pip install --system --no-cache \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch torchvision
+
+# Install OpenDataLoader hybrid extras after torch is already satisfied.
+RUN uv pip install --system --no-cache "opendataloader-pdf[hybrid]>=2.4.7,<3.0" \
+    && python - <<'PY'
+import importlib.metadata as metadata
+import torch
+
+nvidia_packages = sorted(
+    dist.metadata["Name"]
+    for dist in metadata.distributions()
+    if dist.metadata["Name"].lower().startswith("nvidia-")
+)
+if nvidia_packages:
+    raise SystemExit(f"Unexpected CUDA packages installed: {nvidia_packages}")
+print(f"torch={torch.__version__}; cuda_available={torch.cuda.is_available()}")
+PY
+
+COPY start-hybrid.sh /app/start-hybrid.sh
+RUN chmod +x /app/start-hybrid.sh
 
 # Default port
 EXPOSE 5002
 
-CMD ["opendataloader-pdf-hybrid", "--port", "5002", "--force-ocr", "--enrich-picture-description"]
+CMD ["/app/start-hybrid.sh"]

@@ -1,4 +1,5 @@
 export type ChunkingStrategy = 'recursive' | 'semantic' | 'sentence' | 'article' | 'parent_child';
+export type PDFParserMode = 'local_fast' | 'hybrid_auto' | 'hybrid_full';
 
 export interface User {
   id: string;
@@ -44,6 +45,14 @@ export interface Bot {
     chunk_overlap?: number;
     enable_knowledge_graph?: boolean;
     enrich_picture_description?: boolean;
+    pdf_parser_mode?: PDFParserMode;
+    pdf_structured_chunking?: boolean;
+    pdf_enrich_formula?: boolean;
+    pdf_sanitize?: boolean;
+    pdf_use_struct_tree?: boolean;
+    pdf_include_header_footer?: boolean;
+    pdf_detect_strikethrough?: boolean;
+    pdf_threads?: number;
     zalo_personal?: Record<string, any> | null;
     zalo_integration?: any;
     zalo_bot?: Record<string, any> | null;

@@ -365,11 +365,118 @@ class OpenRouterRAGService:
             return rest.FusionQuery(fusion=rest.Fusion.RRF)
         return rest.RrfQuery(rrf=rest.Rrf())
     
-    def _load_document(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
+    @staticmethod
+    def _config_bool(config: Optional[dict], key: str, default: bool = False) -> bool:
+        value = (config or {}).get(key, default)
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return bool(value)
+
+    @staticmethod
+    def _config_int(config: Optional[dict], key: str, default: int) -> int:
+        try:
+            return int((config or {}).get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    def _resolve_pdf_runtime_config(
+        self,
+        bot_config: Optional[dict] = None,
+        enrich_picture_description: bool = False,
+    ) -> Dict[str, Any]:
+        """Resolve per-bot OpenDataLoader settings with conservative fallbacks."""
+        bot_config = bot_config or {}
+        parser_mode = bot_config.get("pdf_parser_mode") or settings.PDF_DEFAULT_PARSER_MODE
+        if parser_mode not in {"local_fast", "hybrid_auto", "hybrid_full"}:
+            parser_mode = settings.PDF_DEFAULT_PARSER_MODE
+
+        picture = enrich_picture_description or self._config_bool(
+            bot_config, "enrich_picture_description", False
+        )
+        formula = self._config_bool(bot_config, "pdf_enrich_formula", settings.PDF_ENRICH_FORMULA)
+        if picture or formula:
+            parser_mode = "hybrid_full"
+
+        return {
+            "parser_mode": parser_mode,
+            "structured_chunking": self._config_bool(
+                bot_config, "pdf_structured_chunking", settings.PDF_STRUCTURED_CHUNKING
+            ),
+            "enrich_picture_description": picture,
+            "enrich_formula": formula,
+            "sanitize": self._config_bool(bot_config, "pdf_sanitize", settings.PDF_SANITIZE),
+            "use_struct_tree": self._config_bool(
+                bot_config, "pdf_use_struct_tree", settings.PDF_USE_STRUCT_TREE
+            ),
+            "include_header_footer": self._config_bool(
+                bot_config, "pdf_include_header_footer", settings.PDF_INCLUDE_HEADER_FOOTER
+            ),
+            "detect_strikethrough": self._config_bool(
+                bot_config, "pdf_detect_strikethrough", settings.PDF_DETECT_STRIKETHROUGH
+            ),
+            "threads": max(1, self._config_int(bot_config, "pdf_threads", settings.PDF_THREADS)),
+        }
+
+    def _build_opendataloader_convert_kwargs(
+        self,
+        file_path: str,
+        output_dir: str,
+        image_dir: str,
+        pdf_config: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Build opendataloader-pdf convert kwargs using the non-deprecated v2.4 API."""
+        convert_kwargs: Dict[str, Any] = {
+            "input_path": [file_path],
+            "output_dir": output_dir,
+            "format": "markdown,json",
+            "table_method": settings.PDF_TABLE_METHOD,
+            "reading_order": settings.PDF_READING_ORDER,
+            "image_output": settings.PDF_IMAGE_OUTPUT,
+            "image_format": settings.PDF_IMAGE_FORMAT,
+            "image_dir": image_dir,
+            "markdown_page_separator": settings.PDF_PAGE_SEPARATOR,
+            "markdown_with_html": settings.PDF_MARKDOWN_WITH_HTML,
+            "sanitize": pdf_config["sanitize"],
+            "use_struct_tree": pdf_config["use_struct_tree"],
+            "include_header_footer": pdf_config["include_header_footer"],
+            "detect_strikethrough": pdf_config["detect_strikethrough"],
+            "quiet": True,
+        }
+
+        if pdf_config["threads"] > 1:
+            convert_kwargs["threads"] = str(pdf_config["threads"])
+
+        parser_mode = pdf_config["parser_mode"]
+        hybrid_provider = settings.PDF_HYBRID_MODE
+        if parser_mode == "hybrid_full" and hybrid_provider == "off":
+            hybrid_provider = "docling-fast"
+
+        if parser_mode != "local_fast" and hybrid_provider != "off":
+            convert_kwargs["hybrid"] = hybrid_provider
+            convert_kwargs["hybrid_url"] = settings.PDF_HYBRID_URL
+            convert_kwargs["hybrid_fallback"] = settings.PDF_HYBRID_FALLBACK
+            convert_kwargs["hybrid_mode"] = "full" if parser_mode == "hybrid_full" else "auto"
+
+        return convert_kwargs
+
+    def _load_document(
+        self,
+        file_path: str,
+        filename: str,
+        enrich_picture_description: bool = False,
+        document_id: Optional[str] = None,
+        bot_config: Optional[dict] = None,
+    ) -> List[LangChainDocument]:
         """Load document based on file type."""
         suffix = Path(filename).suffix.lower()
         if suffix == ".pdf":
-            return self._load_pdf_opendataloader(file_path, filename, enrich_picture_description=enrich_picture_description)
+            return self._load_pdf_opendataloader(
+                file_path,
+                filename,
+                enrich_picture_description=enrich_picture_description,
+                document_id=document_id,
+                bot_config=bot_config,
+            )
         elif suffix in {".txt", ".md"}:
             loader = TextLoader(file_path, encoding="utf-8")
             return loader.load()
@@ -465,19 +572,15 @@ class OpenRouterRAGService:
         wb.close()
         return documents or [LangChainDocument(page_content="", metadata={"source": filename, "page": 0})]
 
-    def _load_pdf_opendataloader(self, file_path: str, filename: str, enrich_picture_description: bool = False) -> List[LangChainDocument]:
-        """Parse PDF using opendataloader-pdf with full feature set.
-
-        Features:
-          - table_method="cluster" → border + cluster detection (better complex tables)
-          - format="markdown-with-images,json" → dual: enriched MD + structured JSON
-          - image_output="external" → extract images as PNG/JPEG → upload to MinIO
-          - markdown_page_separator → preserve page boundaries
-          - hybrid mode (when enrich_picture_description=True) → OCR + SmolVLM image descriptions
-          - JSON → structured tables with bounding boxes → upload to MinIO
-
-        Fallback chain: hybrid → local → PyPDFLoader
-        """
+    def _load_pdf_opendataloader(
+        self,
+        file_path: str,
+        filename: str,
+        enrich_picture_description: bool = False,
+        document_id: Optional[str] = None,
+        bot_config: Optional[dict] = None,
+    ) -> List[LangChainDocument]:
+        """Parse PDF using OpenDataLoader JSON/Markdown artifacts for layout-aware RAG."""
         try:
             import opendataloader_pdf
         except ImportError:
@@ -485,47 +588,40 @@ class OpenRouterRAGService:
             from langchain_community.document_loaders import PyPDFLoader
             return PyPDFLoader(file_path).load()
 
+        pdf_config = self._resolve_pdf_runtime_config(
+            bot_config=bot_config,
+            enrich_picture_description=enrich_picture_description,
+        )
+
         with tempfile.TemporaryDirectory() as output_dir:
             image_dir = os.path.join(output_dir, "images")
             os.makedirs(image_dir, exist_ok=True)
 
-            output_format = "markdown-with-images,json"
+            convert_kwargs = self._build_opendataloader_convert_kwargs(
+                file_path=file_path,
+                output_dir=output_dir,
+                image_dir=image_dir,
+                pdf_config=pdf_config,
+            )
 
-            convert_kwargs = {
-                "input_path": [file_path],
-                "output_dir": output_dir,
-                "format": output_format,
-                "table_method": settings.PDF_TABLE_METHOD,
-                "image_output": settings.PDF_IMAGE_OUTPUT,
-                "image_format": settings.PDF_IMAGE_FORMAT,
-                "image_dir": image_dir,
-                "markdown_page_separator": settings.PDF_PAGE_SEPARATOR,
-                "quiet": True,
-            }
-
-            # Hybrid mode: only enabled when enrich_picture_description is True (per-bot setting)
-            # Hybrid server provides OCR + SmolVLM image/chart descriptions
-            use_hybrid = enrich_picture_description and settings.PDF_HYBRID_MODE != "off"
-            if use_hybrid:
-                convert_kwargs["hybrid"] = settings.PDF_HYBRID_MODE
-                convert_kwargs["hybrid_url"] = settings.PDF_HYBRID_URL
-                convert_kwargs["hybrid_fallback"] = settings.PDF_HYBRID_FALLBACK
-                if settings.PDF_ENRICH_FORMULA:
-                    convert_kwargs["hybrid_mode"] = "full"
-                logger.info(f"Hybrid mode enabled for {filename} (enrich_picture_description=True, server={settings.PDF_HYBRID_URL})")
-            else:
-                logger.info(f"Local parsing mode for {filename} (enrich_picture_description={enrich_picture_description})")
+            logger.info(
+                "opendataloader_convert_start",
+                extra={
+                    "source_filename": filename,
+                    "parser_mode": pdf_config["parser_mode"],
+                    "hybrid_mode": convert_kwargs.get("hybrid_mode"),
+                    "structured_chunking": pdf_config["structured_chunking"],
+                },
+            )
 
             try:
                 opendataloader_pdf.convert(**convert_kwargs)
             except Exception as convert_err:
-                if use_hybrid and settings.PDF_HYBRID_FALLBACK:
+                if "hybrid" in convert_kwargs and settings.PDF_HYBRID_FALLBACK:
                     logger.warning(f"Hybrid mode failed ({convert_err}), retrying local mode")
                     convert_kwargs.pop("hybrid", None)
                     convert_kwargs.pop("hybrid_url", None)
                     convert_kwargs.pop("hybrid_fallback", None)
-                    convert_kwargs.pop("enrich_picture_description", None)
-                    convert_kwargs.pop("enrich_formula", None)
                     convert_kwargs.pop("hybrid_mode", None)
                     try:
                         opendataloader_pdf.convert(**convert_kwargs)
@@ -560,18 +656,55 @@ class OpenRouterRAGService:
 
             logger.info(f"opendataloader-pdf parsed {filename}: {len(text)} chars")
 
-            # --- Upload extracted Markdown to MinIO ---
-            self._save_extracted_markdown(md_path, filename)
-
-            # --- Upload extracted images to MinIO ---
-            self._upload_extracted_images(image_dir, filename)
-
-            # --- Upload structured JSON to MinIO ---
-            doc_metadata = {"source": filename, "page": 0}
             json_path = os.path.join(output_dir, stem + ".json")
-            if os.path.exists(json_path):
-                doc_metadata["has_structured_json"] = True
-                self._save_extracted_json(json_path, filename)
+            if not os.path.exists(json_path):
+                json_files = list(Path(output_dir).glob("*.json"))
+                json_path = str(json_files[0]) if json_files else ""
+
+            artifact_paths = self._upload_opendataloader_artifacts(
+                md_path=md_path,
+                json_path=json_path if json_path and os.path.exists(json_path) else None,
+                image_dir=image_dir,
+                original_filename=filename,
+                document_id=document_id,
+            )
+
+            if artifact_paths.get("markdown"):
+                try:
+                    with open(md_path, "r", encoding="utf-8") as f:
+                        text = f.read()
+                except OSError:
+                    pass
+
+            if pdf_config["structured_chunking"] and json_path and os.path.exists(json_path):
+                try:
+                    with open(json_path, "r", encoding="utf-8") as f:
+                        json_data = json.load(f)
+                    structured_docs = self._documents_from_opendataloader_json(
+                        json_data=json_data,
+                        source=filename,
+                        artifact_paths=artifact_paths,
+                    )
+                    if structured_docs:
+                        logger.info(
+                            "opendataloader_structured_docs_created",
+                            extra={"source_filename": filename, "documents": len(structured_docs)},
+                        )
+                        return structured_docs
+                except Exception as e:
+                    logger.warning(f"OpenDataLoader JSON normalization failed for {filename}: {e}")
+
+            doc_metadata = {
+                "source": filename,
+                "page": 0,
+                "page_numbers": [],
+                "bboxes": [],
+                "element_types": ["markdown"],
+                "heading_path": [],
+                "opendataloader_element_ids": [],
+                "has_structured_json": bool(json_path and os.path.exists(json_path)),
+                "artifact_paths": artifact_paths,
+            }
 
             return [
                 LangChainDocument(
@@ -580,49 +713,275 @@ class OpenRouterRAGService:
                 )
             ]
 
-    def _save_extracted_markdown(self, md_path: str, original_filename: str):
-        """Upload extracted Markdown file to MinIO alongside the original document."""
+    def _upload_opendataloader_artifacts(
+        self,
+        md_path: str,
+        json_path: Optional[str],
+        image_dir: str,
+        original_filename: str,
+        document_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Upload extracted Markdown, JSON, and images under a stable MinIO prefix."""
+        artifact_paths: Dict[str, Any] = {
+            "prefix": f"documents/{document_id}/extracted" if document_id else f"documents/{uuid.uuid4()}/extracted",
+            "images": [],
+        }
         try:
             from app.services.storage_service import storage_service
-            md_filename = Path(original_filename).stem + ".md"
-            with open(md_path, "rb") as f:
-                object_path = storage_service.upload_file(
-                    f, md_filename, content_type="text/markdown"
-                )
-            logger.info(f"Saved extracted Markdown to MinIO: {object_path}")
-        except Exception as e:
-            logger.warning(f"Failed to save extracted Markdown to MinIO: {e}")
+            prefix = artifact_paths["prefix"]
 
-    def _upload_extracted_images(self, image_dir: str, original_filename: str):
-        """Upload extracted images (charts, figures, diagrams) to MinIO."""
-        try:
-            from app.services.storage_service import storage_service
             image_files = [
                 p for p in Path(image_dir).glob("*.*")
                 if p.suffix.lower() in (".png", ".jpeg", ".jpg")
             ]
-            if not image_files:
+            link_rewrites: Dict[str, str] = {}
+            for img_path in image_files:
+                content_type = "image/png" if img_path.suffix.lower() == ".png" else "image/jpeg"
+                object_path = f"{prefix}/images/{img_path.name}"
+                with open(img_path, "rb") as f:
+                    storage_service.upload_file_to_path(f, object_path, content_type)
+                artifact_paths["images"].append(object_path)
+                rel_path = f"{Path(image_dir).name}/{img_path.name}"
+                link_rewrites[rel_path] = f"minio://{settings.MINIO_BUCKET}/{object_path}"
+                link_rewrites[f"./{rel_path}"] = f"minio://{settings.MINIO_BUCKET}/{object_path}"
+                link_rewrites[img_path.name] = f"minio://{settings.MINIO_BUCKET}/{object_path}"
+
+            if link_rewrites:
+                with open(md_path, "r", encoding="utf-8") as f:
+                    md_text = f.read()
+                for rel_path, target in link_rewrites.items():
+                    md_text = md_text.replace(f"]({rel_path})", f"]({target})")
+                    md_text = md_text.replace(f"](<{rel_path}>)", f"](<{target}>)")
+                with open(md_path, "w", encoding="utf-8") as f:
+                    f.write(md_text)
+
+            md_filename = Path(original_filename).stem + ".md"
+            with open(md_path, "rb") as f:
+                artifact_paths["markdown"] = storage_service.upload_file_to_path(
+                    f, f"{prefix}/{md_filename}", content_type="text/markdown"
+                )
+
+            if json_path:
+                json_filename = Path(original_filename).stem + ".json"
+                with open(json_path, "rb") as f:
+                    artifact_paths["json"] = storage_service.upload_file_to_path(
+                        f, f"{prefix}/{json_filename}", content_type="application/json"
+                    )
+
+            logger.info(
+                "opendataloader_artifacts_uploaded",
+                extra={"source_filename": original_filename, "prefix": prefix, "images": len(artifact_paths["images"])},
+            )
+        except Exception as e:
+            logger.warning(f"Failed to upload OpenDataLoader artifacts to MinIO: {e}")
+        return artifact_paths
+
+    @staticmethod
+    def _coerce_bbox(value: Any) -> Optional[List[float]]:
+        if value is None:
+            return None
+        if isinstance(value, (list, tuple)) and len(value) >= 4:
+            try:
+                return [float(value[i]) for i in range(4)]
+            except (TypeError, ValueError):
+                return None
+        if isinstance(value, dict):
+            candidates = [
+                ("left", "bottom", "right", "top"),
+                ("l", "b", "r", "t"),
+                ("x0", "y0", "x1", "y1"),
+            ]
+            for keys in candidates:
+                if all(k in value for k in keys):
+                    try:
+                        return [float(value[k]) for k in keys]
+                    except (TypeError, ValueError):
+                        return None
+        return None
+
+    @classmethod
+    def _extract_element_page_bbox(cls, element: Dict[str, Any]) -> tuple[Optional[int], Optional[List[float]]]:
+        page = (
+            element.get("page number")
+            or element.get("page_number")
+            or element.get("page")
+            or element.get("page_no")
+        )
+        bbox = element.get("bounding box") or element.get("bounding_box") or element.get("bbox")
+        prov = element.get("prov")
+        if isinstance(prov, list) and prov:
+            first = prov[0] if isinstance(prov[0], dict) else {}
+            page = page or first.get("page_no") or first.get("page")
+            bbox = bbox or first.get("bbox")
+
+        try:
+            page_int = int(page) if page is not None else None
+        except (TypeError, ValueError):
+            page_int = None
+        return page_int, cls._coerce_bbox(bbox)
+
+    @staticmethod
+    def _table_data_to_text(table_data: Any) -> str:
+        if not table_data:
+            return ""
+        if isinstance(table_data, str):
+            return table_data
+        if not isinstance(table_data, dict):
+            return ""
+
+        grid = table_data.get("grid") or table_data.get("rows")
+        if isinstance(grid, list):
+            rows: List[str] = []
+            for row in grid:
+                cells = []
+                if isinstance(row, list):
+                    for cell in row:
+                        if isinstance(cell, dict):
+                            cells.append(str(cell.get("text") or cell.get("content") or "").strip())
+                        else:
+                            cells.append(str(cell).strip())
+                elif isinstance(row, dict):
+                    cells.append(str(row.get("text") or row.get("content") or "").strip())
+                line = " | ".join(cell for cell in cells if cell)
+                if line:
+                    rows.append(line)
+            if rows:
+                return "\n".join(rows)
+
+        table_cells = table_data.get("table_cells") or table_data.get("cells")
+        if isinstance(table_cells, list):
+            rows_by_idx: Dict[int, List[tuple[int, str]]] = {}
+            for cell in table_cells:
+                if not isinstance(cell, dict):
+                    continue
+                row_idx = int(cell.get("start_row_offset_idx") or cell.get("row") or 0)
+                col_idx = int(cell.get("start_col_offset_idx") or cell.get("col") or 0)
+                text = str(cell.get("text") or cell.get("content") or "").strip()
+                if text:
+                    rows_by_idx.setdefault(row_idx, []).append((col_idx, text))
+            rows = []
+            for row_idx in sorted(rows_by_idx):
+                rows.append(" | ".join(text for _, text in sorted(rows_by_idx[row_idx])))
+            return "\n".join(rows)
+        return ""
+
+    @classmethod
+    def _extract_element_text(cls, element: Dict[str, Any], element_type: str) -> str:
+        content = (
+            element.get("content")
+            or element.get("text")
+            or element.get("orig")
+            or element.get("alt")
+            or element.get("description")
+            or ""
+        )
+        if not content and element_type == "table":
+            content = cls._table_data_to_text(element.get("data") or element)
+        if not content and element_type in {"image", "picture"}:
+            annotations = element.get("annotations") or element.get("captions") or []
+            if isinstance(annotations, list):
+                parts = []
+                for item in annotations:
+                    if isinstance(item, dict):
+                        parts.append(str(item.get("text") or item.get("content") or "").strip())
+                    elif isinstance(item, str):
+                        parts.append(item.strip())
+                content = " ".join(part for part in parts if part)
+        content = str(content).strip()
+        if not content:
+            return ""
+        if element_type == "table":
+            return f"Table:\n{content}"
+        if element_type == "formula":
+            return f"Formula: {content}"
+        if element_type in {"image", "picture"}:
+            return f"Image description: {content}"
+        return content
+
+    @classmethod
+    def _documents_from_opendataloader_json(
+        cls,
+        json_data: Any,
+        source: str,
+        artifact_paths: Optional[Dict[str, Any]] = None,
+    ) -> List[LangChainDocument]:
+        """Normalize OpenDataLoader JSON into element-level LangChain documents."""
+        documents: List[LangChainDocument] = []
+        heading_path: List[str] = []
+
+        def visit(element: Any, inherited_page: Optional[int] = None):
+            nonlocal heading_path
+            if not isinstance(element, dict):
                 return
 
-            uploaded = []
-            for img_path in image_files:
-                content_type = "image/png" if img_path.suffix == ".png" else "image/jpeg"
-                with open(img_path, "rb") as f:
-                    uploaded.append(storage_service.upload_file(f, img_path.name, content_type))
-            logger.info(f"Uploaded {len(uploaded)} extracted images to MinIO for {original_filename}")
-        except Exception as e:
-            logger.warning(f"Failed to upload extracted images to MinIO: {e}")
+            element_type = str(
+                element.get("type") or element.get("label") or element.get("kind") or "text"
+            ).replace("-", "_").lower()
+            text = cls._extract_element_text(element, element_type)
+            page, bbox = cls._extract_element_page_bbox(element)
+            page = page or inherited_page
 
-    def _save_extracted_json(self, json_path: str, original_filename: str):
-        """Upload structured JSON (tables, bounding boxes) to MinIO."""
-        try:
-            from app.services.storage_service import storage_service
-            json_filename = Path(original_filename).stem + ".json"
-            with open(json_path, "rb") as f:
-                object_path = storage_service.upload_file(f, json_filename, content_type="application/json")
-            logger.info(f"Saved structured JSON to MinIO: {object_path}")
-        except Exception as e:
-            logger.warning(f"Failed to save structured JSON to MinIO: {e}")
+            if element_type in {"heading", "section_header", "title"} and text:
+                try:
+                    level = int(element.get("heading level") or element.get("heading_level") or element.get("level") or 1)
+                except (TypeError, ValueError):
+                    level = 1
+                level = max(1, min(level, 10))
+                heading_path = heading_path[: level - 1] + [text]
+
+            if text and element_type not in {"document"}:
+                element_id = element.get("id") or element.get("self_ref") or element.get("ref")
+                metadata = {
+                    "source": source,
+                    "page": page or 0,
+                    "page_numbers": [page] if page else [],
+                    "bboxes": [bbox] if bbox else [],
+                    "element_types": [element_type],
+                    "heading_path": heading_path.copy(),
+                    "opendataloader_element_ids": [str(element_id)] if element_id else [],
+                    "has_structured_json": True,
+                    "artifact_paths": artifact_paths or {},
+                }
+                documents.append(LangChainDocument(page_content=text, metadata=metadata))
+
+            for child_key in ("kids", "elements"):
+                children = element.get(child_key)
+                if isinstance(children, list):
+                    for child in children:
+                        visit(child, page)
+
+        if isinstance(json_data, dict):
+            if isinstance(json_data.get("kids"), list):
+                for item in json_data["kids"]:
+                    visit(item)
+            pages = json_data.get("pages")
+            if isinstance(pages, dict):
+                for page_key in sorted(pages, key=lambda value: int(value) if str(value).isdigit() else str(value)):
+                    page_data = pages[page_key]
+                    try:
+                        page_num = int(page_key)
+                    except (TypeError, ValueError):
+                        page_num = None
+                    if isinstance(page_data, dict):
+                        for key in ("elements", "kids"):
+                            if isinstance(page_data.get(key), list):
+                                for item in page_data[key]:
+                                    visit(item, page_num)
+            elif isinstance(pages, list):
+                for idx, page_data in enumerate(pages, start=1):
+                    if isinstance(page_data, dict):
+                        page_num = page_data.get("page") or page_data.get("page_number") or idx
+                        for key in ("elements", "kids"):
+                            if isinstance(page_data.get(key), list):
+                                for item in page_data[key]:
+                                    visit(item, int(page_num) if page_num else idx)
+            if not documents:
+                visit(json_data)
+        elif isinstance(json_data, list):
+            for item in json_data:
+                visit(item)
+
+        return [doc for doc in documents if doc.page_content.strip()]
     
     @staticmethod
     def _chunk_article(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
@@ -1063,6 +1422,10 @@ Answer:"""
                             "text": chunk.page_content,
                             "parent_text": chunk.metadata.get("parent_text"),
                             "context_prefix": context_prefixes[idx] if idx < len(context_prefixes) else None,
+                            "page_numbers": chunk.metadata.get("page_numbers", []),
+                            "bboxes": chunk.metadata.get("bboxes", []),
+                            "element_types": chunk.metadata.get("element_types", []),
+                            "artifact_paths": chunk.metadata.get("artifact_paths", {}),
                             "metadata": chunk.metadata,
                         }
                     )
@@ -1105,6 +1468,7 @@ Answer:"""
         chunk_overlap: int = 200,
         preloaded_documents=None,
         document_id: Optional[str] = None,
+        bot_config: Optional[dict] = None,
     ) -> Dict[str, Any]:
         """
         Synchronous file ingestion for Celery worker.
@@ -1120,7 +1484,12 @@ Answer:"""
             logger.info(f"Using pre-loaded document for: {filename}")
         else:
             logger.info(f"Loading document: {filename}")
-            documents = self._load_document(file_path, filename)
+            documents = self._load_document(
+                file_path,
+                filename,
+                document_id=document_id,
+                bot_config=bot_config,
+            )
 
         logger.info(
             f"Chunking document with strategy={chunking_strategy}, size={chunk_size}, overlap={chunk_overlap}"
@@ -1184,6 +1553,10 @@ Answer:"""
                         "text": chunk.page_content,
                         "parent_text": chunk.metadata.get("parent_text"),
                         "context_prefix": context_prefixes[idx] if idx < len(context_prefixes) else None,
+                        "page_numbers": chunk.metadata.get("page_numbers", []),
+                        "bboxes": chunk.metadata.get("bboxes", []),
+                        "element_types": chunk.metadata.get("element_types", []),
+                        "artifact_paths": chunk.metadata.get("artifact_paths", {}),
                         "metadata": chunk.metadata,
                     }
                 )
@@ -2566,9 +2939,9 @@ Answer:"""
         """Invalidate bot-scoped RAG caches by bumping the KB version key."""
         try:
             version = await self._bump_kb_version(bot_id)
-            logger.info("bot_cache_invalidated", bot_id=bot_id, kb_version=version)
+            logger.info("bot_cache_invalidated", extra={"bot_id": bot_id, "kb_version": version})
         except Exception as e:
-            logger.error("cache_invalidation_failed", bot_id=bot_id, error=str(e))
+            logger.error("cache_invalidation_failed", extra={"bot_id": bot_id, "error": str(e)})
 
     def invalidate_bot_cache(self, bot_id: str):
         """Sync wrapper — schedule async invalidation as a task."""

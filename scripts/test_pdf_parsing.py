@@ -30,16 +30,18 @@ def test_opendataloader_direct(pdf_path: str):
         image_dir = os.path.join(output_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
 
-        print("  Converting with: format=markdown-with-images,json, table_method=cluster, image_output=external")
+        print("  Converting with: format=markdown,json, table_method=cluster, reading_order=xycut, image_output=external")
         opendataloader_pdf.convert(
             input_path=[pdf_path],
             output_dir=output_dir,
-            format="markdown-with-images,json",
+            format="markdown,json",
             table_method="cluster",
+            reading_order="xycut",
             image_output="external",
             image_format="png",
             image_dir=image_dir,
             markdown_page_separator="\n\n--- PAGE %page-number% ---\n\n",
+            markdown_with_html=True,
             quiet=True,
         )
 

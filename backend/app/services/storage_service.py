@@ -52,6 +52,27 @@ class StorageService:
             return object_name
         except S3Error as e:
             raise Exception(f"Failed to upload file: {e}")
+
+    def upload_file_to_path(self, file: BinaryIO, object_name: str, content_type: str = "application/octet-stream") -> str:
+        """
+        Upload file to an explicit object path and return that path.
+        Used for deterministic derived artifacts such as parser output bundles.
+        """
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+
+        try:
+            self.client.put_object(
+                settings.MINIO_BUCKET,
+                object_name,
+                file,
+                file_size,
+                content_type=content_type,
+            )
+            return object_name
+        except S3Error as e:
+            raise Exception(f"Failed to upload file to {object_name}: {e}")
     
     def download_file(self, object_name: str) -> bytes:
         """Download file from MinIO"""

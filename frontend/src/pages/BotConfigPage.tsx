@@ -8,7 +8,7 @@ import { botsApi } from '../api/bots';
 import { documentsApi } from '../api/documents';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
-import type { Bot, Document } from '../types/api';
+import type { Bot, Document, PDFParserMode } from '../types/api';
 import RetrievalTester from '../components/retrieval/RetrievalTester';
 import { getDomainMeta } from '../utils/domainHelpers';
 
@@ -109,6 +109,14 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     similarity_threshold: 0,
     enable_knowledge_graph: false,
     enrich_picture_description: false,
+    pdf_parser_mode: 'hybrid_auto' as PDFParserMode,
+    pdf_structured_chunking: true,
+    pdf_enrich_formula: false,
+    pdf_sanitize: false,
+    pdf_use_struct_tree: false,
+    pdf_include_header_footer: false,
+    pdf_detect_strikethrough: false,
+    pdf_threads: 1,
     domain: 'general' as 'general' | 'education' | 'legal' | 'sales',
     zalo_bot: null as any,
     zalo_personal: null as any,
@@ -135,6 +143,14 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
         enable_knowledge_graph: botData.config?.enable_knowledge_graph
           || ['education', 'legal'].includes(botData.config?.domain ?? ''),
         enrich_picture_description: botData.config?.enrich_picture_description || false,
+        pdf_parser_mode: (botData.config?.pdf_parser_mode as PDFParserMode) || 'hybrid_auto',
+        pdf_structured_chunking: botData.config?.pdf_structured_chunking ?? true,
+        pdf_enrich_formula: botData.config?.pdf_enrich_formula || false,
+        pdf_sanitize: botData.config?.pdf_sanitize || false,
+        pdf_use_struct_tree: botData.config?.pdf_use_struct_tree || false,
+        pdf_include_header_footer: botData.config?.pdf_include_header_footer || false,
+        pdf_detect_strikethrough: botData.config?.pdf_detect_strikethrough || false,
+        pdf_threads: botData.config?.pdf_threads || 1,
         zalo_bot: botData.config?.zalo_bot || null,
         zalo_personal: botData.config?.zalo_personal || null,
         telegram: botData.config?.telegram || null,
@@ -349,6 +365,14 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
           similarity_threshold: formData.similarity_threshold,
           enable_knowledge_graph: formData.enable_knowledge_graph,
           enrich_picture_description: formData.enrich_picture_description,
+          pdf_parser_mode: formData.pdf_parser_mode,
+          pdf_structured_chunking: formData.pdf_structured_chunking,
+          pdf_enrich_formula: formData.pdf_enrich_formula,
+          pdf_sanitize: formData.pdf_sanitize,
+          pdf_use_struct_tree: formData.pdf_use_struct_tree,
+          pdf_include_header_footer: formData.pdf_include_header_footer,
+          pdf_detect_strikethrough: formData.pdf_detect_strikethrough,
+          pdf_threads: formData.pdf_threads,
           domain: formData.domain,
           ...(formData.zalo_bot ? { zalo_bot: formData.zalo_bot } : {}),
           ...(formData.zalo_personal ? { zalo_personal: zaloPersonalConfig } : {}),
@@ -575,8 +599,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   })()}
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">Manage behavior, knowledge, and integrations</p>
+                </div>
               </div>
-            </div>
             {!embedded && (
               <div className="flex items-center gap-3">
                 <button
@@ -868,7 +892,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   <p className="text-sm text-muted-foreground mt-1">Manage the documents this agent uses for context.</p>
                 </div>
                 <div className="text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 shadow-[inset_0_0_15px_rgba(var(--primary),0.1)]">
-                  Supported: PDF, DOCX, TXT • Max: 25MB
+                  Supported: PDF, DOCX, PPTX, XLSX, CSV, MD, TXT • Max: 25MB
                 </div>
               </div>
 
@@ -944,6 +968,88 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     {loading ? 'Saving...' : 'Save Settings'}
                   </button>
                   <span className="text-[10px] text-muted-foreground italic">Cần Save trước khi upload để áp dụng</span>
+                </div>
+	              </div>
+
+              {/* OpenDataLoader PDF Settings */}
+              <div className="rounded-xl border border-white/10 bg-background/40 backdrop-blur-xl px-4 py-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-[20px]">document_scanner</span>
+                    <span className="text-sm font-semibold text-foreground">PDF Parsing</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveBasicSettings}
+                    disabled={loading}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : 'Save Settings'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <label className="space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">Parser Mode</span>
+                    <select
+                      value={formData.pdf_parser_mode}
+                      onChange={(e) => setFormData(prev => ({ ...prev, pdf_parser_mode: e.target.value as PDFParserMode }))}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-white/10 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    >
+                      <option value="local_fast">Local Fast</option>
+                      <option value="hybrid_auto">Hybrid Auto</option>
+                      <option value="hybrid_full">Hybrid Full</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">Threads</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="16"
+                      value={formData.pdf_threads}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        pdf_threads: Math.max(1, Math.min(16, parseInt(e.target.value || '1', 10))),
+                      }))}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-white/10 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </label>
+                  <div className="flex items-center justify-between gap-3 px-3 h-10 mt-5 rounded-lg border border-white/10 bg-muted/10">
+                    <span className="text-xs font-medium text-foreground">Structured Chunks</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, pdf_structured_chunking: !prev.pdf_structured_chunking }))}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.pdf_structured_chunking ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                      role="switch"
+                      aria-checked={formData.pdf_structured_chunking}
+                    >
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.pdf_structured_chunking ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {([
+                    ['pdf_enrich_formula', 'function', 'Formula Enrichment'],
+                    ['pdf_sanitize', 'policy', 'Sanitize Text'],
+                    ['pdf_use_struct_tree', 'account_tree', 'Use Structure Tree'],
+                    ['pdf_include_header_footer', 'vertical_align_center', 'Header/Footer'],
+                    ['pdf_detect_strikethrough', 'strikethrough_s', 'Strikethrough'],
+                  ] as const).map(([key, icon, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, [key]: !prev[key] }))}
+                      className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border text-left transition-all ${formData[key] ? 'border-primary/40 bg-primary/10 text-foreground' : 'border-white/10 bg-muted/10 text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="material-symbols-outlined text-[17px]">{icon}</span>
+                        <span className="text-xs font-medium truncate">{label}</span>
+                      </span>
+                      <span className={`h-2 w-2 rounded-full ${formData[key] ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                    </button>
+                  ))}
                 </div>
               </div>
 

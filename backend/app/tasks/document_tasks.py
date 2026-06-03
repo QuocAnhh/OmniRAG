@@ -18,6 +18,7 @@ from app.models.bot import Bot
 from app.models.folder import Folder
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.models.channel_account import ChannelAccount, ChannelAccountAccess
 
 
 @celery_app.task(bind=True, name="process_document")
@@ -44,6 +45,8 @@ def process_document_task(
     try:
         # Reuse a single DB session across all status updates for this task
         db = SessionLocal()
+        bot = db.execute(select(Bot).where(Bot.id == UUID(bot_id))).scalar_one_or_none()
+        bot_config = bot.config if bot and bot.config else {}
 
         # Update status to processing
         self.update_state(state='PROCESSING', meta={'status': 'Downloading file'})
@@ -70,6 +73,8 @@ def process_document_task(
             loaded_documents = rag_service._load_document(
                 tmp_file_path, filename,
                 enrich_picture_description=enrich_picture_description,
+                document_id=document_id,
+                bot_config=bot_config,
             )
 
             # Extract full text now (cheap, in-memory) if KG will need it later
@@ -89,6 +94,7 @@ def process_document_task(
                 chunk_overlap=chunk_overlap,
                 preloaded_documents=loaded_documents,
                 document_id=document_id,
+                bot_config=bot_config,
             )
             num_chunks = ingest_result.get("chunks_created", 0)
 
@@ -104,6 +110,12 @@ def process_document_task(
                     "preview": ingest_result.get("preview"),
                     "model": ingest_result.get("model_used"),
                     "has_structured_json": loaded_documents[0].metadata.get("has_structured_json", False) if loaded_documents else False,
+                    "artifact_paths": loaded_documents[0].metadata.get("artifact_paths", {}) if loaded_documents else {},
+                    "page_numbers": sorted({
+                        page
+                        for loaded_doc in loaded_documents
+                        for page in loaded_doc.metadata.get("page_numbers", [])
+                    }) if loaded_documents else [],
                 },
                 error_message=None,
                 _session=db,
@@ -236,7 +248,7 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str,
                             error_msg=f"{type(e).__name__}: {str(e)}")
 
 
-def _resolve_reindex_chunk_config(bot: Bot, doc: DocumentModel) -> tuple[str, int, int, bool]:
+def _resolve_reindex_chunk_config(bot: Bot, doc: DocumentModel) -> tuple[str, int, int, bool, dict]:
     """Resolve the same chunking/enrichment settings used by normal uploads."""
     from app.services.domain_config import get_domain_profile
 
@@ -247,7 +259,7 @@ def _resolve_reindex_chunk_config(bot: Bot, doc: DocumentModel) -> tuple[str, in
     chunk_size = meta.get("chunk_size") or bot_cfg.get("chunk_size") or profile.chunk_size
     chunk_overlap = meta.get("chunk_overlap") or bot_cfg.get("chunk_overlap") or profile.chunk_overlap
     enrich_picture_description = bool(bot_cfg.get("enrich_picture_description", False))
-    return strategy, int(chunk_size), int(chunk_overlap), enrich_picture_description
+    return strategy, int(chunk_size), int(chunk_overlap), enrich_picture_description, bot_cfg
 
 
 def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> dict:
@@ -260,6 +272,7 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
     processed = 0
     failed = 0
     failures: list[dict] = []
+    processed_bot_ids: set[str] = set()
     try:
         query = select(DocumentModel).where(DocumentModel.status == "completed")
         if bot_id:
@@ -277,7 +290,7 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
                 if not bot or not doc.file_path:
                     raise RuntimeError("Missing bot or file_path for reindex")
 
-                strategy, chunk_size, chunk_overlap, enrich_picture_description = _resolve_reindex_chunk_config(bot, doc)
+                strategy, chunk_size, chunk_overlap, enrich_picture_description, bot_config = _resolve_reindex_chunk_config(bot, doc)
                 file_data = storage_service.download_file(doc.file_path)
                 file_ext = Path(doc.filename).suffix
 
@@ -290,6 +303,8 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
                         tmp_file_path,
                         doc.filename,
                         enrich_picture_description=enrich_picture_description,
+                        document_id=str(doc.id),
+                        bot_config=bot_config,
                     )
                     result = rag_service.process_file_sync(
                         tmp_file_path,
@@ -300,6 +315,7 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
                         chunk_overlap=chunk_overlap,
                         preloaded_documents=loaded_documents,
                         document_id=str(doc.id),
+                        bot_config=bot_config,
                     )
                 finally:
                     if os.path.exists(tmp_file_path):
@@ -311,10 +327,13 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
                     "reindex_collection": rag_service.collection_name,
                     "reindexed_at": datetime.utcnow().isoformat(),
                     "reindex_chunks": result.get("chunks_created", 0),
+                    "has_structured_json": loaded_documents[0].metadata.get("has_structured_json", False) if loaded_documents else False,
+                    "artifact_paths": loaded_documents[0].metadata.get("artifact_paths", {}) if loaded_documents else {},
                 }
                 db.add(doc)
                 db.commit()
                 processed += 1
+                processed_bot_ids.add(str(doc.bot_id))
             except Exception as e:
                 failed += 1
                 failures.append({"document_id": str(doc.id), "filename": doc.filename, "error": str(e)})
@@ -329,6 +348,9 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
 
         if bot_id:
             rag_service.invalidate_bot_cache(bot_id)
+        else:
+            for processed_bot_id in processed_bot_ids:
+                rag_service.invalidate_bot_cache(processed_bot_id)
         return {
             "status": "completed" if failed == 0 else "partial",
             "collection": rag_service.collection_name,
@@ -343,6 +365,16 @@ def reindex_qdrant_v2(bot_id: str | None = None, limit: int | None = None) -> di
 @celery_app.task(bind=True, name="reindex_qdrant_v2")
 def reindex_qdrant_v2_task(self, bot_id: str | None = None, limit: int | None = None):
     return reindex_qdrant_v2(bot_id=bot_id, limit=limit)
+
+
+def reindex_qdrant_v3(bot_id: str | None = None, limit: int | None = None) -> dict:
+    """Rebuild completed documents into the configured v3 RAG collection."""
+    return reindex_qdrant_v2(bot_id=bot_id, limit=limit)
+
+
+@celery_app.task(bind=True, name="reindex_qdrant_v3")
+def reindex_qdrant_v3_task(self, bot_id: str | None = None, limit: int | None = None):
+    return reindex_qdrant_v3(bot_id=bot_id, limit=limit)
 
 
 def _update_document_status(

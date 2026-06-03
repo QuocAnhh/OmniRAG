@@ -24,7 +24,7 @@ qdrant-client[fastembed]>=1.16.0,<2.0
 openai>=2.0.0,<3.0
 tiktoken>=0.7
 tenacity==8.2.3
-opendataloader-pdf>=2.0.0
+opendataloader-pdf>=2.4.7,<3.0
 motor==3.3.2
 pymongo==4.6.1
 minio==7.2.3

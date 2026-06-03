@@ -160,7 +160,7 @@ async def health_check():
 
     # Qdrant (REST health endpoint)
     try:
-        qdrant_url = f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}/health"
+        qdrant_url = f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}/healthz"
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(qdrant_url)
         checks["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"

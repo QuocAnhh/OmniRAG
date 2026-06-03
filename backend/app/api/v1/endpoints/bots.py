@@ -213,11 +213,15 @@ async def upload_document(
         id=uuid.uuid4(),
         bot_id=bot.id,  # Use bot.id from the dependency injection
         filename=original_filename,
-        file_type=file.content_type or "text/plain",
+        file_type=suffix.lstrip("."),
         file_size=file_size,
         file_path=file_path,
         status="processing",
-        doc_metadata={"chunking_strategy": chunking_strategy, "enable_knowledge_graph": enable_knowledge_graph}
+        doc_metadata={
+            "chunking_strategy": chunking_strategy,
+            "enable_knowledge_graph": enable_knowledge_graph,
+            "content_type": file.content_type or "application/octet-stream",
+        }
     )
     db.add(doc)
     await db.commit()
@@ -238,6 +242,9 @@ async def upload_document(
         "chunking_strategy": effective_strategy,
         "chunk_size": effective_chunk_size,
         "chunk_overlap": effective_chunk_overlap,
+        "pdf_parser_mode": bot_cfg.get("pdf_parser_mode"),
+        "pdf_structured_chunking": bot_cfg.get("pdf_structured_chunking"),
+        "pdf_enrich_formula": bot_cfg.get("pdf_enrich_formula"),
     }
     db.add(doc)
     await db.commit()
