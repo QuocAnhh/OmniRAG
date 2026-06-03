@@ -88,11 +88,13 @@ Form-data:
 
 | Key | Type | Value |
 | --- | --- | --- |
-| `file` | File | Chọn PDF/DOCX/TXT |
+| `file` | File | Chọn `.pdf`, `.txt`, `.md`, `.csv`, `.docx`, `.pptx`, `.xlsx` |
 | `chunking_strategy` | Text | `recursive` |
 | `enable_knowledge_graph` | Text | `false` |
 
 Ingestion chạy bất đồng bộ qua Celery. Nếu upload xong nhưng chat chưa thấy context, kiểm tra log `celery_worker`.
+
+Legacy `.doc`, `.ppt`, `.xls` bị chặn bằng `415`; convert sang `.docx`, `.pptx`, `.xlsx` trước khi upload.
 
 ### 5. Chat
 

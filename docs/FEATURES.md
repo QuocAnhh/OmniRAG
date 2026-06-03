@@ -1,6 +1,6 @@
 # Features
 
-Danh sách tính năng hiện có trên snapshot hiện tại của `refactor/backend-perf-p1-observability`.
+Danh sách tính năng hiện có sau audit ngày 2026-06-01.
 
 ## Core platform
 
@@ -17,9 +17,9 @@ Danh sách tính năng hiện có trên snapshot hiện tại của `refactor/ba
 - Upload tài liệu cho từng bot.
 - Ingest tài liệu bất đồng bộ qua Celery worker.
 - Lưu file gốc trên MinIO, metadata trên PostgreSQL.
-- Vector search qua Qdrant.
+- Vector search qua Qdrant collection v3 với dense+sparse named vectors.
 - Conversation/session history trên MongoDB.
-- Hybrid retrieval, reranking, query rewriting và CRAG verdict trong RAG service.
+- Hybrid retrieval bằng Qdrant RRF, reranking, query rewriting và CRAG verdict trong RAG service.
 - Redis cache cho chat, embeddings, rewrite và CRAG.
 - Knowledge Graph qua backend API `/api/v1/bots/{bot_id}/knowledge-graph`.
 - Frontend graph page tại `/bots/:id/graph`.
@@ -42,19 +42,22 @@ Chunk strategies:
 | PostgreSQL | 15-alpine | `5433` host | Relational store |
 | MongoDB | 7.0 | `27017` | Conversations, sessions, integrations |
 | Redis | 7-alpine | `6380` host | Celery broker, gateway/backend cache |
-| Qdrant | latest | `6333` | Vector DB |
+| Qdrant | `qdrant/qdrant:v1.16.0` | `6333` | Vector DB |
 | MinIO | latest | `9000/9001` | S3-compatible storage |
-| OpenDataLoader hybrid | local build | `5002` | PDF/Office parsing |
+| OpenDataLoader hybrid | local CPU-only build | `5002` | PDF parsing |
 | Facebook worker | Python + FastAPI | `9100` internal | `fbchat-muqit` isolated bridge |
 | Zalo Personal worker | Node.js + Fastify | `9200` internal | `zca-js` isolated bridge |
 
 ## PDF và tài liệu
 
-- PDF/Office parsing qua OpenDataLoader.
+- PDF parsing qua OpenDataLoader markdown+JSON output.
+- TXT, MD, CSV, DOCX, PPTX và XLSX parsing qua dedicated loaders.
+- Legacy `.doc`, `.ppt`, `.xls` bị chặn bằng `415`.
 - Hybrid service build từ `backend/Dockerfile.hybrid`.
-- Hỗ trợ table extraction, external image output, docling-fast hybrid mode.
+- Hỗ trợ table extraction, xycut reading order, external image output, docling-fast hybrid mode.
 - Có fallback local nếu hybrid service lỗi và `PDF_HYBRID_FALLBACK=true`.
 - Bot config có thể bật enrichment cho mô tả ảnh tùy flow.
+- Structured PDF chunks có page/bbox/element metadata và stable extracted artifacts trong MinIO.
 
 ## Frontend
 

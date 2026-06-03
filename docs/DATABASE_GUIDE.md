@@ -125,12 +125,25 @@ Service compose: `qdrant`.
 Vai trò:
 
 - Vector collections cho chunks.
-- Hybrid retrieval data.
+- Hybrid retrieval data: dense OpenRouter vectors và sparse BM25 vectors.
+
+Collection mặc định hiện tại:
+
+```text
+omnirag_openrouter_collection_v3
+```
+
+Qdrant image được pin trong compose:
+
+```text
+qdrant/qdrant:v1.16.0
+```
 
 Kiểm tra:
 
 ```bash
 curl http://localhost:6333/
+curl http://localhost:6333/healthz
 curl http://localhost:6333/collections
 ```
 
@@ -147,7 +160,7 @@ Service compose: `minio`.
 Vai trò:
 
 - Lưu file upload gốc.
-- Lưu artifact parsing nếu flow cần.
+- Lưu OpenDataLoader artifacts theo prefix `documents/{document_id}/extracted/...`.
 
 Console:
 

@@ -1,0 +1,135 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="fig_2_3_7_colpali_multimodal" id="diag-c0e9cf4">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="cb5aab4" value="ColPali Multimodal Retrieval vs Traditional OCR Pipeline" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="40" y="20" width="1420" height="35" as="geometry"/>
+</mxCell><mxCell id="c8b035a" value="Traditional Text RAG (OCR Pipeline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="70" width="660" height="280" as="geometry"/>
+</mxCell><mxCell id="c3a3d21" value="PDF Upload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="80" y="110" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="c92d6b4" value="OCR Engine&#xa;(Tesseract / Docling)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="310" y="110" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="c27428f" value="Layout Detection&#xa;(table/image/column)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="540" y="110" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="c7e8c69" value="Chunking&#xa;(recursive/sentence)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="80" y="220" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="c2e9f5b" value="Text Embedding&#xa;(text-embedding-3-small)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="310" y="220" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="ccbb4b8" value="Vector Store&#xa;(Qdrant)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="540" y="220" width="170" height="55" as="geometry"/>
+</mxCell><mxCell id="c1c816e" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c3a3d21" target="c92d6b4" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c3064cb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c92d6b4" target="c27428f" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c7cbf6f" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c27428f" target="c7e8c69" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+    <mxPoint x="620" y="165"/>
+    <mxPoint x="620" y="190"/>
+    <mxPoint x="165" y="190"/>
+    <mxPoint x="165" y="220"/>
+    </Array>
+  </mxGeometry>
+</mxCell><mxCell id="ca2790f" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c7e8c69" target="c2e9f5b" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c6562e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c2e9f5b" target="ccbb4b8" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c527fbe" value="⚠  Issues: OCR errors (60-80% on Vietnamese), layout loss, 7.2s/page, 3-5 pipeline steps" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="80" y="290" width="620" height="30" as="geometry"/>
+</mxCell><mxCell id="cab1e36" value="ViDoRe nDCG@5: BM25=37%, BGE-M3=46%" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="80" y="315" width="620" height="30" as="geometry"/>
+</mxCell><mxCell id="cbc0bf3" value="ColPali Multimodal RAG (Vision-Language)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="780" y="70" width="660" height="280" as="geometry"/>
+</mxCell><mxCell id="c609208" value="PDF Page → Image&#xa;(448×448px)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="800" y="110" width="190" height="55" as="geometry"/>
+</mxCell><mxCell id="ce054b6" value="Vision-Language Model&#xa;(PaliGemma-3B / Qwen2-VL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="110" width="190" height="55" as="geometry"/>
+</mxCell><mxCell id="ca42694" value="Multi-Vector Grid&#xa;(~1030 patch × 128-dim)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1260" y="110" width="190" height="55" as="geometry"/>
+</mxCell><mxCell id="c9551d1" value="Late Interaction&#xa;(MaxSim: query × doc patches)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="800" y="220" width="190" height="55" as="geometry"/>
+</mxCell><mxCell id="c9d5610" value="Top-K Pages&#xa;(with spatial layout preserved)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="220" width="190" height="55" as="geometry"/>
+</mxCell><mxCell id="cea4421" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c609208" target="ce054b6" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c05d742" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="ce054b6" target="ca42694" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+    <mxPoint x="1280" y="165"/>
+    <mxPoint x="1280" y="190"/>
+    <mxPoint x="895" y="190"/>
+    <mxPoint x="895" y="220"/>
+    </Array>
+  </mxGeometry>
+</mxCell><mxCell id="c2bcff6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="ca42694" target="c9551d1" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c54e8b9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c9551d1" target="c9d5610" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cf09364" value="✅  Advantages: No OCR, 0.39s/page (18× faster), preserves tables/charts/layout" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="800" y="290" width="620" height="30" as="geometry"/>
+</mxCell><mxCell id="cd90a34" value="ViDoRe nDCG@5: ColPali-3=78%, ColQwen2.5-7B=83% (State-of-the-Art)" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="800" y="315" width="620" height="30" as="geometry"/>
+</mxCell><mxCell id="c3d7764" value="ViDoRe Benchmark Comparison (nDCG@5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="370" width="1380" height="220" as="geometry"/>
+</mxCell><mxCell id="c27be94" value="Method" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="410" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="c3a17ea" value="Financial PDFs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="330" y="410" width="200" height="35" as="geometry"/>
+</mxCell><mxCell id="cb309c8" value="Slides" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="410" width="200" height="35" as="geometry"/>
+</mxCell><mxCell id="cfd0306" value="Scanned Docs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="790" y="410" width="200" height="35" as="geometry"/>
+</mxCell><mxCell id="c38e1ae" value="Average" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="410" width="200" height="35" as="geometry"/>
+</mxCell><mxCell id="c363def" value="BM25 (Text)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="455" width="210" height="30" as="geometry"/>
+</mxCell><mxCell id="c5d543e" value="48%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="330" y="455" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c27b9db" value="35%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="455" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cc008d0" value="28%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="790" y="455" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c2b07ca" value="37%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="455" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c547d6a" value="BGE-M3 (Dense Text)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="490" width="210" height="30" as="geometry"/>
+</mxCell><mxCell id="cb9e55f" value="62%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="330" y="490" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cdc073c" value="44%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="490" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cc6a486" value="31%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="790" y="490" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cfbfbe7" value="46%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="490" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c3e35c4" value="ColPali-3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="525" width="210" height="30" as="geometry"/>
+</mxCell><mxCell id="c4d3936" value="78%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="330" y="525" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c41dc0b" value="82%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="525" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c79a886" value="74%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="790" y="525" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c313641" value="78%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="525" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cf18240" value="ColQwen2.5-7B ⭐" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="560" width="210" height="30" as="geometry"/>
+</mxCell><mxCell id="cf14ca4" value="84%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="330" y="560" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="cc72569" value="87%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="560" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="ceda711" value="79%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="790" y="560" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c4f10ff" value="83%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1020" y="560" width="200" height="30" as="geometry"/>
+</mxCell><mxCell id="c388427" value="Source: ViDoRe benchmark (Faysse et al., ICLR 2025); ColQwen2.5-7B results from arXiv:2506.15213." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="100" y="620" width="1000" height="30" as="geometry"/>
+</mxCell><mxCell id="c9a537b" value="OmniRAG Roadmap: Đang thử nghiệm ColQwen2.5-7B cho tài liệu tiếng Việt nhiều bảng biểu, công thức." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="100" y="645" width="1000" height="30" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

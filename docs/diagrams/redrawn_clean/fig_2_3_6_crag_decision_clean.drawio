@@ -1,0 +1,89 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/clean_diagram_generator">
+  <diagram name="fig_2_3_6_crag_decision_clean" id="diag-fig_2_3_6_crag_decision_clean">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1780" pageHeight="545" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.3.6 - CRAG (Corrective RAG) Decision Flow" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1700" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="e_chunks_classifier" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="chunks" target="classifier">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_query_classifier" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#333333;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="query" target="classifier">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_classifier_relevant" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="classifier" target="relevant">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="255" />
+              <mxPoint x="690" y="140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_classifier_ambiguous" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="classifier" target="ambiguous">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_classifier_no_context" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#b85450;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="classifier" target="no_context">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="255" />
+              <mxPoint x="690" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_relevant_normal" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="relevant" target="normal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ambiguous_caution" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ambiguous" target="caution">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_no_context_refuse" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#b85450;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="no_context" target="refuse">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_normal_llm" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="normal" target="llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_caution_llm" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="caution" target="llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_refuse_llm" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#b85450;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="refuse" target="llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="chunks" value="Retrieved&#10;Top-3 Chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#336699;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="150" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="query" value="Rewritten&#10;Search Query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="280" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="classifier" value="CRAG Classifier&#10;INTERNAL_LLM_MODEL&#10;temp=0, max_tokens=16" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#b36b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="205" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fallback" value="Fallback&#10;return 'relevant' if classifier fails" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#7f6000;" vertex="1" parent="1">
+          <mxGeometry x="360" y="395" width="260" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="relevant" value="relevant&#10;chunks answer directly" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#38761d;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="105" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ambiguous" value="ambiguous&#10;partial match only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#7f6000;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="245" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="no_context" value="no_context&#10;KB lacks information" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#a61c1c;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="385" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="normal" value="Normal Pipeline&#10;answer from context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#38761d;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="105" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="caution" value="Flag Uncertainty&#10;answer with caution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#7f6000;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="245" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="refuse" value="Refuse to Fabricate&#10;state KB has no info" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#a61c1c;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="385" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="llm" value="LLM Generation&#10;OpenRouter&#10;final response" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8;fontColor=#674ea7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="225" width="210" height="110" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,41 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="Figure 3.11c - Telegram Bot Configuration UI" id="diag-c41c4ba">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="c9ce0b1" value="Figure 3.11c - Telegram Bot Configuration UI Wireframe" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="60" y="24" width="1330" height="35" as="geometry"/>
+</mxCell><mxCell id="c42d237" value="Bot configuration page - Channels tab" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="70" y="90" width="1310" height="560" as="geometry"/>
+</mxCell><mxCell id="c77b4e4" value="Telegram Bot&#xa;CONNECTED / NOT CONNECTED status badge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="130" y="145" width="330" height="75" as="geometry"/>
+</mxCell><mxCell id="c51b7fd" value="Token input&#xa;BotFather token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="130" y="285" width="260" height="65" as="geometry"/>
+</mxCell><mxCell id="c8aa892" value="Connect Telegram Bot&#xa;calls getMe + setWebhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="450" y="285" width="270" height="65" as="geometry"/>
+</mxCell><mxCell id="c3dd57f" value="Connected state card&#xa;bot username, webhook URL,&#xa;copy button" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="800" y="170" width="300" height="110" as="geometry"/>
+</mxCell><mxCell id="c76933c" value="AI auto-reply toggle&#xa;config.telegram.is_active" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1160" y="170" width="170" height="110" as="geometry"/>
+</mxCell><mxCell id="c525690" value="Disconnect&#xa;remove webhook + config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="960" y="380" width="230" height="70" as="geometry"/>
+</mxCell><mxCell id="cca0be8" value="Quick setup guide&#xa;1. Create with @BotFather&#xa;2. Paste token&#xa;3. Connect" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="180" y="455" width="440" height="110" as="geometry"/>
+</mxCell><mxCell id="ca26445" value="submit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c51b7fd" target="c8aa892" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c02daf8" value="connected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c8aa892" target="c3dd57f" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c282102" value="enable/disable" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c3dd57f" target="c76933c" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c9687ab" value="cleanup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c3dd57f" target="c525690" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cd51224" value="not connected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" edge="1" source="c77b4e4" target="c51b7fd" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c81fa42" value="The actual UI lives in frontend/src/pages/BotConfigPage.tsx." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="110" y="610" width="900" height="30" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

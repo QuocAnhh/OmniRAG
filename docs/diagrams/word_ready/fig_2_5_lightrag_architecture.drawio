@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_2_5_lightrag_architecture" id="diag-fig_2_5_lightrag_architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1580" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.5 - LightRAG Architecture" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1500" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_1" value="KG indexing stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="120" width="690" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_2" value="Query stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="120" width="660" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_fulltext_insert" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="fulltext" target="insert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_2_insert_extractkg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="insert" target="extractkg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_3_extractkg_graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="extractkg" target="graph">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_4_graph_workspace" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="graph" target="workspace">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_5_kgquery_kgmode" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kgquery" target="kgmode">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_6_kgmode_kgctx" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kgmode" target="kgctx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_7_kgctx_ragctx" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kgctx" target="ragctx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_8_workspace_kgmode" value="if domain uses KG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="workspace" target="kgmode">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="630" y="490" />
+              <mxPoint x="800" y="490" />
+              <mxPoint x="970" y="314" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fulltext" value="Full document text&#10;sanitized, capped" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="115" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="insert" value="LightRAG insert_text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="285" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="extractkg" value="Entity / relation&#10;extraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="455" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="graph" value="GraphML + vector stores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#444444;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="625" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="workspace" value="Per-bot workspace&#10;rag_storage/lightrag_{bot_id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#444444;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="455" width="340" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="kgquery" value="User query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="kgmode" value="LightRAG query&#10;local/global/hybrid" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="kgctx" value="KG context only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="ragctx" value="Merged prompt&#10;chunks + KG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#b36b00;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="230" width="145" height="84" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

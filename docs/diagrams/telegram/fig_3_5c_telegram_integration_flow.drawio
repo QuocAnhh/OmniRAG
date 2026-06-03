@@ -1,0 +1,119 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/drawio_kit" pages="2">
+  <diagram name="Figure 3.5c - Telegram Bot Integration Flow" id="diag-c6553a9">
+    <mxGraphModel dx="1580" dy="842" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="740" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c7b48ea" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" value="Figure 3.5c - Telegram Bot Integration Flow" vertex="1">
+          <mxGeometry height="35" width="1480" x="60" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c67600e" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="&amp;nbsp; &amp;nbsp; &amp;nbsp;Connect path" vertex="1">
+          <mxGeometry height="520" width="690" x="70" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c00d814" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; Inbound path" vertex="1">
+          <mxGeometry height="520" width="690" x="840" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-1" edge="1" parent="1" source="ca05010" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="c9dceba" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ca05010" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="BotConfigPage&#xa;paste BotFather token" vertex="1">
+          <mxGeometry height="70" width="230" x="120" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c770e23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="POST /channels/telegram/connect&#xa;Bearer user auth" vertex="1">
+          <mxGeometry height="70" width="260" x="430" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c9dceba" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Telegram getMe&#xa;verify token" vertex="1">
+          <mxGeometry height="70" width="230" x="120" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="c295b47" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Telegram setWebhook&#xa;secret_token + allowed_updates" vertex="1">
+          <mxGeometry height="80" width="260" x="430" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="c30e7bb" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="bot.config.telegram&#xa;bot_info, webhook_url,&#xa;webhook_secret, is_active" vertex="1">
+          <mxGeometry height="90" width="300" x="270" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="c38c27f" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Telegram Bot API&#xa;POST update" vertex="1">
+          <mxGeometry height="70" width="230" x="900" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="cd32f4d" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Webhook endpoint&#xa;public per-bot URL" vertex="1">
+          <mxGeometry height="70" width="240" x="1210" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="cd7f515" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Constant-time&#xa;secret compare" vertex="1">
+          <mxGeometry height="70" width="230" x="900" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="c587273" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Background task&#xa;handle_webhook()" vertex="1">
+          <mxGeometry height="70" width="240" x="1210" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="c7f9108" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Text / photo / document&#xa;handlers -&gt; RAG core" vertex="1">
+          <mxGeometry height="80" width="300" x="1055" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="cc91c23" edge="1" parent="1" source="ca05010" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c770e23" value="bot_id + token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cd11967" edge="1" parent="1" source="c770e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c295b47" value="setWebhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c84beb0" edge="1" parent="1" source="c38c27f" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cd32f4d" value="webhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c308a80" edge="1" parent="1" source="cd7f515" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c587273" value="accepted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c7ee94f" edge="1" parent="1" source="c587273" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c7f9108" value="route update">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-2" edge="1" parent="1" source="c770e23" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="c9dceba" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="630" y="410" as="sourcePoint" />
+            <mxPoint x="680" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-3" connectable="0" parent="4A9lLzr6SU9LgA3sSXTa-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="getMe" vertex="1">
+          <mxGeometry relative="1" x="-0.0145" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-4" edge="1" parent="1" source="c9dceba" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.519;entryY=0.007;entryDx=0;entryDy=0;entryPerimeter=0;" target="c30e7bb" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="260" y="470" as="sourcePoint" />
+            <mxPoint x="420" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-5" connectable="0" parent="4A9lLzr6SU9LgA3sSXTa-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;span style=&quot;font-family: Arial;&quot;&gt;bot_info&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.0137" y="2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-6" edge="1" parent="1" source="c295b47" style="endArrow=classic;html=1;rounded=0;exitX=0.473;exitY=1.004;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="c30e7bb" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="510" y="480" as="sourcePoint" />
+            <mxPoint x="560" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-7" connectable="0" parent="4A9lLzr6SU9LgA3sSXTa-6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;span style=&quot;font-family: Arial;&quot;&gt;webhook_url&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1051" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-8" edge="1" parent="1" source="cd32f4d" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="cd7f515" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1140" y="340" as="sourcePoint" />
+            <mxPoint x="1190" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4A9lLzr6SU9LgA3sSXTa-9" connectable="0" parent="4A9lLzr6SU9LgA3sSXTa-8" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;span style=&quot;font-family: Arial;&quot;&gt;secret header&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.0527" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="_ULxUZrfqakNKvNOid0H" name="Trang-2">
+    <mxGraphModel dx="2054" dy="1095" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

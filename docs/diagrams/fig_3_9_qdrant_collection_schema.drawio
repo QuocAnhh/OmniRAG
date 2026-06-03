@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="fig_3_9_qdrant_collection_schema" id="diag-cdef3b1">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="c722c97" value="Qdrant Collection Schema — omnirag &amp; omnirag_memories" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="40" y="20" width="1320" height="35" as="geometry"/>
+</mxCell><mxCell id="c5dfe22" value="Collection: omnirag (single-tenant via bot_id filter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="70" width="1280" height="340" as="geometry"/>
+</mxCell><mxCell id="c04d6e7" value="Vector Config&#xa;1536-dim&#xa;Cosine similarity&#xa;HNSW (m=16, ef_construct=128)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="125" width="250" height="84" as="geometry"/>
+</mxCell><mxCell id="c29a45e" value="Payload Fields&#xa;(per vector point)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="110" width="200" height="40" as="geometry"/>
+</mxCell><mxCell id="c3b2122" value="bot_id (string)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="160" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="c302a2b" value="UUID of bot — mandatory filter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="160" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c8e7aad" value="text (string)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="200" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="ca576d7" value="Enriched chunk (prefix + orig) — BM25 FTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="200" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c72fc05" value="parent_text (string?)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="240" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="c140432" value="Parent chunk (Parent-Child strategy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="240" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c072f83" value="context_prefix (string)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="280" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="cabefe2" value="1-2 câu situating context (Anthropic CTX)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="280" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c40d49f" value="source (string)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="320" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="c278d92" value="Tên file gốc — citation [[n]]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="320" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c0eecc1" value="metadata (object)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="420" y="360" width="210" height="35" as="geometry"/>
+</mxCell><mxCell id="c2cdb74" value="page_number, section, document_id, chunk_index" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="640" y="360" width="370" height="35" as="geometry"/>
+</mxCell><mxCell id="c1f320a" value="Payload Indexes&#xa;(3 indexes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="110" width="220" height="40" as="geometry"/>
+</mxCell><mxCell id="c2530e4" value="KEYWORD on bot_id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="160" width="220" height="30" as="geometry"/>
+</mxCell><mxCell id="cd00270" value="O(1) tenant filter — mandatory in every query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="192" width="220" height="22" as="geometry"/>
+</mxCell><mxCell id="c370bf4" value="TEXT on text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="220" width="220" height="30" as="geometry"/>
+</mxCell><mxCell id="c52e845" value="Sparse BM25 named vector with IDF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="252" width="220" height="22" as="geometry"/>
+</mxCell><mxCell id="c28a26e" value="KEYWORD on source" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="280" width="220" height="30" as="geometry"/>
+</mxCell><mxCell id="cbd3727" value="Filter by document — debug retrieval endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1050" y="312" width="220" height="22" as="geometry"/>
+</mxCell><mxCell id="cd15a1d" value="Collection: omnirag_memories (Mem0 — managed by mem0ai library)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="440" width="1280" height="170" as="geometry"/>
+</mxCell><mxCell id="c125f3f" value="Same Vector Config&#xa;1536-dim, Cosine&#xa;(shared Qdrant infra)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="495" width="230" height="70" as="geometry"/>
+</mxCell><mxCell id="c032bc6" value="Metadata&#xa;{user_id, bot_id,&#xa; session_id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="400" y="495" width="200" height="70" as="geometry"/>
+</mxCell><mxCell id="ccafa4c" value="Managed by mem0ai&#xa;• auto-create collection&#xa;• fact extraction&#xa;• embedding + upsert&#xa;• search with score threshold" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="680" y="495" width="280" height="101" as="geometry"/>
+</mxCell><mxCell id="cf03f76" value="Document → Upsert Flow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="640" width="1280" height="100" as="geometry"/>
+</mxCell><mxCell id="c8283f1" value="Parse&#xa;(opendataloader)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="680" width="170" height="50" as="geometry"/>
+</mxCell><mxCell id="cfa2cf0" value="Chunk&#xa;(domain strategy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="310" y="680" width="170" height="50" as="geometry"/>
+</mxCell><mxCell id="cb57909" value="Context Prefix&#xa;(gpt-5.4-nano)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="520" y="680" width="170" height="50" as="geometry"/>
+</mxCell><mxCell id="c2b7fc5" value="Embed&#xa;(text-embed-3-small)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="730" y="680" width="170" height="50" as="geometry"/>
+</mxCell><mxCell id="c112283" value="Qdrant Upsert&#xa;(PointStruct)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="940" y="680" width="170" height="50" as="geometry"/>
+</mxCell><mxCell id="c3f632e" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c8283f1" target="cfa2cf0" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cbe449a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cfa2cf0" target="cb57909" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c2fda8a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cb57909" target="c2b7fc5" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="caf6205" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c2b7fc5" target="c112283" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

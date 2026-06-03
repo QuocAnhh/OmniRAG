@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_2_3_1_hybrid_search" id="diag-fig_2_3_1_hybrid_search">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1780" pageHeight="610" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.3.1 - Hybrid Search + Cross-Encoder Reranking" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1700" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_query_embed" value="embed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="query" target="embed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="185" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_2_query_bm25" value="query text" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="query" target="bm25">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_3_embed_vector" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="embed" target="vector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_4_bm25_fts" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="bm25" target="fts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_5_vector_rrf" value="ranked list" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#333333;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="vector" target="rrf">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="870" y="179" />
+              <mxPoint x="870" y="288" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_6_fts_rrf" value="ranked list" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#333333;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="fts" target="rrf">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="870" y="389" />
+              <mxPoint x="870" y="288" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_7_rrf_rerank" value="candidates" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="rrf" target="rerank">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_8_rerank_final" value="top_k" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="rerank" target="final">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="query" value="Original&#10;Query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="embed" value="Embed Query&#10;text-embedding-3-small&#10;1536-dim vector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="140" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="vector" value="Vector Search&#10;Qdrant HNSW cosine&#10;top_k * 2 candidates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="140" width="240" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="bm25" value="Sparse BM25 Vector&#10;FastEmbed + IDF&#10;Qdrant named vector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#b36b00;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="350" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="fts" value="Full-Text Results&#10;keyword matches&#10;top_k * 2 candidates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#b36b00;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="350" width="240" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="rrf" value="RRF Merge&#10;k = 60&#10;score = sum 1/(k+rank)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="240" width="230" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="rerank" value="Cross-Encoder Rerank&#10;ms-marco / bge-reranker&#10;sigmoid normalize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="240" width="260" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="final" value="Final Top-K&#10;hybrid_score &amp;gt;= 0.15&#10;Context Assembly" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="240" width="210" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="filter" value="Tenant filter: FieldCondition(bot_id) applies to both paths" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
+          <mxGeometry x="300" y="470" width="530" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="formula" value="Score rule: hybrid_score = sigmoid(cross_encoder); fallback = RRF score" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="900" y="450" width="550" height="85" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

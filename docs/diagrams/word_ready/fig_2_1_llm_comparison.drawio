@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_2_1_llm_comparison" id="diag-fig_2_1_llm_comparison">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1560" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.1 - LLM Comparison Matrix" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1480" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_0_0" value="Model family" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="130" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_0_1" value="Strength" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="130" width="340" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_0_2" value="Typical use" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="130" width="390" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_0_3" value="OmniRAG role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="130" width="350" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_1_0" value="GPT-4o / mini" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="218" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_1_1" value="Vision, stable tool use" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="218" width="340" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_1_2" value="general answer, image reasoning" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="690" y="218" width="390" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_1_3" value="chat + image description" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="218" width="350" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_2_0" value="GPT-5.x nano" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="306" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_2_1" value="low latency, low cost" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="306" width="340" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_2_2" value="internal classification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="690" y="306" width="390" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_2_3" value="CRAG / rewrite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="306" width="350" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_3_0" value="Claude / Gemini" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="394" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_3_1" value="long context, reasoning" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="394" width="340" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_3_2" value="fallback provider" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="690" y="394" width="390" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_3_3" value="OpenRouter option" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="394" width="350" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_4_0" value="Open embeddings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="482" width="260" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_4_1" value="cost-controlled vectors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="482" width="340" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_4_2" value="document retrieval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="690" y="482" width="390" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="llm_4_3" value="Qdrant indexing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="482" width="350" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="No live refresh: values follow the thesis document, not current web data." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="360" y="620" width="820" height="56" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

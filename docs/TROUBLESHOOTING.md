@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Các lỗi thường gặp khi chạy OmniRAG trên snapshot `refactor/backend-perf-p1-observability`.
+Các lỗi thường gặp khi chạy OmniRAG sau audit ngày 2026-06-01.
 
 ## Không thấy `backend/.env.example`
 
@@ -85,10 +85,24 @@ Kiểm tra Qdrant:
 
 ```bash
 curl http://localhost:6333/
+curl http://localhost:6333/healthz
 docker compose logs --tail=100 qdrant
 ```
 
 Sau khi upload tài liệu, đợi Celery hoàn tất. Frontend Knowledge Graph nằm ở `/bots/:id/graph`; API backend là `/api/v1/bots/{bot_id}/knowledge-graph`.
+
+Collection mặc định là `omnirag_openrouter_collection_v3`. Nếu collection rỗng, kiểm tra log `celery_worker`, trạng thái document trong PostgreSQL và `RAG_COLLECTION_NAME` effective trong backend/Celery.
+
+## OpenDataLoader hybrid kéo CUDA hoặc image quá nặng
+
+Image `backend/Dockerfile.hybrid` đã được chỉnh CPU-only: cài torch từ PyTorch CPU index rồi mới cài `opendataloader-pdf[hybrid]`. Mặc định:
+
+```env
+PDF_HYBRID_DEVICE=cpu
+PDF_HYBRID_FORCE_OCR=false
+```
+
+Nếu thấy package `nvidia-*` trong image, build guard sẽ fail thay vì silently tạo image CUDA nhiều GB.
 
 ## Chat/RAG trả lỗi model hoặc provider
 

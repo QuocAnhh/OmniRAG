@@ -9,7 +9,7 @@ File này thay thế nội dung “complete checklist” cũ bằng trạng thá
 | Docker Compose stack | Backend, frontend, gateway, db, mongodb, redis, minio, qdrant, celery, hybrid parser |
 | Gateway | Proxy, CORS, rate limit, health/readiness/metrics, GET cache |
 | Backend API | Auth, tenants, bots, documents, chat, graph, dashboard, analytics, users, integrations, channels |
-| RAG | OpenRouter RAG service, LightRAG, Qdrant, Redis cache, Celery ingestion |
+| RAG | OpenRouter RAG service, LightRAG, Qdrant v3 dense+sparse RRF, Redis cache, Celery ingestion |
 | Frontend | React app with protected dashboard/bots/chat/graph/settings routes |
 | Zalo Bot Platform | Connect/disconnect/status/webhook |
 | Zalo Personal | QR-login worker, multi-account APIs, access grants, HMAC inbound |
@@ -33,10 +33,10 @@ File này thay thế nội dung “complete checklist” cũ bằng trạng thá
 
 1. Upload one file via `POST /api/v1/bots/{bot_id}/documents`.
 2. Backend stores metadata/file and queues Celery.
-3. Worker parses via OpenDataLoader/hybrid service.
-4. RAG service chunks with `recursive`, `sentence`, `article`, `parent_child` or `semantic`.
-5. Embeddings go to Qdrant.
-6. Cache is invalidated for the bot.
+3. Worker parses via OpenDataLoader/hybrid service or dedicated non-PDF loaders.
+4. RAG service chunks with structured PDF JSON metadata or `recursive`, `sentence`, `article`, `parent_child`, `semantic`.
+5. Dense and sparse vectors go to Qdrant collection `omnirag_openrouter_collection_v3`.
+6. Cache `kb_version:{bot_id}` is incremented for the bot.
 
 ## Not complete / known gaps
 
@@ -62,3 +62,9 @@ Then:
 4. Wait for Celery ingestion.
 5. Chat.
 6. Open `/bots/:id/graph` if Knowledge Graph is enabled.
+
+For full parser/RAG E2E, run:
+
+```bash
+python scripts/benchmark_opendataloader_pipeline.py
+```

@@ -1,0 +1,33 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="Figure KL.1 - Telegram Bot Demo Summary" id="diag-cac1837">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="ca9e8c8" value="Figure KL.1 - Telegram Bot Demo Summary" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="60" y="24" width="1330" height="35" as="geometry"/>
+</mxCell><mxCell id="cacb4e0" value="Telegram App&#xa;user sends text/photo/document" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="260" width="250" height="90" as="geometry"/>
+</mxCell><mxCell id="c1c6648" value="Telegram Bot API&#xa;webhook + secret token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="430" y="260" width="250" height="90" as="geometry"/>
+</mxCell><mxCell id="c5de396" value="OmniRAG Backend&#xa;TelegramBotService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="760" y="260" width="250" height="90" as="geometry"/>
+</mxCell><mxCell id="cfe782f" value="RAG Core&#xa;Qdrant v3 + OpenRouter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1090" y="260" width="250" height="90" as="geometry"/>
+</mxCell><mxCell id="c3c2430" value="message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cacb4e0" target="c1c6648" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c906dc7" value="update" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c1c6648" target="c5de396" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c1fe340" value="query/context" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c5de396" target="cfe782f" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c674be8" value="answer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cfe782f" target="c5de396" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c9f4932" value="sendMessage" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c5de396" target="c1c6648" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c8fcc2d" value="reply" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c1c6648" target="cacb4e0" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

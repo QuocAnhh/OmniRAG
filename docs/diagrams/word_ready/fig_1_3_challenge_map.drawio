@@ -1,0 +1,67 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_1_3_challenge_map" id="diag-fig_1_3_challenge_map">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1520" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 1.3 - Technical Challenge Map" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1440" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_1" value="Problem space" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="670" height="580" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_2" value="OmniRAG design response" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="110" width="670" height="580" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_stale_rag" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="stale" target="rag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_2_messy_loader" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="messy" target="loader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_3_miss_hybrid" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="miss" target="hybrid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_4_halluc_crag" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="halluc" target="crag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_5_channel_omni" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="channel" target="omni">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="stale" value="LLM knowledge is stale&#10;and not business-specific" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="160" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="rag" value="RAG over private data&#10;with source grounding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="160" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="messy" value="Documents are messy:&#10;PDF, tables, scans, long text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="260" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="loader" value="OpenDataLoader + chunk strategy&#10;by domain profile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="260" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="miss" value="Naive retrieval misses&#10;keyword or semantic matches" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="360" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="hybrid" value="Hybrid search:&#10;vector + BM25 + RRF + rerank" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="360" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="halluc" value="Model may fabricate&#10;when evidence is weak" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="460" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="crag" value="CRAG classifier&#10;relevant / ambiguous / no_context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="460" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="channel" value="Many channels need&#10;one consistent answer core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="560" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="omni" value="Omnichannel adapters&#10;reuse the same backend pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="560" width="520" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="center" value="OmniRAG thesis goal:&#10;reliable custom-data IVA for Vietnamese SMEs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#b36b00;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="715" width="440" height="64" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

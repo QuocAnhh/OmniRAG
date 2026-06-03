@@ -1,6 +1,6 @@
 # Integration Summary
 
-Tài liệu này tóm tắt trạng thái tích hợp hiện tại của OmniRAG trên snapshot `refactor/backend-perf-p1-observability`.
+Tài liệu này tóm tắt trạng thái tích hợp hiện tại của OmniRAG sau audit ngày 2026-06-01.
 
 ## Runtime summary
 
@@ -9,8 +9,8 @@ Tài liệu này tóm tắt trạng thái tích hợp hiện tại của OmniRAG
 | Frontend | React 19 SPA, gọi gateway `http://localhost:8080` |
 | Gateway | Go proxy, CORS, rate limit, health/readiness/metrics, GET cache |
 | Backend | FastAPI, SQLAlchemy sync/async, MongoDB, Redis, Celery, MinIO, Qdrant |
-| RAG | OpenRouter/LightRAG, Qdrant retrieval, rerank/rewrite/CRAG, Redis cache |
-| Parsing | OpenDataLoader local/hybrid service build từ `backend/Dockerfile.hybrid` |
+| RAG | OpenRouter/LightRAG, Qdrant v3 dense+sparse RRF retrieval, rerank/rewrite/CRAG, Redis cache |
+| Parsing | OpenDataLoader local/hybrid CPU-only service build từ `backend/Dockerfile.hybrid` |
 | Channels | Zalo Bot Platform, Zalo Hub webhook, Facebook Messenger worker |
 
 ## Ports
@@ -43,7 +43,10 @@ REDIS_URL=redis://redis:6379/0
 OPENROUTER_API_KEY=sk-or-v1-your-key
 OPENAI_API_KEY=sk-your-openai-key
 PUBLIC_URL=https://your-public-domain.example.com
+RAG_COLLECTION_NAME=omnirag_openrouter_collection_v3
 ```
+
+Host ports có thể override bằng env như `GATEWAY_HOST_PORT`, `BACKEND_HOST_PORT`, `QDRANT_HOST_PORT` và `PDF_HYBRID_HOST_PORT`.
 
 Compose override model:
 
@@ -111,6 +114,14 @@ Supported:
 - `frontend/src/api/folders.ts` đang thiếu prefix `/api/v1` trong URL.
 - Gateway cache chỉ GET, không cache POST chat.
 - Một số utility OpenRouter route phục vụ test/debug, không phải flow chính của frontend.
+
+## RAG/parser status
+
+- Qdrant image pin: `qdrant/qdrant:v1.16.0`.
+- Default collection: `omnirag_openrouter_collection_v3`.
+- PDF parser: OpenDataLoader `format="markdown,json"`, external images, xycut reading order.
+- Supported uploads: `.pdf`, `.txt`, `.md`, `.csv`, `.docx`, `.pptx`, `.xlsx`.
+- Legacy `.doc`, `.ppt`, `.xls` return `415`.
 
 ## Verification commands
 

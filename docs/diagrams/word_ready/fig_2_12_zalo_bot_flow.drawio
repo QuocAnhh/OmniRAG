@@ -1,0 +1,260 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_2_12_zalo_bot_flow" id="diag-fig_2_12_zalo_bot_flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1760" pageHeight="1320" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.12 - Zalo Bot Integration Flow" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1680" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_1" value="A. Connect-time setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="80" width="1660" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_2" value="B. Runtime webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="540" width="1660" height="700" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_admin_s_backend_s" value="POST /channels/zalo-bot/connect" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="195" y="245" as="sourcePoint" />
+            <mxPoint x="515" y="245" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_2_backend_s_zalo_s" value="getMe(bot_token)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="515" y="290" as="sourcePoint" />
+            <mxPoint x="842" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_3_zalo_s_backend_s" value="bot info" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="842" y="335" as="sourcePoint" />
+            <mxPoint x="515" y="335" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_4_backend_s_zalo_s" value="setWebhook(webhook URL + secret)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="515" y="380" as="sourcePoint" />
+            <mxPoint x="842" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_5_zalo_s_backend_s" value="webhook ok" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="842" y="425" as="sourcePoint" />
+            <mxPoint x="515" y="425" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_6_backend_s_pg_s" value="save bot.config.zalo_bot" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="515" y="465" as="sourcePoint" />
+            <mxPoint x="1210" y="465" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_7_backend_s_admin_s" value="connected" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="515" y="500" as="sourcePoint" />
+            <mxPoint x="195" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_8_user_r_zalo_r" value="send message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="157" y="695" as="sourcePoint" />
+            <mxPoint x="357" y="695" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_9_zalo_r_gateway_r" value="POST webhook/{bot_id}&#10;+ x-bot-api-secret-token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="357" y="740" as="sourcePoint" />
+            <mxPoint x="565" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_10_gateway_r_backend_r" value="proxy to FastAPI route" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="565" y="780" as="sourcePoint" />
+            <mxPoint x="797" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_11_backend_r_pg_r" value="load webhook_secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="797" y="820" as="sourcePoint" />
+            <mxPoint x="1030" y="820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_12_pg_r_backend_r" value="expected secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1030" y="860" as="sourcePoint" />
+            <mxPoint x="797" y="860" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_13_backend_r_backend_r" value="constant-time verify&#10;hmac.compare_digest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="797" y="900" as="sourcePoint" />
+            <mxPoint x="797" y="932" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="892" y="900" />
+              <mxPoint x="892" y="932" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_14_backend_r_service_r" value="asyncio.create_task(handle_webhook)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="797" y="940" as="sourcePoint" />
+            <mxPoint x="1247" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_15_backend_r_zalo_r" value="200 {status: received}" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="797" y="980" as="sourcePoint" />
+            <mxPoint x="357" y="980" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_16_service_r_zalo_r" value="sendChatAction typing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1247" y="1025" as="sourcePoint" />
+            <mxPoint x="357" y="1025" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_17_service_r_rag_r" value="chat(bot_id, query,&#10;user_id=zalo_chat_id)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1247" y="1065" as="sourcePoint" />
+            <mxPoint x="1457" y="1065" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_18_rag_r_ai_r" value="embed + retrieve + generate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1457" y="1105" as="sourcePoint" />
+            <mxPoint x="1635" y="1105" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_19_ai_r_rag_r" value="context + answer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1635" y="1145" as="sourcePoint" />
+            <mxPoint x="1457" y="1145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_20_rag_r_service_r" value="AI response" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1457" y="1185" as="sourcePoint" />
+            <mxPoint x="1247" y="1185" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_21_service_r_zalo_r" value="sendMessage(chat_id, response)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1247" y="1215" as="sourcePoint" />
+            <mxPoint x="357" y="1215" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_22_zalo_r_user_r" value="reply to user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=11;fontFamily=Arial;fontColor=#222222;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="357" y="1228" as="sourcePoint" />
+            <mxPoint x="157" y="1228" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="admin_s" value="Admin UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="135" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="admin_s_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="192" y="215" width="6" height="275" as="geometry" />
+        </mxCell>
+        <mxCell id="backend_s" value="FastAPI Channel API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="135" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="backend_s_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="512" y="215" width="6" height="275" as="geometry" />
+        </mxCell>
+        <mxCell id="zalo_s" value="Zalo Bot API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="135" width="165" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="zalo_s_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="839" y="215" width="6" height="275" as="geometry" />
+        </mxCell>
+        <mxCell id="pg_s" value="PostgreSQL&#10;bot.config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#444444;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1115" y="135" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="pg_s_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1207" y="215" width="6" height="275" as="geometry" />
+        </mxCell>
+        <mxCell id="act_backend_setup" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="510" y="240" width="10" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="act_zalo_setup" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="837" y="285" width="10" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="act_pg_setup" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="1205" y="445" width="10" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="user_r" value="Zalo User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="85" y="600" width="145" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="user_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="154" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="zalo_r" value="Zalo Bot API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="600" width="155" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="zalo_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="354" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway_r" value="Go Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="600" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="562" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="backend_r" value="FastAPI Channel API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="705" y="600" width="185" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="backend_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="794" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="pg_r" value="PostgreSQL&#10;bot.config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#444444;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="945" y="600" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="pg_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1027" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="service_r" value="ZaloBotService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="600" width="165" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="service_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1244" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_r" value="RAG + Memory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1375" y="600" width="165" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1454" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="ai_r" value="OpenRouter&#10;Qdrant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="600" width="130" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ai_r_life" value="" style="line;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1632" y="680" width="6" height="545" as="geometry" />
+        </mxCell>
+        <mxCell id="act_zalo_runtime" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="352" y="690" width="10" height="535" as="geometry" />
+        </mxCell>
+        <mxCell id="act_gateway" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="560" y="735" width="10" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="act_backend_runtime" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="792" y="775" width="10" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="act_pg_runtime" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="1025" y="815" width="10" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="act_service" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="1242" y="935" width="10" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="act_rag" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="1452" y="1055" width="10" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="act_ai" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=1;fontFamily=Arial;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="1095" width="10" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="Code-truth note: current Zalo Direct path dispatches an asyncio background task in FastAPI; it is not shown as a separate Celery worker in this diagram." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=9;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
+          <mxGeometry x="340" y="1265" width="1080" height="38" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

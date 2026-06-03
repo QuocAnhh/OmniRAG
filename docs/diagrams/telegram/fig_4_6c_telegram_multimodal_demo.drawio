@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/drawio_kit">
+  <diagram name="Figure 4.6c - Telegram Bot Multimodal Demo" id="diag-c4b605e">
+    <mxGraphModel dx="2054" dy="1095" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c11d0dd" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" value="Figure 4.6c - Telegram Bot Multimodal Demo" vertex="1">
+          <mxGeometry height="35" width="1480" x="60" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c1ce38a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Text Q&amp;amp;A" vertex="1">
+          <mxGeometry height="560" width="460" x="70" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c2d4dbf" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Photo with vision" vertex="1">
+          <mxGeometry height="560" width="460" x="570" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cd42c3e" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Document upload" vertex="1">
+          <mxGeometry height="560" width="460" x="1070" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ced8076" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="User question" vertex="1">
+          <mxGeometry height="60" width="240" x="150" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="cb52d04" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="RAG chat&#xa;session tg_{chat_id}" vertex="1">
+          <mxGeometry height="75" width="240" x="150" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="cffdb87" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Answer with citations" vertex="1">
+          <mxGeometry height="60" width="240" x="150" y="465" as="geometry" />
+        </mxCell>
+        <mxCell id="c4ed57b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Photo + caption" vertex="1">
+          <mxGeometry height="60" width="240" x="650" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c0a4351" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Download file&#xa;getFile + download_file" vertex="1">
+          <mxGeometry height="70" width="240" x="650" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="c046ea6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="OpenRouter vision&#xa;description in Vietnamese" vertex="1">
+          <mxGeometry height="80" width="240" x="650" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="cd0932b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="RAG answer&#xa;using image description" vertex="1">
+          <mxGeometry height="70" width="240" x="650" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="cf88808" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Document message&#xa;PDF/DOCX/TXT/etc." vertex="1">
+          <mxGeometry height="70" width="240" x="1150" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="c78d9f8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Size check &lt;= 20 MB&#xa;upload to MinIO" vertex="1">
+          <mxGeometry height="80" width="240" x="1150" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="c8dae75" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Text preview for text/*&#xa;metadata for other files" vertex="1">
+          <mxGeometry height="85" width="240" x="1150" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="c0116a8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="RAG prompt includes&#xa;caption + file context" vertex="1">
+          <mxGeometry height="70" width="240" x="1150" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="ce6e407" edge="1" parent="1" source="ced8076" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cb52d04" value="query">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbb2655" edge="1" parent="1" source="cb52d04" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cffdb87" value="response">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c536c96" edge="1" parent="1" source="c4ed57b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c0a4351" value="file_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ced3aa1" edge="1" parent="1" source="c0a4351" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c046ea6" value="image bytes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c71cb17" edge="1" parent="1" source="c046ea6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cd0932b" value="description">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c83c4d6" edge="1" parent="1" source="cf88808" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c78d9f8" value="file">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8a689c" edge="1" parent="1" source="c78d9f8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c8dae75" value="stored object">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3ac97b" edge="1" parent="1" source="c8dae75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c0116a8" value="context">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cf41da1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" value="Current Telegram document handler does not run full Knowledge Base ingestion; full PDF layout parsing still belongs to the normal upload pipeline." vertex="1">
+          <mxGeometry height="40" width="1220" x="160" y="705" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

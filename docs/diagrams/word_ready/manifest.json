@@ -1,0 +1,413 @@
+[
+  {
+    "figure_id": "1.1",
+    "caption": "Figure 1.1 - IVA Problem Overview",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_1_1_iva_overview.drawio",
+    "png": "docs/diagrams/word_ready/fig_1_1_iva_overview.png",
+    "source_notes": [
+      "Synthesized from DOCX Chapter 1, backend channel architecture, and Telegram integration docs."
+    ]
+  },
+  {
+    "figure_id": "1.2",
+    "caption": "Figure 1.2 - Omnichannel Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_1_2_omnichannel_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_1_2_omnichannel_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "1.3",
+    "caption": "Figure 1.3 - Technical Challenge Map",
+    "kind": "quadrant",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_1_3_challenge_map.drawio",
+    "png": "docs/diagrams/word_ready/fig_1_3_challenge_map.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "1.5",
+    "caption": "Figure 1.5 - Use Case Overview",
+    "kind": "use_case",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_1_5_use_case_overview.drawio",
+    "png": "docs/diagrams/word_ready/fig_1_5_use_case_overview.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.1",
+    "caption": "Figure 2.1 - LLM Comparison Matrix",
+    "kind": "matrix",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_1_llm_comparison.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_1_llm_comparison.png",
+    "source_notes": [],
+    "excalidraw": "docs/diagrams/word_ready/fig_2_1_llm_comparison.excalidraw.json"
+  },
+  {
+    "figure_id": "2.2.1",
+    "caption": "Figure 2.2.1 - Basic RAG Pipeline",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_2_1_basic_rag_pipeline.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_2_1_basic_rag_pipeline.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.2.2",
+    "caption": "Figure 2.2.2 - Naive RAG vs Advanced RAG vs Agentic RAG",
+    "kind": "comparison",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_2_2_rag_evolution.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_2_2_rag_evolution.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.3.1",
+    "caption": "Figure 2.3.1 - Hybrid Search + Cross-Encoder Reranking",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_3_1_hybrid_search.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_3_1_hybrid_search.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.3.2",
+    "caption": "Figure 2.3.2 - HyDE + Multi-Query Fusion",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_3_2_hyde_multi_query.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_3_2_hyde_multi_query.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.3.6",
+    "caption": "Figure 2.3.6 - CRAG Decision Flow",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_3_6_crag_decision.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_3_6_crag_decision.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.3.7",
+    "caption": "Figure 2.3.7 - ColPali Multimodal Retrieval",
+    "kind": "comparison",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_3_7_colpali_multimodal.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_3_7_colpali_multimodal.png",
+    "source_notes": [
+      "Roadmap/theoretical figure from DOCX; not required for current default backend path."
+    ]
+  },
+  {
+    "figure_id": "2.4",
+    "caption": "Figure 2.4 - Mem0 Persistent Memory Flow",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_4_mem0_memory.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_4_mem0_memory.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.5",
+    "caption": "Figure 2.5 - LightRAG Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_5_lightrag_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_5_lightrag_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.7.1",
+    "caption": "Figure 2.7.1 - RAG Observability Stack",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_7_1_observability_stack.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_7_1_observability_stack.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.8",
+    "caption": "Figure 2.8 - Qdrant Collection Schema",
+    "kind": "data_model",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_8_qdrant_schema.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_8_qdrant_schema.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.9",
+    "caption": "Figure 2.9 - OmniRAG System Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_9_system_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_9_system_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.12",
+    "caption": "Figure 2.12 - Zalo Bot Integration Flow",
+    "kind": "sequence",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_12_zalo_bot_flow.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_12_zalo_bot_flow.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "2.13",
+    "caption": "Figure 2.13 - Facebook Messenger Integration Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_2_13_facebook_messenger_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_2_13_facebook_messenger_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.1",
+    "caption": "Figure 3.1 - Omnichannel Message Flow",
+    "kind": "sequence",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_1_omnichannel_message_flow.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_1_omnichannel_message_flow.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.1b",
+    "caption": "Figure 3.1b - Facebook Messenger Message Flow",
+    "kind": "sequence",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_1_b_facebook_message_flow.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_1_b_facebook_message_flow.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.2",
+    "caption": "Figure 3.2 - Use Case Diagram",
+    "kind": "use_case",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_2_use_case_diagram.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_2_use_case_diagram.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.3",
+    "caption": "Figure 3.3 - RAG Sequence Diagram",
+    "kind": "sequence",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_3_rag_sequence.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_3_rag_sequence.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.4",
+    "caption": "Figure 3.4 - Activity Diagram: Document Processing",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_4_document_processing_activity.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_4_document_processing_activity.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.5",
+    "caption": "Figure 3.5 - Zalo Integration Flow",
+    "kind": "flowchart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_5_zalo_integration_flow.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_5_zalo_integration_flow.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.5b",
+    "caption": "Figure 3.5b - Channel Integration Comparison",
+    "kind": "comparison",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_5_b_messenger_comparison_flow.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_5_b_messenger_comparison_flow.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.6",
+    "caption": "Figure 3.6 - Two-Stage Document Processing Flow",
+    "kind": "timeline",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_6_two_stage_document_processing.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_6_two_stage_document_processing.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.7",
+    "caption": "Figure 3.7 - System Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_7_system_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_7_system_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.8",
+    "caption": "Figure 3.8 - ERD PostgreSQL",
+    "kind": "er",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_8_erd_postgresql.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_8_erd_postgresql.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.9",
+    "caption": "Figure 3.9 - Qdrant Collection Schema",
+    "kind": "data_model",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_9_qdrant_collection_schema.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_9_qdrant_collection_schema.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.9b",
+    "caption": "Figure 3.9b - Observability Architecture",
+    "kind": "architecture",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_3_9_b_observability_architecture.drawio",
+    "png": "docs/diagrams/word_ready/fig_3_9_b_observability_architecture.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "3.10",
+    "caption": "Figure 3.10 - Dashboard and Bot Wizard",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "dashboard_and_bot_wizard"
+  },
+  {
+    "figure_id": "3.11",
+    "caption": "Figure 3.11 - Channel Configuration UI",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "channel_configuration_ui"
+  },
+  {
+    "figure_id": "3.11b",
+    "caption": "Figure 3.11b - Facebook Messenger Configuration UI",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "facebook_messenger_configuration_ui"
+  },
+  {
+    "figure_id": "3.12",
+    "caption": "Figure 3.12 - Knowledge Graph Visualization",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "knowledge_graph_visualization"
+  },
+  {
+    "figure_id": "3.13",
+    "caption": "Figure 3.13 - Chat UI",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "chat_ui"
+  },
+  {
+    "figure_id": "4.1",
+    "caption": "Figure 4.1 - Docker Compose Stack",
+    "kind": "deployment",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_4_1_docker_compose_stack.drawio",
+    "png": "docs/diagrams/word_ready/fig_4_1_docker_compose_stack.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "4.1b",
+    "caption": "Figure 4.1b - Observability Deployment",
+    "kind": "deployment",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_4_1_b_observability_deployment.drawio",
+    "png": "docs/diagrams/word_ready/fig_4_1_b_observability_deployment.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "4.2",
+    "caption": "Figure 4.2 - Web Dashboard Demo",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "web_dashboard_demo"
+  },
+  {
+    "figure_id": "4.3",
+    "caption": "Figure 4.3 - Chat Playground Demo",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "chat_playground_demo"
+  },
+  {
+    "figure_id": "4.4",
+    "caption": "Figure 4.4 - Zalo Bot Direct Demo",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "zalo_bot_direct_demo"
+  },
+  {
+    "figure_id": "4.5",
+    "caption": "Figure 4.5 - Knowledge Graph Visualization Demo",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "knowledge_graph_visualization_demo"
+  },
+  {
+    "figure_id": "4.6",
+    "caption": "Figure 4.6 - Persistent Memory Demo",
+    "kind": "comparison",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_4_6_persistent_memory_demo.drawio",
+    "png": "docs/diagrams/word_ready/fig_4_6_persistent_memory_demo.png",
+    "source_notes": []
+  },
+  {
+    "figure_id": "4.6b",
+    "caption": "Figure 4.6b - Facebook Messenger Bot Demo",
+    "kind": "screenshot",
+    "status": "requires_screenshot",
+    "reason": "The DOCX describes this as a real UI/demo screenshot, so the generator does not fabricate it as a Draw.io diagram.",
+    "drawio": null,
+    "png": null,
+    "slug": "facebook_messenger_bot_demo"
+  },
+  {
+    "figure_id": "4.7",
+    "caption": "Figure 4.7 - RAG Evaluation Dashboard",
+    "kind": "chart",
+    "status": "generated",
+    "drawio": "docs/diagrams/word_ready/fig_4_7_rag_evaluation_dashboard.drawio",
+    "png": "docs/diagrams/word_ready/fig_4_7_rag_evaluation_dashboard.png",
+    "source_notes": []
+  }
+]

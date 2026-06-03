@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4">
+  <diagram name="fig_3_4_document_processing_activity" id="diag-fig_3_4_document_processing_activity">
+    <mxGraphModel dx="2282" dy="1217" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1680" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" value="Figure 3.4 - Activity Diagram: Document Processing" vertex="1">
+          <mxGeometry height="35" width="1600" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" value="&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Upload and vector indexing" vertex="1">
+          <mxGeometry height="650" width="720" x="70" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" value="&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Async knowledge graph stage" vertex="1">
+          <mxGeometry height="650" width="680" x="900" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_upload_task" edge="1" parent="1" source="upload" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="task" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_2_task_load" edge="1" parent="1" source="task" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="load" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_3_load_chunk" edge="1" parent="1" source="load" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#6c8ebf;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="chunk" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_4_chunk_index" edge="1" parent="1" source="chunk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="410" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_5_index_complete" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="complete" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="560" y="660" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_6_complete_kgcheck" edge="1" parent="1" source="complete" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="kgcheck" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="930" y="660" />
+              <mxPoint x="930" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_7_kgcheck_enqueue" edge="1" parent="1" source="kgcheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="enqueue" value="yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_8_enqueue_sanitize" edge="1" parent="1" source="enqueue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="sanitize" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_9_sanitize_insert" edge="1" parent="1" source="sanitize" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#9673a6;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="insert" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_10_insert_kgdone" edge="1" parent="1" source="insert" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#82b366;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" target="kgdone" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_11_kgcheck_skip" edge="1" parent="1" source="kgcheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#999999;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4;" target="skip" value="no">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="upload" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="User uploads file&#xa;stored in MinIO" vertex="1">
+          <mxGeometry height="72" width="230" x="130" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="task" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Celery process_document_task&#xa;status = processing" vertex="1">
+          <mxGeometry height="72" width="250" x="470" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="load" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Load document once&#xa;OpenDataLoader/docling fallback" vertex="1">
+          <mxGeometry height="80" width="300" x="260" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="chunk" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Domain chunking&#xa;article / sentence / recursive" vertex="1">
+          <mxGeometry height="80" width="300" x="260" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="complete" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Document status = completed&#xa;metadata available immediately" vertex="1">
+          <mxGeometry height="80" width="240" x="590" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="kgcheck" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;fontStyle=1;" value="KG enabled&#xa;for domain?" vertex="1">
+          <mxGeometry height="90" width="150" x="975" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="enqueue" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Enqueue&#xa;build_knowledge_graph_task" vertex="1">
+          <mxGeometry height="80" width="260" x="1210" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="sanitize" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="Sanitize full text&#xa;remove null bytes, cap size" vertex="1">
+          <mxGeometry height="80" width="260" x="1210" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="insert" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#674ea7;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="LightRAG insert_text&#xa;entities + relations" vertex="1">
+          <mxGeometry height="80" width="260" x="1210" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="kgdone" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#444444;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" value="kg_status updated&#xa;ready / failed" vertex="1">
+          <mxGeometry height="70" width="260" x="1210" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="skip" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;" value="No KG&#xa;skip stage 2" vertex="1">
+          <mxGeometry height="70" width="180" x="955" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="71i3PVgfWqjylCSq0JHA-1" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="&lt;span style=&quot;color: rgb(68, 68, 68); font-family: Arial; font-size: 11px; font-weight: 700;&quot;&gt;Embed + upsert chunks&lt;/span&gt;&lt;br style=&quot;color: rgb(68, 68, 68); font-family: Arial; font-size: 11px; font-weight: 700;&quot;&gt;&lt;span style=&quot;color: rgb(68, 68, 68); font-family: Arial; font-size: 11px; font-weight: 700;&quot;&gt;Qdrant vector + FTS payload&lt;/span&gt;" vertex="1">
+          <mxGeometry height="120" width="190" x="315" y="620" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

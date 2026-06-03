@@ -1,0 +1,37 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="Figure 4.5b - Telegram Bot Connect Flow" id="diag-cec2a90">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="c7bf3b0" value="Figure 4.5b - Telegram Bot Connect Flow" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="60" y="24" width="1480" height="35" as="geometry"/>
+</mxCell><mxCell id="c876e2e" value="User&#xa;paste token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="80" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="ce2bdde" value="OmniRAG UI&#xa;BotConfigPage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="325" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="c9d1fa1" value="Backend&#xa;POST /connect" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="590" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="cb127c5" value="Telegram getMe&#xa;verify token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="870" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="c080341" value="Telegram setWebhook&#xa;secret token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1135" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="ccd2152" value="PostgreSQL JSONB&#xa;bot.config.telegram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1390" y="250" width="180" height="80" as="geometry"/>
+</mxCell><mxCell id="ccf275d" value="token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c876e2e" target="ce2bdde" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cd1efec" value="bot_id + token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="ce2bdde" target="c9d1fa1" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c943188" value="getMe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c9d1fa1" target="cb127c5" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cc3e892" value="bot_info ok" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cb127c5" target="c080341" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c310a4f" value="webhook_url + secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c080341" target="ccd2152" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c9e5833" value="Disconnect calls deleteWebhook, closes the aiogram Bot session, then removes config.telegram." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="120" y="500" width="1150" height="40" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

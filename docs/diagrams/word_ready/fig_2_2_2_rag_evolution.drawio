@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_2_2_2_rag_evolution" id="diag-fig_2_2_2_rag_evolution">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 2.2.2 - Naive RAG vs Advanced RAG vs Agentic RAG" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1520" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_1" value="Naive RAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="115" width="420" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_2" value="Advanced RAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="115" width="420" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_3" value="Agentic RAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingTop=8;fontStyle=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="115" width="420" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="e_1_naive_flow_advanced_flow" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="naive_flow" target="advanced_flow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_2_advanced_flow_agentic_flow" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=none;startFill=0;strokeColor=#d79b00;fontSize=10;fontFamily=Arial;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="advanced_flow" target="agentic_flow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="naive_flow" value="query -&amp;gt; vector search -&amp;gt; prompt -&amp;gt; answer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="135" y="190" width="330" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="naive_note" value="Simple but brittle&#10;weak reranking&#10;no correction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="135" y="360" width="330" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="naive_fit" value="Fit: baseline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="135" y="535" width="330" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="advanced_flow" value="rewrite + hybrid search + rerank + CRAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="635" y="190" width="330" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="advanced_note" value="OmniRAG default&#10;better recall&#10;lower hallucination" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="635" y="360" width="330" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="advanced_fit" value="Fit: production" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="635" y="535" width="330" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="agentic_flow" value="planner -&amp;gt; tools -&amp;gt; retrieve -&amp;gt; reflect -&amp;gt; answer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#336699;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="190" width="330" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="agentic_note" value="More autonomous&#10;higher cost&#10;harder to control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="360" width="330" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="agentic_fit" value="Fit: research/complex workflows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#7f6000;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="535" width="330" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

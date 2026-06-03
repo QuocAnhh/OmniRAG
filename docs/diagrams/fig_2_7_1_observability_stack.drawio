@@ -1,0 +1,61 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="fig_2_7_1_observability_stack" id="diag-c7f95d2">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="cd45159" value="RAG Observability Stack — 3 Pillars: Metrics + Traces + Logs" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="40" y="20" width="1320" height="35" as="geometry"/>
+</mxCell><mxCell id="c99abaf" value="Application Instrumentation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="70" width="1280" height="120" as="geometry"/>
+</mxCell><mxCell id="c3415c5" value="FastAPI Backend&#xa;+ Gateway (Go/Gin)&#xa;+ Celery Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="115" width="220" height="67" as="geometry"/>
+</mxCell><mxCell id="c6a0756" value="prometheus-client&#xa;6 metrics:&#xa;RAG_CHAT_DURATION&#xa;QDRANT_OP_DURATION&#xa;EMBED_DURATION&#xa;LLM_CALL_DURATION&#xa;CACHE_HITS/MISSES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="400" y="105" width="250" height="135" as="geometry"/>
+</mxCell><mxCell id="c445f73" value="OpenTelemetry SDK&#xa;Langfuse v3 integration&#xa;(tracing + cost tracking&#xa;+ prompt versioning)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="720" y="105" width="250" height="84" as="geometry"/>
+</mxCell><mxCell id="c979871" value="structlog (JSON)&#xa;request_id, user_id,&#xa;bot_id in every log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="1040" y="105" width="240" height="75" as="geometry"/>
+</mxCell><mxCell id="c881ad9" value="Pillar 1 — Metrics (Prometheus + Grafana)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="220" width="400" height="240" as="geometry"/>
+</mxCell><mxCell id="c11b440" value="Prometheus&#xa;scrape /metrics&#xa;mỗi 15s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="270" width="170" height="70" as="geometry"/>
+</mxCell><mxCell id="ca4a6d7" value="Grafana Dashboards:&#xa;• RAG Pipeline Overview&#xa;• Cache Performance&#xa;• Qdrant Operations&#xa;• Error Tracking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="100" y="370" width="290" height="101" as="geometry"/>
+</mxCell><mxCell id="cb0a9f3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c11b440" target="ca4a6d7" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c8f02e5" value="Pillar 2 — Traces (Langfuse + OTel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="490" y="220" width="420" height="240" as="geometry"/>
+</mxCell><mxCell id="c64725a" value="OpenTelemetry Collector&#xa;OTLP/HTTP → Langfuse&#xa;(W3C Trace Context)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="520" y="270" width="250" height="70" as="geometry"/>
+</mxCell><mxCell id="c593c89" value="Langfuse v3:&#xa;• Step-by-step RAG tracing&#xa;• Cost per model/user/session&#xa;• Prompt A/B testing&#xa;• Dataset + eval management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="520" y="370" width="280" height="101" as="geometry"/>
+</mxCell><mxCell id="cc36bee" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c64725a" target="c593c89" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="cf111b8" value="Pillar 3 — Logs (structlog + Loki)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="940" y="220" width="400" height="240" as="geometry"/>
+</mxCell><mxCell id="cf0f1f0" value="Promtail&#xa;Docker log tailing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="980" y="270" width="170" height="70" as="geometry"/>
+</mxCell><mxCell id="c5de1dc" value="Grafana Loki&#xa;centralized log search&#xa;LogQL: request_id,&#xa;user_id, error_type" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="980" y="370" width="250" height="84" as="geometry"/>
+</mxCell><mxCell id="c57e561" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="cf0f1f0" target="c5de1dc" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c36ec52" value="Unified Observability — Grafana + Alertmanager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="490" width="1280" height="130" as="geometry"/>
+</mxCell><mxCell id="c03f692" value="Grafana Unified Dashboard&#xa;Metrics + Traces + Logs → single pane of glass" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="300" y="535" width="500" height="60" as="geometry"/>
+</mxCell><mxCell id="c2ecc1a" value="Alertmanager&#xa;→ Slack / Email alerts&#xa;on: high latency, low cache hit,&#xa;error rate spike, eval regression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="900" y="535" width="280" height="84" as="geometry"/>
+</mxCell><mxCell id="cf79211" value="triggers" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" edge="1" source="c03f692" target="c2ecc1a" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell><mxCell id="c2322ef" value="Graceful Degradation — nếu biến môi trường không set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="650" width="1280" height="100" as="geometry"/>
+</mxCell><mxCell id="c9610e8" value="Langfuse keys not set? → tracing tự động disable, backend hoạt động bình thường." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="100" y="690" width="500" height="30" as="geometry"/>
+</mxCell><mxCell id="c2cfcfc" value="Prometheus optional? → /metrics endpoint luôn sẵn, chỉ cần Prometheus scrape target." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="100" y="715" width="500" height="30" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

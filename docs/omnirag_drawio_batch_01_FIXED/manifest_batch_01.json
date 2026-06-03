@@ -1,0 +1,32 @@
+[
+  {
+    "figure": "2.2.1",
+    "file": "fig_2_2_1_rag_pipeline_co_ban.drawio",
+    "type": "Pipeline / flow",
+    "notes": "Không icon, có online/offline lanes"
+  },
+  {
+    "figure": "3.3",
+    "file": "fig_3_3_rag_sequence_diagram.drawio",
+    "type": "UML sequence",
+    "notes": "Không icon, lifeline + timeline annotations"
+  },
+  {
+    "figure": "3.8",
+    "file": "fig_3_8_erd_postgresql.drawio",
+    "type": "ERD",
+    "notes": "Không icon, bảng + quan hệ 1:N"
+  },
+  {
+    "figure": "3.7",
+    "file": "fig_3_7_system_architecture.drawio",
+    "type": "Layered architecture",
+    "notes": "Không icon, layer + service boxes"
+  },
+  {
+    "figure": "3.4",
+    "file": "fig_3_4_activity_document_processing.drawio",
+    "type": "Activity diagram",
+    "notes": "Không icon, 2-stage pipeline"
+  }
+]

@@ -1,6 +1,6 @@
 # Quick Start
 
-Hướng dẫn này giúp dev chạy nhanh snapshot `refactor/backend-perf-p1-observability` bằng Docker Compose. Gateway là entrypoint chính tại `http://localhost:8080`.
+Hướng dẫn này giúp dev chạy nhanh codebase hiện tại bằng Docker Compose. Gateway là entrypoint chính tại `http://localhost:8080`.
 
 ## 1. Chuẩn bị
 
@@ -31,6 +31,7 @@ QDRANT_URL=http://qdrant:6333
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
+RAG_COLLECTION_NAME=omnirag_openrouter_collection_v3
 ```
 
 ## 2. Chạy toàn bộ stack
@@ -61,6 +62,8 @@ docker compose ps
 | Qdrant | `http://localhost:6333` |
 
 Trong Docker, backend expose nội bộ `8000`, nhưng host port là `8001:8000`. Khi gọi từ máy host, dùng `http://localhost:8001` nếu muốn bypass gateway.
+
+Các host port có thể override bằng env như `GATEWAY_HOST_PORT`, `BACKEND_HOST_PORT`, `QDRANT_HOST_PORT`, `PDF_HYBRID_HOST_PORT`.
 
 ## 4. Tạo user và đăng nhập
 
@@ -107,6 +110,8 @@ curl -X POST http://localhost:8080/api/v1/bots/<bot_id>/documents \
   -F "enable_knowledge_graph=false"
 ```
 
+Supported files: `.pdf`, `.txt`, `.md`, `.csv`, `.docx`, `.pptx`, `.xlsx`. Legacy `.doc`, `.ppt`, `.xls` trả `415`.
+
 Ingestion chạy bất đồng bộ qua Celery. Theo dõi log:
 
 ```bash
@@ -148,3 +153,11 @@ Lưu ý: route UI Knowledge Graph là `/bots/:id/graph`; API backend tương ứ
 ## 8. Khi gặp lỗi
 
 Xem [Troubleshooting](TROUBLESHOOTING.md) cho các lỗi thường gặp về port, env, migration, Redis, MinIO, Qdrant, OpenRouter và webhook channels.
+
+## 9. Benchmark RAG/parser E2E
+
+```bash
+python scripts/benchmark_opendataloader_pipeline.py
+```
+
+Script dùng compose project isolated `omnirag-odl-bench`, generated fixtures và report ở `/tmp/omnirag-odl-benchmark.json`.

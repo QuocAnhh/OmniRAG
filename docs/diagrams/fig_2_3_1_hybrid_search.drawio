@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/drawio_kit">
+  <diagram name="fig_2_3_1_hybrid_search" id="diag-ca939d5">
+    <mxGraphModel dx="1258" dy="789" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="caeb876" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" value="Hybrid Search Flow — Vector + BM25 + RRF → Cross-Encoder Rerank" vertex="1">
+          <mxGeometry height="35" width="1320" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="c4c29ff" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="Đầu vào" vertex="1">
+          <mxGeometry height="140" width="1280" x="60" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c646fe8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Query&#xa;người dùng" vertex="1">
+          <mxGeometry height="55" width="160" x="100" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c561dfe" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Embedding&#xa;(text-embedding-3-small)" vertex="1">
+          <mxGeometry height="55" width="200" x="320" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c855ea7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Vector 1536-dim" vertex="1">
+          <mxGeometry height="55" width="160" x="580" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c1521e4" edge="1" parent="1" source="c646fe8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c561dfe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c87760b" edge="1" parent="1" source="c561dfe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c855ea7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c00af94" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="Hybrid Search — song song Vector &amp; Full-Text" vertex="1">
+          <mxGeometry height="200" width="1280" x="60" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="c56278f" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Vector Search&#xa;(HNSW Cosine Similarity)&#xa;Qdrant query_points" vertex="1">
+          <mxGeometry height="67" width="260" x="120" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="c4915f6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Sparse BM25 Vector&#xa;FastEmbed + IDF&#xa;Qdrant named vector" vertex="1">
+          <mxGeometry height="67" width="260" x="480" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="c187216" edge="1" parent="1" source="c855ea7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;exitX=0;exitY=1;exitDx=0;exitDy=0;" value="query_embedding">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="190" as="sourcePoint" />
+            <mxPoint x="250" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cdb9e64" edge="1" parent="1" source="c855ea7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c4915f6" value="query text">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbb1126" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="RRF Merge&#xa;Reciprocal Rank Fusion&#xa;k=60" vertex="1">
+          <mxGeometry height="67" width="200" x="820" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="c9e8389" edge="1" parent="1" source="c56278f" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;exitX=0.846;exitY=1.012;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" target="cbb1126" value="top-20">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="356.3399999999999" y="381.9329999999999" as="sourcePoint" />
+            <mxPoint x="820" y="395" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cb2e252" edge="1" parent="1" source="c4915f6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cbb1126" value="top-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cb17c5f" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="Rerank &amp; Output" vertex="1">
+          <mxGeometry height="140" width="1280" x="60" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="c20b502" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Cross-Encoder Rerank&#xa;ms-marco-MiniLM-L-6-v2&#xa;→ sigmoid normalize" vertex="1">
+          <mxGeometry height="67" width="280" x="320" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="c6b5da6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Final Top-K&#xa;(filtered by&#xa;similarity_threshold ≥ 0.15)" vertex="1">
+          <mxGeometry height="67" width="200" x="720" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="ce23e23" edge="1" parent="1" source="cbb1126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" value="top-20">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="839.9999999999998" y="357.00275862068963" as="sourcePoint" />
+            <mxPoint x="480" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cc0ebbe" edge="1" parent="1" source="c20b502" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c6b5da6" value="top-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cd55e56" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" value="Bot filter: FieldCondition(bot_id={bot_id}) — luôn áp dụng cho cả 2 luồng search" vertex="1">
+          <mxGeometry height="30" width="800" x="100" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="cd7f2bc" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" value="RRF k=60 — hằng số chuẩn từ Cormack et al. (SIGIR 2009). Sigmoid normalize chuyển logit → 0..1 probability." vertex="1">
+          <mxGeometry height="30" width="800" x="100" y="680" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,6 +1,6 @@
 # Advanced RAG Features
 
-Tài liệu này mô tả RAG pipeline hiện tại trong `backend/app/services/openrouter_rag_service.py` và `backend/app/services/lightrag_service.py`.
+Tài liệu này mô tả RAG pipeline hiện tại trong `backend/app/services/openrouter_rag_service.py` và `backend/app/services/lightrag_service.py` sau audit ngày 2026-06-01.
 
 ## Pipeline tổng quát
 
@@ -9,11 +9,11 @@ Upload document
   -> MinIO object + PostgreSQL metadata
   -> Celery task
   -> OpenDataLoader/local parsing
-  -> chunking
-  -> embeddings
-  -> Qdrant upsert
+  -> structured chunking
+  -> dense + sparse embeddings
+  -> Qdrant collection v3 upsert
   -> optional Knowledge Graph / LightRAG
-  -> chat retrieval + rerank + rewrite + answer
+  -> Qdrant RRF hybrid retrieval + rerank + rewrite + answer
 ```
 
 ## Ingestion bất đồng bộ
@@ -46,11 +46,31 @@ RAG service kết hợp nhiều bước:
 
 - Query embedding.
 - Query rewrite cho câu hỏi cần mở rộng.
-- Hybrid retrieval trên Qdrant.
-- Reranking để chọn context tốt hơn.
+- Hybrid retrieval trên Qdrant Query API với named vectors:
+  - `dense`: OpenRouter embedding, cosine, 1536 dimensions.
+  - `bm25`: sparse vector từ FastEmbed BM25, IDF modifier.
+- RRF fusion trên dense+sparse prefetch.
+- Cross-encoder reranking để chọn context tốt hơn sau fusion.
 - CRAG verdict để đánh giá chất lượng context.
 - Optional group chat context cho channel integrations.
 - Response generation qua OpenRouter.
+
+Không còn dùng pseudo-BM25 bằng `MatchText` filter. Collection mặc định hiện là `omnirag_openrouter_collection_v3`.
+
+## Structured retrieval metadata
+
+Payload Qdrant và `retrieved_chunks[].metadata` giữ backward compatibility nhưng đã có thêm metadata phục vụ citation:
+
+- `document_id`
+- `page_numbers`
+- `bboxes`
+- `element_types`
+- `heading_path`
+- `opendataloader_element_ids`
+- `has_structured_json`
+- `artifact_paths`
+
+PDF artifacts từ OpenDataLoader được lưu ổn định ở `documents/{document_id}/extracted/...` trong MinIO.
 
 ## Cache
 
@@ -58,12 +78,14 @@ Backend cache nằm ở `backend/app/services/cache_service.py`, dùng Redis asy
 
 Các nhóm cache chính:
 
-- `rag:chat`: cache câu trả lời chat theo bot và query.
+- `rag:chat`: cache câu trả lời chat theo bot, query, config digest và `kb_version`.
 - `emb`: cache embedding cho query.
 - `rewrite`: cache query rewrite.
 - `crag`: cache verdict CRAG.
 
 Gateway không cache chat. Gateway chỉ cache `GET` response đủ điều kiện. Nếu kiểm tra `X-Cache` trên `POST /chat` sẽ không thấy hit từ gateway.
+
+RAG response cache chỉ dùng cho request stateless. Nếu request có memory, `user_id` hoặc `conversation_history`, backend bypass cache để tránh leak hoặc stale conversational context.
 
 ## Knowledge Graph và LightRAG
 

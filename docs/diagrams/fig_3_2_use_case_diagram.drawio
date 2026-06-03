@@ -1,0 +1,65 @@
+<mxfile host="app.diagrams.net" modified="2026-05-31T00:00:00.000Z" agent="OmniRAG/drawio_kit" version="24.7.17" type="device">
+  <diagram name="fig_3_2_use_case_diagram" id="diag-cf7d160">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="ce7aab6" value="Use Case Diagram — OmniRAG System" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+  <mxGeometry x="40" y="20" width="1320" height="35" as="geometry"/>
+</mxCell><mxCell id="c96c16f" value="OmniRAG System Boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" vertex="1" parent="1">
+  <mxGeometry x="60" y="70" width="1280" height="650" as="geometry"/>
+</mxCell><mxCell id="ce6aec7" value="👤 Admin&#xa;(Tenant Owner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="110" y="120" width="150" height="55" as="geometry"/>
+</mxCell><mxCell id="cd54066" value="👤 End User&#xa;(Web Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="110" y="310" width="150" height="55" as="geometry"/>
+</mxCell><mxCell id="c2d4f5b" value="👤 Zalo User&#xa;(Mobile)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="110" y="500" width="150" height="55" as="geometry"/>
+</mxCell><mxCell id="ce99a3b" value="👤 API Consumer&#xa;(Developer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="110" y="680" width="150" height="55" as="geometry"/>
+</mxCell><mxCell id="c46062b" value="Đăng ký Tenant&#xa;+ Quản lý" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="360" y="100" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="caaf03e" value="Bot Builder&#xa;(Wizard 4 steps)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="100" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c27b65c" value="Upload &amp; Xử lý&#xa;Tài liệu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="760" y="100" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cf69493" value="Cấu hình&#xa;Domain + RAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="960" y="100" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cd20f70" value="Tích hợp&#xa;Zalo Bot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="360" y="230" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cbb1f1e" value="Tích hợp&#xa;Zalo OA Hub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="230" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c32c71e" value="Tích hợp&#xa;FB Messenger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="760" y="230" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cb5777f" value="Chat Streaming&#xa;(SSE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="360" y="370" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c241d79" value="Knowledge Graph&#xa;Visualization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="370" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cfa20ca" value="Memory&#xa;(Persistent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="760" y="370" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cb8c3a1" value="Message&#xa;Feedback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="960" y="370" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cc6ea6f" value="Dashboard&#xa;+ Analytics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="360" y="510" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="ce232bc" value="Quản lý&#xa;API Keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="560" y="510" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c8859a2" value="Quản lý&#xa;Users + RBAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="760" y="510" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="cc5d57f" value="Health Check&#xa;+ Monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="960" y="510" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c593c20" value="REST API&#xa;Chat Endpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="460" y="640" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c7d10ca" value="Webhook&#xa;Integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" vertex="1" parent="1">
+  <mxGeometry x="660" y="640" width="160" height="60" as="geometry"/>
+</mxCell><mxCell id="c3c2e58" value="Admin actor → Tất cả use cases (full quyền owner trong tenant)." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="350" y="680" width="500" height="30" as="geometry"/>
+</mxCell><mxCell id="cc40e31" value="End User → Chat Streaming, Memory, Message Feedback (qua Web Chat Playground)." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="350" y="710" width="500" height="30" as="geometry"/>
+</mxCell><mxCell id="c08d68c" value="Zalo User → Chat Streaming (qua Zalo Bot/Zalo OA/FB Messenger — không cần OmniRAG account)." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="350" y="740" width="500" height="30" as="geometry"/>
+</mxCell><mxCell id="cc1a183" value="API Consumer → REST API Chat Endpoint, Webhook Integration (qua API Key Bearer token)." style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" vertex="1" parent="1">
+  <mxGeometry x="350" y="770" width="500" height="30" as="geometry"/>
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

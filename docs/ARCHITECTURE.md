@@ -1,6 +1,6 @@
 # Architecture
 
-Tài liệu này mô tả kiến trúc hiện tại của OmniRAG trên snapshot `refactor/backend-perf-p1-observability`.
+Tài liệu này mô tả kiến trúc hiện tại của OmniRAG sau audit ngày 2026-06-01.
 
 ## Tổng quan
 
@@ -22,9 +22,9 @@ FastAPI Backend :8000 container / :8001 host
   +-- MongoDB mongodb:27017    conversations, sessions, api keys, integrations
   +-- Redis redis:6379         cache, Celery broker/result backend
   +-- MinIO minio:9000         uploaded file objects
-  +-- Qdrant qdrant:6333       vector search
+  +-- Qdrant qdrant:6333       dense+sparse vector search
   +-- Celery worker            async document ingestion
-  +-- OpenDataLoader :5002     hybrid PDF/Office parsing
+  +-- OpenDataLoader :5002     CPU-only hybrid PDF layout/OCR parsing
   +-- OpenRouter/OpenAI        LLM, embeddings, vision
 ```
 
@@ -36,25 +36,25 @@ FastAPI Backend :8000 container / :8001 host
 | Gateway | `gateway` | Go HTTP proxy, CORS, rate limit, health/readiness/metrics, GET cache |
 | Frontend | `frontend` | React 19 SPA, protected routes, API clients |
 | Celery worker | `backend/app/tasks` | Xử lý ingest tài liệu bất đồng bộ |
-| RAG service | `backend/app/services/openrouter_rag_service.py` | Chunking, embedding, retrieval, rerank, rewrite, CRAG, chat, cache |
+| RAG service | `backend/app/services/openrouter_rag_service.py` | Structured chunking, dense+sparse embedding, RRF retrieval, rerank, rewrite, CRAG, chat, cache |
 | LightRAG service | `backend/app/services/lightrag_service.py` | Knowledge Graph và LightRAG mode |
-| OpenDataLoader hybrid | `backend/Dockerfile.hybrid` | OCR/formula/chart/table/image extraction service |
+| OpenDataLoader hybrid | `backend/Dockerfile.hybrid` | CPU-only OCR/formula/chart/table/image extraction service |
 | Facebook worker | `services/fb-channel-worker` | Messenger bridge tách riêng runtime GPL |
 
 ## Ports
 
-| Service | Host | Container/Internal |
+| Service | Host mặc định | Container/Internal |
 | --- | ---: | ---: |
-| Frontend | `5173` | `5173` |
-| Gateway | `8080` | `8080` |
-| Backend | `8001` | `8000` |
-| PostgreSQL | `5433` | `5432` |
-| MongoDB | `27017` | `27017` |
-| Redis | `6380` | `6379` |
-| MinIO API | `9000` | `9000` |
-| MinIO Console | `9001` | `9001` |
-| Qdrant | `6333` | `6333` |
-| OpenDataLoader hybrid | `5002` | `5002` |
+| Frontend | `${FRONTEND_HOST_PORT:-5173}` | `5173` |
+| Gateway | `${GATEWAY_HOST_PORT:-8080}` | `8080` |
+| Backend | `${BACKEND_HOST_PORT:-8001}` | `8000` |
+| PostgreSQL | `${POSTGRES_HOST_PORT:-5433}` | `5432` |
+| MongoDB | `${MONGODB_HOST_PORT:-27017}` | `27017` |
+| Redis | `${REDIS_HOST_PORT:-6380}` | `6379` |
+| MinIO API | `${MINIO_API_HOST_PORT:-9000}` | `9000` |
+| MinIO Console | `${MINIO_CONSOLE_HOST_PORT:-9001}` | `9001` |
+| Qdrant | `${QDRANT_HOST_PORT:-6333}` | `6333` |
+| OpenDataLoader hybrid | `${PDF_HYBRID_HOST_PORT:-5002}` | `5002` |
 | Facebook worker | internal | `9100` |
 
 ## Backend runtime
@@ -96,7 +96,7 @@ Gateway hiện có:
 Phân biệt rõ hai lớp cache:
 
 - Gateway cache chỉ áp dụng cho `GET` request đủ điều kiện, có tính `Authorization` vào cache key để tránh leak cross-user. Gateway không cache `POST /chat` hoặc streaming.
-- Backend RAG cache dùng Redis cho chat result, embeddings, query rewrite, CRAG verdict và invalidation theo bot khi knowledge base thay đổi.
+- Backend RAG cache dùng Redis cho chat result, embeddings, query rewrite, CRAG verdict và invalidation theo `kb_version:{bot_id}` khi knowledge base thay đổi. Chat cache bypass với memory/history/user-scoped context.
 
 ## Document ingestion
 
@@ -106,9 +106,11 @@ Luồng upload tài liệu:
 2. Backend lưu metadata PostgreSQL và object vào MinIO.
 3. Backend enqueue Celery task.
 4. Celery gọi OpenDataLoader/local parser để parse file.
-5. Service chunk tài liệu theo strategy hiệu lực.
-6. Embeddings được ghi vào Qdrant, metadata cập nhật vào PostgreSQL.
-7. Nếu bật Knowledge Graph, LightRAG xử lý graph data.
+5. PDF được parse thành markdown + JSON elements nếu có; artifacts được lưu ở `documents/{document_id}/extracted/...` trong MinIO.
+6. Service chunk tài liệu theo strategy hiệu lực hoặc structured JSON element metadata.
+7. Dense OpenRouter embedding và sparse BM25 vector được ghi vào Qdrant collection `omnirag_openrouter_collection_v3`.
+8. Metadata cập nhật vào PostgreSQL, gồm số chunks và trạng thái ingest.
+9. Nếu bật Knowledge Graph, LightRAG xử lý graph data.
 
 Chunk strategies hiện hỗ trợ:
 

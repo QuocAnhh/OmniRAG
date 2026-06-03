@@ -1,6 +1,6 @@
 # API Reference
 
-API reference này được đối chiếu với router hiện có trong `backend/app/api/v1/endpoints` trên snapshot hiện tại của `refactor/backend-perf-p1-observability`.
+API reference này được đối chiếu với router hiện có trong `backend/app/api/v1/endpoints` sau audit ngày 2026-06-01.
 
 ## Base URL
 
@@ -110,6 +110,18 @@ Ví dụ tạo bot:
 - `parent_child`
 - `semantic`
 
+Bot config còn hỗ trợ các field PDF parsing:
+
+- `pdf_parser_mode`: `local_fast`, `hybrid_auto`, `hybrid_full`
+- `pdf_structured_chunking`
+- `pdf_enrich_formula`
+- `pdf_sanitize`
+- `pdf_use_struct_tree`
+- `pdf_include_header_footer`
+- `pdf_detect_strikethrough`
+- `pdf_threads`
+- `enrich_picture_description`
+
 ## Bot Documents
 
 | Method | Path | Mô tả |
@@ -127,6 +139,10 @@ curl -X POST http://localhost:8080/api/v1/bots/<bot_id>/documents \
   -F "chunking_strategy=recursive" \
   -F "enable_knowledge_graph=false"
 ```
+
+File type hiện hỗ trợ: `.pdf`, `.txt`, `.md`, `.csv`, `.docx`, `.pptx`, `.xlsx`.
+
+Legacy Office `.doc`, `.ppt`, `.xls` trả `415` với hướng dẫn convert sang format hiện đại.
 
 Ingestion chạy qua Celery worker. Backend hiện chưa có endpoint public để update metadata tài liệu hoặc preview file:
 
@@ -161,6 +177,8 @@ Ví dụ chat:
 ```
 
 Gateway không cache `POST /chat`. Cache chat/RAG được xử lý trong backend service.
+
+`retrieved_chunks[].metadata` có thể chứa `document_id`, `page_numbers`, `bboxes`, `element_types`, `heading_path`, `opendataloader_element_ids` và `artifact_paths` khi tài liệu được parse bằng structured OpenDataLoader flow.
 
 ## Knowledge Graph
 

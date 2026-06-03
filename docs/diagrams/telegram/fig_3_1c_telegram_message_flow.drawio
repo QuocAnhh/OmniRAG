@@ -1,0 +1,123 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/drawio_kit">
+  <diagram name="Figure 3.1c - Telegram Bot Message Flow" id="diag-c91842a">
+    <mxGraphModel dx="1956" dy="1043" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c679f9d" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" value="Figure 3.1c - Telegram Bot Message Flow" vertex="1">
+          <mxGeometry height="35" width="1480" x="60" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c7cade2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#6c8ebf;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="Telegram platform" vertex="1">
+          <mxGeometry height="560" width="340" x="60" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="c83673d" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbfdff;strokeColor=#82b366;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="OmniRAG backend" vertex="1">
+          <mxGeometry height="560" width="740" x="430" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cb68886" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfcfc;strokeColor=#999999;fontSize=12;fontFamily=Arial;align=left;verticalAlign=top;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;dashed=1;dashPattern=8 4;verticalAlign=top;spacingTop=8" value="AI / storage services" vertex="1">
+          <mxGeometry height="560" width="340" x="1200" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="ce8ca7a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Telegram user&#xa;text / photo / document" vertex="1">
+          <mxGeometry height="70" width="240" x="110" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="c3b1033" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Telegram Bot API&#xa;Webhook Update" vertex="1">
+          <mxGeometry height="70" width="240" x="110" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="ihkIg1AgO35XTy7a90BE-1" edge="1" parent="1" source="cee947e" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="c661ead" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cee947e" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="FastAPI webhook&#xa;/channels/telegram/webhook/{bot_id}" vertex="1">
+          <mxGeometry height="80" width="270" x="480" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="c661ead" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Secret token verify&#xa;X-Telegram-Bot-Api-Secret-Token" vertex="1">
+          <mxGeometry height="80" width="280" x="820" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="c971a68" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="aiogram Update parse&#xa;custom routing" vertex="1">
+          <mxGeometry height="70" width="250" x="480" y="295" as="geometry" />
+        </mxCell>
+        <mxCell id="c6f0452" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Handler router&#xa;text | photo | document | voice" vertex="1">
+          <mxGeometry height="70" width="280" x="820" y="295" as="geometry" />
+        </mxCell>
+        <mxCell id="cbe7ee8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="RAG chat core&#xa;session_id = tg_{chat_id}&#xa;memory enabled" vertex="1">
+          <mxGeometry height="90" width="280" x="520" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="c18e44a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="sendChatAction + sendMessage&#xa;HTML parse mode" vertex="1">
+          <mxGeometry height="90" width="260" x="850" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="c0b75ee" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="Qdrant v3&#xa;retrieval + memory" vertex="1">
+          <mxGeometry height="70" width="240" x="1250" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="cfdfab1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="OpenRouter vision&#xa;photo description" vertex="1">
+          <mxGeometry height="70" width="240" x="1250" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="cd627fe" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;spacing=8;spacingLeft=8;spacingRight=8" value="MinIO&#xa;uploaded documents" vertex="1">
+          <mxGeometry height="70" width="240" x="1250" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="c5cb97c" edge="1" parent="1" source="ce8ca7a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c3b1033" value="message">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ca52e77" edge="1" parent="1" source="c3b1033" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cee947e" value="POST update">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="430" />
+              <mxPoint x="615" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c086218" edge="1" parent="1" source="cee947e" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c661ead" value="header">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c164e0d" edge="1" parent="1" source="c661ead" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c971a68" value="accepted">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="130" />
+              <mxPoint x="460" y="130" />
+              <mxPoint x="460" y="330" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cda6dad" edge="1" parent="1" source="c971a68" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c6f0452" value="Message">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c200fda" edge="1" parent="1" source="c6f0452" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="cbe7ee8" value="text query">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="270" />
+              <mxPoint x="660" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cd82ddd" edge="1" parent="1" source="cbe7ee8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c18e44a" value="answer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ca70198" edge="1" parent="1" source="c18e44a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="c3b1033" value="Bot API">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c0c21a1" edge="1" parent="1" source="c3b1033" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff" target="ce8ca7a" value="response">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cdc8238" edge="1" parent="1" source="cbe7ee8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" target="c0b75ee" value="retrieve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3ab6ed" edge="1" parent="1" source="c6f0452" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" target="cfdfab1" value="photo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5468a8" edge="1" parent="1" source="c6f0452" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" target="cd627fe" value="document">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cf132ef" edge="1" parent="1" source="cfdfab1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" target="cbe7ee8" value="description">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c0f1e02" edge="1" parent="1" source="cd627fe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;strokeColor=#333333;endArrow=block;endFill=1;startArrow=none;startFill=0;fontSize=11;fontFamily=Arial;labelBackgroundColor=#ffffff;dashed=1;dashPattern=6 4" target="cbe7ee8" value="metadata/text preview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cb60302" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontFamily=Arial;align=left;verticalAlign=middle;fontColor=#444444;whiteSpace=wrap" value="Voice messages currently return a clear unsupported-message response." vertex="1">
+          <mxGeometry height="30" width="640" x="460" y="620" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

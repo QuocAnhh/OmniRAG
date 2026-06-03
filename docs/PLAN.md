@@ -1,6 +1,6 @@
 # OmniRAG Current Plan
 
-Tài liệu này là current-state roadmap cho snapshot `refactor/backend-perf-p1-observability`. Nó không còn là checklist triển khai cũ.
+Tài liệu này là current-state roadmap sau audit ngày 2026-06-01. Nó không còn là checklist triển khai cũ.
 
 ## Product direction
 
@@ -8,7 +8,7 @@ OmniRAG tập trung vào:
 
 - Nền tảng chatbot RAG đa tenant.
 - Ingestion tài liệu bất đồng bộ, có parsing nâng cao.
-- Retrieval chất lượng cao với Qdrant, reranking, query rewrite, CRAG và Knowledge Graph.
+- Retrieval chất lượng cao với Qdrant dense+sparse RRF, reranking, query rewrite, CRAG và Knowledge Graph.
 - Frontend quản trị bot, chat, graph, settings.
 - Gateway làm entrypoint thống nhất.
 - Channel integrations cho Zalo Bot Platform và Facebook Messenger.
@@ -20,7 +20,7 @@ OmniRAG tập trung vào:
 | Backend | FastAPI, JWT auth, SQLAlchemy sync/async, MongoDB, Redis |
 | Workers | Celery document ingestion |
 | Storage | PostgreSQL, MongoDB, MinIO, Qdrant |
-| RAG | OpenRouter RAG service, LightRAG, Redis cache |
+| RAG | OpenRouter RAG service, LightRAG, Qdrant v3 dense+sparse RRF, Redis cache |
 | Frontend | React 19, React Router 7, Zustand, Tailwind 4 |
 | Gateway | Go proxy with CORS, rate limit, GET cache, metrics |
 | Observability | `structlog`, Prometheus, request id, SlowAPI |

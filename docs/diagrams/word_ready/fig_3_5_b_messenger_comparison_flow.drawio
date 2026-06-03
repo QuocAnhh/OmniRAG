@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net" agent="OmniRAG/generate_omnirag_figures_v4" version="24.7.17" type="device">
+  <diagram name="fig_3_5_b_messenger_comparison_flow" id="diag-fig_3_5_b_messenger_comparison_flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1640" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Figure 3.5b - Channel Integration Comparison" style="text;html=1;strokeColor=none;fillColor=none;fontSize=18;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#222222;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1560" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_0_0" value="Channel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="140" width="220" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_0_1" value="Inbound auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="140" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_0_2" value="Backend entrypoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="630" y="140" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_0_3" value="Outbound path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="140" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_0_4" value="Notes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#38761d;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="140" width="350" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_1_0" value="Telegram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="232" width="220" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_1_1" value="X-Telegram-Bot-Api-Secret-Token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="300" y="232" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_1_2" value="/channels/telegram/webhook/{bot_id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="232" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_1_3" value="api.telegram.org sendMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="232" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_1_4" value="per-bot token in bot.config.telegram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="232" width="350" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_2_0" value="Zalo Direct" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="324" width="220" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_2_1" value="x-bot-api-secret-token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="300" y="324" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_2_2" value="/webhook/{bot_id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="324" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_2_3" value="bot-api.zapps.me" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="324" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_2_4" value="per-bot webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="324" width="350" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_3_0" value="Zalo Hub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="416" width="220" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_3_1" value="x-hub-secret" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="300" y="416" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_3_2" value="/hub-webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="416" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_3_3" value="func.vn API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="416" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_3_4" value="centralized account dispatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="416" width="350" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_4_0" value="Facebook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="508" width="220" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_4_1" value="HMAC worker signature" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="300" y="508" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_4_2" value="/facebook/inbound" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="508" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_4_3" value="fb-channel-worker /send" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="508" width="330" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_4_4" value="cookie session worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#666666;spacing=8;spacingLeft=8;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="508" width="350" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="shared" value="All four paths normalize into the same Chat Pipeline:&#10;channel_user_id + bot_id + text -&amp;gt; RAG/memory/CRAG -&amp;gt; channel adapter reply" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontFamily=Arial;align=center;verticalAlign=middle;fontColor=#b36b00;spacing=8;spacingLeft=8;spacingRight=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="635" width="920" height="86" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
