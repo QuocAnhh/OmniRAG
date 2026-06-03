@@ -74,7 +74,7 @@ import re
 
 # Fast model for internal pipeline calls (query rewriting, HyDE, CRAG, etc.)
 # User-facing answer generation uses the model configured per-bot in the UI.
-INTERNAL_LLM_MODEL = "openai/gpt-5.4-nano"
+INTERNAL_LLM_MODEL = "google/gemini-3.1-flash-lite"
 
 
 def _sigmoid(x):
@@ -2133,7 +2133,7 @@ Answer:"""
             if group_participants:
                 base_system_prompt += _build_group_context_block(bot_config)
             # ─────────────────────────────────────────────────────────────
-            model = bot_config.get("model", "openai/gpt-4o-mini")
+            model = bot_config.get("model", "google/gemini-3.1-flash-lite")
             temperature = bot_config.get("temperature", 0.7)
             max_tokens = bot_config.get("max_tokens", 1000)
 
@@ -2626,7 +2626,7 @@ Answer:"""
         if group_participants:
             base_system_prompt += _build_group_context_block(bot_config)
         # ─────────────────────────────────────────────────────────────────
-        model = bot_config.get("model", "openai/gpt-4o-mini")
+        model = bot_config.get("model", "google/gemini-3.1-flash-lite")
         temperature = bot_config.get("temperature", 0.7)
         max_tokens = bot_config.get("max_tokens", 1000)
 

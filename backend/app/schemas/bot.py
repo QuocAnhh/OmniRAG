@@ -9,7 +9,7 @@ PDFParserMode = Literal["local_fast", "hybrid_auto", "hybrid_full"]
 class BotConfig(BaseModel):
     """Typed config for a Bot. All keys that the RAG pipeline reads must live here."""
     # LLM
-    model: str = Field(default="openai/gpt-4o-mini", description="OpenRouter model ID")
+    model: str = Field(default="google/gemini-3.1-flash-lite", description="OpenRouter model ID")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1000, ge=100, le=32000)
 

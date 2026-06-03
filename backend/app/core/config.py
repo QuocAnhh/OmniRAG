@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # ============================================================
     # OpenRouter provides unified access to 400+ models
     OPENROUTER_API_KEY: str = ""
-    OPENROUTER_CHAT_MODEL: str = "openai/gpt-4o-mini"  # Default chat model
+    OPENROUTER_CHAT_MODEL: str = "google/gemini-3.1-flash-lite"  # Default chat model
     OPENROUTER_EMBEDDING_MODEL: str = "openai/text-embedding-3-small"  # Default embedding model
     OPENROUTER_ENABLE_FALLBACKS: bool = True  # Enable automatic provider fallbacks
     OPENROUTER_SITE_URL: str = ""  # Optional: Your site URL for rankings
@@ -176,7 +176,7 @@ class Settings(BaseSettings):
     # ============================================================
     MEM0_ENABLED: bool = True
     MEM0_COLLECTION_NAME: str = "omnirag_memories"
-    MEM0_MEMORY_MODEL: str = "openai/gpt-4o-mini"     # LLM for fact extraction
+    MEM0_MEMORY_MODEL: str = "google/gemini-3.1-flash-lite"     # LLM for fact extraction
     MEM0_TOP_K: int = 5                                # Memories retrieved per query
 
     class Config:

@@ -238,7 +238,7 @@ class TelegramBotService:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "openai/gpt-4o-mini",
+                        "model": "google/gemini-3.1-flash-lite",
                         "messages": [
                             {
                                 "role": "user",

@@ -47,9 +47,9 @@ def _cache_set(key: str, value: str):
 # Entity extraction uses OpenRouter (OpenAI-compatible) — fast, cheap.
 # Recommended models for extraction (cost vs quality):
 #   google/gemini-2.0-flash-001          → fastest, very cheap
-#   openai/gpt-4o-mini                   → reliable, cheap
+#   google/gemini-3.1-flash-lite                   → reliable, cheap
 #   meta-llama/llama-3.1-8b-instruct     → free tier available
-LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "openai/gpt-5.4-nano")
+LIGHTRAG_LLM_MODEL    = os.getenv("LIGHTRAG_LLM_MODEL", "google/gemini-3.1-flash-lite")
 LIGHTRAG_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 async def _global_embedding_func(texts: list[str]) -> np.ndarray:

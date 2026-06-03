@@ -199,7 +199,7 @@ class FacebookMessengerService:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "openai/gpt-4o-mini",
+                        "model": "google/gemini-3.1-flash-lite",
                         "messages": [{"role": "user", "content": content}],
                         "max_tokens": 200,
                         "temperature": 0.3,

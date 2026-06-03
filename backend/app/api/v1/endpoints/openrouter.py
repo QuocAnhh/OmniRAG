@@ -191,7 +191,7 @@ async def list_chat_models():
                 "context_length": 128000
             },
             {
-                "id": "openai/gpt-4o-mini",
+                "id": "google/gemini-3.1-flash-lite",
                 "name": "GPT-4o Mini",
                 "description": "Fast and affordable",
                 "context_length": 128000

@@ -614,7 +614,7 @@ async def generate_bot_prompt(
         # We can reuse rag_service.openrouter.chat_completion
         response = rag_service.openrouter.chat_completion(
             messages=messages,
-            model="openai/gpt-4o-mini", # Fast and capable enough
+            model="google/gemini-3.1-flash-lite", # Fast and capable enough
             temperature=0.7
         )
         
