@@ -1,8 +1,10 @@
 import os
 import logging
 import asyncio
+import time
 import numpy as np
 from typing import List, Dict, Any, Optional
+from functools import lru_cache
 
 from lightrag import LightRAG, QueryParam
 from lightrag.utils import EmbeddingFunc
@@ -11,6 +13,35 @@ from app.core.config import settings
 from app.services.openrouter_service import get_openrouter_service
 
 logger = logging.getLogger(__name__)
+
+# ─── Query result cache ──────────────────────────────────────────────────────
+# Simple TTL-based cache for KG query results. Same query → instant hit.
+_kg_query_cache: Dict[str, tuple[float, str]] = {}
+_KG_CACHE_MAX_SIZE = 256
+_KG_CACHE_TTL_SEC = 300  # 5 minutes
+
+
+def _make_cache_key(query_text: str, mode: str) -> str:
+    return f"{mode}:{query_text.strip().lower()[:200]}"
+
+
+def _cache_get(key: str) -> Optional[str]:
+    entry = _kg_query_cache.get(key)
+    if entry is None:
+        return None
+    ts, value = entry
+    if time.time() - ts > _KG_CACHE_TTL_SEC:
+        del _kg_query_cache[key]
+        return None
+    return value
+
+
+def _cache_set(key: str, value: str):
+    if len(_kg_query_cache) >= _KG_CACHE_MAX_SIZE:
+        # Evict oldest entry
+        oldest_key = min(_kg_query_cache, key=lambda k: _kg_query_cache[k][0])
+        del _kg_query_cache[oldest_key]
+    _kg_query_cache[key] = (time.time(), value)
 
 # ─── LightRAG LLM Config (OpenRouter) ────────────────────────────────────────
 # Entity extraction uses OpenRouter (OpenAI-compatible) — fast, cheap.
@@ -163,16 +194,41 @@ class LightRAGService:
 
         Modes: 'naive' (vector only), 'local' (specific nodes),
                'global' (broad ideas), 'hybrid' (local+global)
+
+        Optimizations:
+        - Query result cache (5-min TTL, 256 entries max)
+        - Skip LLM keyword extraction (pass keywords from query text directly)
         """
-        logger.info(f"Querying LightRAG Graph (context-only, no Ollama) mode='{mode}': {query_text}")
+        cache_key = _make_cache_key(query_text, mode)
+        cached = _cache_get(cache_key)
+        if cached is not None:
+            logger.info(f"[KG Cache HIT] mode={mode}: {query_text[:60]}...")
+            return cached
+
+        logger.info(f"Querying LightRAG Graph (context-only) mode='{mode}': {query_text[:80]}")
         try:
             await self._ensure_initialized()
-            # only_need_context=True → returns raw graph context, skips LLM call
-            # Final answer synthesis is handled by OpenRouter (API)
+
+            # Build simple keywords from query text to skip LLM keyword extraction.
+            # LightRAG's get_keywords_from_query() checks: if hl_keywords or ll_keywords
+            # are already set, it returns them directly without calling the LLM.
+            words = query_text.strip().split()
+            hl_keywords = [query_text.strip()[:80]]  # first 80 chars as high-level
+            ll_keywords = words[:8] if len(words) > 1 else words  # first 8 words as low-level
+
             context = await self.rag.aquery(
                 query_text,
-                param=QueryParam(mode=mode, only_need_context=True)
+                param=QueryParam(
+                    mode=mode,
+                    only_need_context=True,
+                    hl_keywords=hl_keywords,
+                    ll_keywords=ll_keywords,
+                ),
             )
+
+            if context:
+                _cache_set(cache_key, context)
+
             return context
         except Exception as e:
             import traceback

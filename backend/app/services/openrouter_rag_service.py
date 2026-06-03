@@ -2338,10 +2338,11 @@ Answer:"""
             try:
                 from app.services.lightrag_service import get_lightrag_service
                 svc = get_lightrag_service(bot_id=bid)
-                result = await asyncio.wait_for(svc.query(q, mode=mode), timeout=10.0)
+                result = await asyncio.wait_for(svc.query(q, mode=mode), timeout=8.0)
+                logger.info(f"[PERF] KG contributed: yes, took={mode}, bot={bid}")
                 return result or ""
             except asyncio.TimeoutError:
-                logger.warning(f"[PERF] LightRAG timed out (10s) for bot={bid}")
+                logger.warning(f"[PERF] KG timed out (8s) for bot={bid}")
                 return ""
             except Exception as exc:
                 logger.warning(f"LightRAG query failed: {exc}")
@@ -2408,7 +2409,22 @@ Answer:"""
             return verdict
 
         crag_task = asyncio.ensure_future(_cached_crag(search_query, filtered_results))
-        crag_status, lightrag_raw = await asyncio.gather(crag_task, lightrag_task, return_exceptions=True)
+
+        # ── Non-blocking KG: Don't wait for LightRAG in gather ──────────────
+        # CRAG is essential for quality → await it. LightRAG runs concurrently
+        # with a short grace period after CRAG completes. If KG isn't ready
+        # within 3s after CRAG, we proceed without it (KG adds value but is not
+        # required for a correct answer). Old behaviour: blocked 10s every time.
+        crag_status = await crag_task
+        _kg_deadline = _time.time() + 3.0
+        try:
+            lightrag_raw = await asyncio.wait_for(
+                lightrag_task,
+                timeout=max(0.1, _kg_deadline - _time.time()),
+            )
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            logger.info(f"[PERF] KG skipped — not ready in time for bot={bot_id}")
+            lightrag_raw = ""
 
         if isinstance(crag_status, BaseException):
             logger.warning(f"CRAG failed: {crag_status}")
