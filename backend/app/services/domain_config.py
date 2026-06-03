@@ -2,9 +2,15 @@
 Domain Profile Registry — defines specialized RAG configurations per domain.
 Each profile controls chunking strategy, retrieval parameters, LightRAG usage,
 and a system-prompt suffix injected at chat time.
+
+For locked domains (education, legal, sales), system_prompt_suffix, temperature,
+and max_tokens are FIXED — users cannot override them via the UI or API.
 """
 from dataclasses import dataclass
 from typing import Literal
+
+# Domains whose prompt + generation params are locked (not user-editable)
+LOCKED_DOMAINS = {"education", "legal", "sales"}
 
 
 @dataclass
@@ -18,6 +24,9 @@ class DomainProfile:
     use_lightrag: bool
     system_prompt_suffix: str
     lightrag_mode: Literal["local", "global", "hybrid", "naive"]
+    # Fixed generation params for locked domains
+    temperature: float = 0.7
+    max_tokens: int = 2000
 
 
 DOMAIN_PROFILES: dict[str, DomainProfile] = {
@@ -49,6 +58,8 @@ DOMAIN_PROFILES: dict[str, DomainProfile] = {
             "Break down multi-step problems step by step."
         ),
         lightrag_mode="local",
+        temperature=0.3,
+        max_tokens=3000,
     ),
     "legal": DomainProfile(
         name="Legal",
@@ -65,6 +76,8 @@ DOMAIN_PROFILES: dict[str, DomainProfile] = {
             "Do NOT provide legal advice — only factual information from the provided documents."
         ),
         lightrag_mode="hybrid",
+        temperature=0.1,
+        max_tokens=4000,
     ),
     "sales": DomainProfile(
         name="Sales",
@@ -81,6 +94,8 @@ DOMAIN_PROFILES: dict[str, DomainProfile] = {
             "Always suggest a clear next step or call to action."
         ),
         lightrag_mode="naive",
+        temperature=0.5,
+        max_tokens=2000,
     ),
 }
 
@@ -88,3 +103,8 @@ DOMAIN_PROFILES: dict[str, DomainProfile] = {
 def get_domain_profile(domain: str) -> DomainProfile:
     """Return the DomainProfile for the given domain key, falling back to 'general'."""
     return DOMAIN_PROFILES.get(domain, DOMAIN_PROFILES["general"])
+
+
+def is_domain_locked(domain: str) -> bool:
+    """Return True if the domain has locked prompt + generation params (not user-editable)."""
+    return domain in LOCKED_DOMAINS

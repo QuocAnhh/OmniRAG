@@ -95,7 +95,26 @@ def update_bot(
     db: Session = Depends(deps.get_db),
 ):
     """Update a bot"""
+    from app.services.domain_config import get_domain_profile, is_domain_locked
+
     update_data = bot_in.model_dump(exclude_unset=True)
+
+    # When domain is locked, enforce optimized defaults for prompt + generation params
+    effective_domain = update_data.get("config", {}).get("domain") if update_data.get("config") else None
+    if effective_domain is None and isinstance(bot.config, dict):
+        effective_domain = bot.config.get("domain")
+    if effective_domain is None:
+        effective_domain = "general"
+
+    if is_domain_locked(effective_domain):
+        profile = get_domain_profile(effective_domain)
+        if update_data.get("config") is None:
+            update_data["config"] = {}
+        # Force domain-optimized defaults, ignoring any user-supplied overrides
+        update_data["config"]["system_prompt"] = profile.system_prompt_suffix.strip()
+        update_data["config"]["temperature"] = profile.temperature
+        update_data["config"]["max_tokens"] = profile.max_tokens
+
     for field, value in update_data.items():
         setattr(bot, field, value)
 

@@ -701,7 +701,16 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                               type="button"
                               onClick={() => {
                                 const useKg = ['education', 'legal'].includes(d);
-                                setFormData({ ...formData, domain: d, enable_knowledge_graph: useKg });
+                                const dm = getDomainMeta(d);
+                                setFormData({
+                                  ...formData,
+                                  domain: d,
+                                  enable_knowledge_graph: useKg,
+                                  ...(dm.isLocked ? {
+                                    temperature: d === 'education' ? 0.3 : d === 'legal' ? 0.1 : 0.5,
+                                    max_tokens: d === 'education' ? 3000 : d === 'legal' ? 4000 : 2000,
+                                  } : {}),
+                                });
                               }}
                               className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left text-xs font-medium transition-all ${
                                 formData.domain === d
@@ -735,36 +744,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   <div className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">Model</label>
-                        <div className="relative">
-                            <select
-                              value={formData.model}
-                              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                              className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm appearance-none cursor-pointer"
-                            >
-                              <optgroup label="OpenAI (Next Gen)">
-                                <option value="openai/gpt-5-mini">GPT-5 Mini (New!)</option>
-                                <option value="openai/gpt-4.1-mini">GPT-4.1 Mini</option>
-                                <option value="openai/gpt-4o">GPT-4o (Stable)</option>
-                                <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
-                              </optgroup>
-                              <optgroup label="Google">
-                                <option value="google/gemini-2.5-flash-lite-preview-09-2025">Gemini 2.5 Flash Lite (Preview)</option>
-                                <option value="google/gemini-flash-1.5">Gemini 1.5 Flash</option>
-                                <option value="google/gemini-pro-1.5">Gemini 1.5 Pro</option>
-                              </optgroup>
-                              <optgroup label="Meta & Open Source">
-                                <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
-                                <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B</option>
-                                <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
-                                <option value="deepseek/deepseek-chat">DeepSeek V3</option>
-                                <option value="mistralai/mistral-large">Mistral Large 2</option>
-                              </optgroup>
-                            </select>
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground material-symbols-outlined text-sm">expand_more</span>
-                          </div>
-                      </div>
-                      <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">Role</label>
                         <input
                           type="text"
@@ -775,41 +754,42 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-end">
-                        <label className="text-sm font-semibold text-foreground">System Prompt</label>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!formData.name && !formData.description) {
-                              toast.error('Please enter a name or description first');
-                              return;
-                            }
-                            const toastId = toast.loading('Generating prompt...');
-                            try {
-                              // Pass 'id' (botId from params) if available to make prompt context-aware
-                              const prompt = await botsApi.generatePrompt(formData.name, formData.description, id);
-                              setFormData(prev => ({ ...prev, system_prompt: prompt }));
-                              toast.success('Prompt generated with document context!', { id: toastId });
-                            } catch (err) {
-                              toast.error('Failed to generate prompt', { id: toastId });
-                            }
-                          }}
-                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 font-medium bg-primary/10 px-2 py-1 rounded-lg transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-                          Auto-Write
-                        </button>
+                    {!getDomainMeta(formData.domain).isLocked && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-end">
+                          <label className="text-sm font-semibold text-foreground">System Prompt</label>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!formData.name && !formData.description) {
+                                toast.error('Please enter a name or description first');
+                                return;
+                              }
+                              const toastId = toast.loading('Generating prompt...');
+                              try {
+                                const prompt = await botsApi.generatePrompt(formData.name, formData.description, id);
+                                setFormData(prev => ({ ...prev, system_prompt: prompt }));
+                                toast.success('Prompt generated with document context!', { id: toastId });
+                              } catch (err) {
+                                toast.error('Failed to generate prompt', { id: toastId });
+                              }
+                            }}
+                            className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 font-medium bg-primary/10 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                            Auto-Write
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Define the agent's personality, constraints, and instructions.</p>
+                        <textarea
+                          value={formData.system_prompt}
+                          onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                          rows={6}
+                          placeholder="You are a helpful assistant..."
+                          className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm resize-none font-mono"
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground">Define the agent's personality, constraints, and instructions.</p>
-                      <textarea
-                        value={formData.system_prompt}
-                        onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-                        rows={6}
-                        placeholder="You are a helpful assistant..."
-                        className="w-full px-4 py-2.5 rounded-xl bg-muted/20 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm resize-none font-mono"
-                      />
-                    </div>
+                    )}
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -833,40 +813,42 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       </div>
                     </div>
 
-                    <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <label className="text-sm font-semibold text-foreground">Temperature</label>
-                          <span className="text-xs font-mono font-bold text-primary">{formData.temperature}</span>
+                    {!getDomainMeta(formData.domain).isLocked && (
+                      <div className="p-6 bg-black/20 rounded-2xl border border-white/5 grid sm:grid-cols-2 gap-8 mt-4 relative z-10">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <label className="text-sm font-semibold text-foreground">Temperature</label>
+                            <span className="text-xs font-mono font-bold text-primary">{formData.temperature}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={formData.temperature}
+                            onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+                            className="w-full h-2 bg-muted-foreground/20 rounded-full appearance-none cursor-pointer accent-primary"
+                          />
+                          <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                            <span>Determinstic</span>
+                            <span>Creative</span>
+                          </div>
                         </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={formData.temperature}
-                          onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
-                          className="w-full h-2 bg-muted-foreground/20 rounded-full appearance-none cursor-pointer accent-primary"
-                        />
-                        <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                          <span>Determinstic</span>
-                          <span>Creative</span>
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">Max Tokens</label>
-                        <input
-                          type="number"
-                          min="100"
-                          max="32000"
-                          step="100"
-                          value={formData.max_tokens}
-                          onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2.5 rounded-xl bg-background border border-white/10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
-                        />
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground">Max Tokens</label>
+                          <input
+                            type="number"
+                            min="100"
+                            max="32000"
+                            step="100"
+                            value={formData.max_tokens}
+                            onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
+                            className="w-full px-4 py-2.5 rounded-xl bg-background border border-white/10 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

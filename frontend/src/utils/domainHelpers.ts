@@ -14,6 +14,7 @@ export interface DomainMeta {
   badge: string;        // Tailwind classes for the badge pill
   description: string;  // Short description shown in domain selector cards
   chunkingHint: string; // Human-readable chunking strategy description
+  isLocked: boolean;    // true = prompt + generation params are fixed (not user-editable)
   blueprint: BlueprintItem[];
 }
 
@@ -25,6 +26,7 @@ export const DOMAIN_META: Record<DomainKey, DomainMeta> = {
     badge: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
     description: 'Balanced defaults for any use case.',
     chunkingHint: 'Recursive chunking · 512 tokens',
+    isLocked: false,
     blueprint: [
       { icon: 'account_tree', label: 'Knowledge Graph', value: 'Disabled', active: false },
       { icon: 'content_cut',  label: 'Chunking',        value: 'Recursive · 512 tokens', active: true },
@@ -39,6 +41,7 @@ export const DOMAIN_META: Record<DomainKey, DomainMeta> = {
     badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     description: 'Sentence-aware chunking preserving paragraph coherence. KG enabled for concept relationships.',
     chunkingHint: 'Sentence chunking · 384 tokens',
+    isLocked: true,
     blueprint: [
       { icon: 'account_tree', label: 'Knowledge Graph', value: 'ON · local mode', active: true },
       { icon: 'content_cut',  label: 'Chunking',        value: 'Sentence-aware · 384 tokens', active: true },
@@ -53,6 +56,7 @@ export const DOMAIN_META: Record<DomainKey, DomainMeta> = {
     badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     description: 'Article-boundary chunking (Điều N) for Vietnamese legal docs. Hybrid KG mode.',
     chunkingHint: 'Article chunking · 1024 tokens',
+    isLocked: true,
     blueprint: [
       { icon: 'account_tree', label: 'Knowledge Graph', value: 'ON · hybrid mode', active: true },
       { icon: 'content_cut',  label: 'Chunking',        value: 'Article (Điều N) · 1024 tokens', active: true },
@@ -67,6 +71,7 @@ export const DOMAIN_META: Record<DomainKey, DomainMeta> = {
     badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     description: 'Small dense chunks with wide retrieval net. Persuasion-focused prompts.',
     chunkingHint: 'Recursive chunking · 256 tokens',
+    isLocked: true,
     blueprint: [
       { icon: 'account_tree', label: 'Knowledge Graph', value: 'Disabled', active: false },
       { icon: 'content_cut',  label: 'Chunking',        value: 'Dense recursive · 256 tokens', active: true },
