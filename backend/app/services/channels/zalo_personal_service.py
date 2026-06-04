@@ -318,6 +318,29 @@ class ZaloPersonalService:
         finally:
             db.close()
 
+    async def _load_conversation_history(
+        self, bot_id: str, session_id: str, limit: int = 10
+    ) -> list[dict[str, str]]:
+        """Load recent conversation messages for a session from MongoDB."""
+        try:
+            from app.db.mongodb import get_mongodb
+            mongo_db = await get_mongodb()
+            conversations = mongo_db.conversations
+            cursor = conversations.find(
+                {"bot_id": bot_id, "session_id": session_id}
+            ).sort("timestamp", -1).limit(limit)
+            docs = await cursor.to_list(length=limit)
+            # Reverse to chronological order for the LLM
+            docs.reverse()
+            history = []
+            for doc in docs:
+                history.append({"role": "user", "content": doc.get("user_message", "")})
+                history.append({"role": "assistant", "content": doc.get("response", "")})
+            return history
+        except Exception as e:
+            logger.warning("zalo_load_history_failed bot=%s session=%s err=%s", bot_id, session_id, e)
+            return []
+
     # ── Helpers ────────────────────────────────────────────────────────────
 
     @staticmethod
@@ -509,6 +532,11 @@ class ZaloPersonalService:
                 "zalo_personal_processing bot=%s account=%s thread=%s sender=%s text=%r",
                 bot_id, account_id or "legacy", thread_id, sender_id, text[:80],
             )
+            # Load recent conversation history for this session
+            conversation_history = await self._load_conversation_history(
+                str(bot.id), session_id
+            )
+
             # Fire typing indicator (non-blocking) while RAG processes
             asyncio.ensure_future(
                 self.account_send_typing(send_id, thread_id, thread_type)
@@ -525,6 +553,7 @@ class ZaloPersonalService:
                     "sender_name": data.get("sender_name") or None,
                 },
                 session_id=session_id,
+                conversation_history=conversation_history,
             )
             answer = (result or {}).get("response") or ""
             if not answer:
