@@ -139,6 +139,19 @@ class ZaloPersonalService:
         result = await self._get(f"/accounts/{account_id}/status")
         return result.get("status") or {}
 
+    async def account_send_typing(
+        self, account_id: str, thread_id: str, thread_type: str = "user"
+    ) -> dict[str, Any]:
+        try:
+            return await self._post(
+                f"/accounts/{account_id}/typing",
+                {"thread_id": thread_id, "thread_type": thread_type},
+                timeout=5.0,
+            )
+        except Exception as e:
+            logger.debug("zalo_personal_typing_failed account=%s err=%s", account_id, e)
+            return {"ok": False, "error": str(e)}
+
     async def account_send_message(
         self, account_id: str, thread_id: str, text: str, thread_type: str = "user"
     ) -> dict[str, Any]:
@@ -384,6 +397,17 @@ class ZaloPersonalService:
     async def disconnect(self, bot_id: str) -> dict[str, Any]:
         return await self._post(f"/bots/{bot_id}/unload", {})
 
+    async def send_typing(self, bot_id: str, thread_id: str, thread_type: str = "user") -> dict[str, Any]:
+        try:
+            return await self._post(
+                f"/bots/{bot_id}/typing",
+                {"thread_id": thread_id, "thread_type": thread_type},
+                timeout=5.0,
+            )
+        except Exception as e:
+            logger.debug("zalo_personal_typing_failed bot=%s err=%s", bot_id, e)
+            return {"ok": False, "error": str(e)}
+
     async def send_message(self, bot_id: str, thread_id: str, text: str, thread_type: str = "user") -> dict[str, Any]:
         last_exception = None
         for attempt in range(2):
@@ -484,6 +508,12 @@ class ZaloPersonalService:
             logger.info(
                 "zalo_personal_processing bot=%s account=%s thread=%s sender=%s text=%r",
                 bot_id, account_id or "legacy", thread_id, sender_id, text[:80],
+            )
+            # Fire typing indicator (non-blocking) while RAG processes
+            asyncio.ensure_future(
+                self.account_send_typing(send_id, thread_id, thread_type)
+                if account_id else
+                self.send_typing(send_id, thread_id, thread_type)
             )
             result = await self.rag_service.chat(
                 bot_id=str(bot.id),

@@ -56,6 +56,16 @@ app.get("/accounts/:account_id/status", { preHandler: requireBearer }, async (re
   return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(accountId) };
 });
 
+app.post("/accounts/:account_id/typing", { preHandler: requireBearer }, async (request, reply) => {
+  const { account_id: accountId } = request.params;
+  const { thread_id: threadId, thread_type: threadType = "user" } = request.body || {};
+  if (!threadId) {
+    reply.code(400).send({ error: "thread_id is required" });
+    return;
+  }
+  return manager.sendTyping(accountId, threadId, threadType);
+});
+
 app.post("/accounts/:account_id/send", { preHandler: requireBearer }, async (request, reply) => {
   const { account_id: accountId } = request.params;
   const { thread_id: threadId, text, thread_type: threadType = "user" } = request.body || {};
@@ -96,6 +106,18 @@ app.get("/bots/:bot_id/status", { preHandler: requireBearer }, async (request) =
   const { bot_id: botId } = request.params;
   const session = manager.get(botId) || manager.getByBotId(botId);
   return { ok: true, status: session ? manager.publicStatus(session) : manager.defaultStatus(botId) };
+});
+
+app.post("/bots/:bot_id/typing", { preHandler: requireBearer }, async (request, reply) => {
+  const { bot_id: botId } = request.params;
+  const { thread_id: threadId, thread_type: threadType = "user" } = request.body || {};
+  if (!threadId) {
+    reply.code(400).send({ error: "thread_id is required" });
+    return;
+  }
+  const session = manager.get(botId) || manager.getByBotId(botId);
+  const accountId = session ? session.accountId : botId;
+  return manager.sendTyping(accountId, threadId, threadType);
 });
 
 app.post("/bots/:bot_id/send", { preHandler: requireBearer }, async (request, reply) => {

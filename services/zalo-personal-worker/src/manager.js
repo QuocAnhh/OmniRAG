@@ -418,6 +418,18 @@ export class ZaloPersonalManager {
     }
   }
 
+  async sendTyping(accountId, threadId, threadType = "user") {
+    const session = this.get(accountId);
+    if (!session?.api) return { ok: false, error: "session not loaded" };
+    const zcaThreadType = threadType === "group" ? ThreadType.Group : ThreadType.User;
+    try {
+      await session.api.sendTypingEvent(String(threadId), zcaThreadType);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  }
+
   async send(accountId, threadId, text, threadType = "user") {
     const session = this.get(accountId);
     if (!session?.api) {
