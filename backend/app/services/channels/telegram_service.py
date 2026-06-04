@@ -93,6 +93,27 @@ class TelegramBotService:
         text = text.replace('&lt;code&gt;', '<code>').replace('&lt;/code&gt;', '</code>')
         return text
 
+    @staticmethod
+    async def _load_history(bot_id: str, session_id: str, limit: int = 10) -> list[dict[str, str]]:
+        """Load recent conversation messages from MongoDB."""
+        try:
+            from app.db.mongodb import get_mongodb
+            mongo_db = await get_mongodb()
+            conversations = mongo_db.conversations
+            cursor = conversations.find(
+                {"bot_id": bot_id, "session_id": session_id}
+            ).sort("timestamp", -1).limit(limit)
+            docs = await cursor.to_list(length=limit)
+            docs.reverse()
+            history = []
+            for doc in docs:
+                history.append({"role": "user", "content": doc.get("user_message", "")})
+                history.append({"role": "assistant", "content": doc.get("response", "")})
+            return history
+        except Exception as e:
+            logger.warning("telegram_load_history_failed bot=%s session=%s err=%s", bot_id, session_id, e)
+            return []
+
     async def send_message(self, bot_token: str, chat_id: int, text: str) -> dict:
         """Send text message to a Telegram chat (auto-converts markdown to HTML)."""
         bot = self._get_bot(bot_token)
@@ -273,7 +294,10 @@ class TelegramBotService:
         # Regular text -> RAG pipeline
         await self.send_chat_action(bot_token, chat_id)
 
-        logger.info(f"Telegram: Processing message for bot '{bot.name}': '{text[:50]}...'")
+        session_id = f"tg_{chat_id}"
+        conversation_history = await self._load_history(str(bot.id), session_id)
+
+        logger.info(f"Telegram: Processing message for bot '{bot.name}': '{text[:50]}...' history={len(conversation_history)}")
         result = await self.rag_service.chat(
             bot_id=str(bot.id),
             query=text,
@@ -282,7 +306,8 @@ class TelegramBotService:
                 "user_id": f"tg_{chat_id}",
                 "enable_memory": True,
             },
-            session_id=f"tg_{chat_id}"
+            session_id=session_id,
+            conversation_history=conversation_history,
         )
 
         ai_response = result["response"]
@@ -344,6 +369,8 @@ class TelegramBotService:
             description = caption or "Image received."
 
         # Feed described image to RAG
+        session_id = f"tg_{chat_id}"
+        history = await self._load_history(str(bot.id), session_id)
         result = await self.rag_service.chat(
             bot_id=str(bot.id),
             query=f"[User sent an image]\nImage description: {description}",
@@ -352,7 +379,8 @@ class TelegramBotService:
                 "user_id": f"tg_{chat_id}",
                 "enable_memory": True,
             },
-            session_id=f"tg_{chat_id}"
+            session_id=session_id,
+            conversation_history=history,
         )
 
         await self.send_message(bot_token, chat_id, result["response"])
@@ -403,6 +431,8 @@ class TelegramBotService:
             doc_context += f"\nContent preview:\n{text_preview}"
         query = f"{caption}\n\n[{doc_context}]" if caption else f"I uploaded a document.\n\n[{doc_context}]"
 
+        session_id = f"tg_{chat_id}"
+        history = await self._load_history(str(bot.id), session_id)
         result = await self.rag_service.chat(
             bot_id=str(bot.id),
             query=query,
@@ -411,7 +441,8 @@ class TelegramBotService:
                 "user_id": f"tg_{chat_id}",
                 "enable_memory": True,
             },
-            session_id=f"tg_{chat_id}",
+            session_id=session_id,
+            conversation_history=history,
         )
 
         await self.send_message(bot_token, chat_id, result["response"])
