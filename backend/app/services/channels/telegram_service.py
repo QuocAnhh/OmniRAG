@@ -73,10 +73,31 @@ class TelegramBotService:
         self._bot_cache.pop(bot_token, None)
         return result
 
+    @staticmethod
+    def _markdown_to_telegram_html(text: str) -> str:
+        """Convert common markdown to Telegram HTML (subset supported by Telegram)."""
+        import re
+        # Bold: **text** → <b>text</b>
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        # Italic: *text* → <i>text</i> (but not **)
+        text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
+        # Inline code: `text` → <code>text</code>
+        text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+        # Headers: ### text → <b>text</b>
+        text = re.sub(r'^#{1,3}\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+        # Escape HTML entities that aren't our tags
+        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        # Restore our tags
+        text = text.replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
+        text = text.replace('&lt;i&gt;', '<i>').replace('&lt;/i&gt;', '</i>')
+        text = text.replace('&lt;code&gt;', '<code>').replace('&lt;/code&gt;', '</code>')
+        return text
+
     async def send_message(self, bot_token: str, chat_id: int, text: str) -> dict:
-        """Send text message to a Telegram chat."""
+        """Send text message to a Telegram chat (auto-converts markdown to HTML)."""
         bot = self._get_bot(bot_token)
-        msg = await bot.send_message(chat_id=chat_id, text=text)
+        html = self._markdown_to_telegram_html(text)
+        msg = await bot.send_message(chat_id=chat_id, text=html)
         return msg.model_dump()
 
     async def send_chat_action(self, bot_token: str, chat_id: int, action: str = "typing") -> None:
