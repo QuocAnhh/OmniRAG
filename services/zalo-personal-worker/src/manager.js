@@ -26,6 +26,79 @@ function threadTypeName(type) {
   return type === ThreadType.Group ? "group" : "user";
 }
 
+/**
+ * Convert common markdown formatting to Zalo text styles.
+ * Returns { text, styles } where text is plain text and styles is
+ * the array of style objects for zca-js sendMessage.
+ *
+ * Supported: **bold**, *italic*, - unordered lists, 1. ordered lists
+ */
+function parseMarkdownToZalo(md) {
+  const styles = [];
+  let text = md;
+
+  // Bold: **text** → Bold
+  text = text.replace(/\*\*(.+?)\*\*/g, (_, content, offset) => {
+    const start = offset;
+    const len = content.length;
+    styles.push({ start, len, st: "b" });
+    return content;
+  });
+
+  // Italic: *text* (but not **) → Italic
+  // Run after bold so that bold's ** are already resolved
+  text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, (_, content, offset) => {
+    styles.push({ start: offset, len: content.length, st: "i" });
+    return content;
+  });
+
+  // Headers: ### text → Big + Bold
+  text = text.replace(/^#{1,3}\s+(.+)$/gm, (_, content, offset) => {
+    styles.push({ start: offset, len: content.length, st: "f_18" });
+    styles.push({ start: offset, len: content.length, st: "b" });
+    return content;
+  });
+
+  // Horizontal rules: --- or *** → skip
+  text = text.replace(/^[-*]{3,}\s*$/gm, "──────────────");
+
+  // Unordered list items: lines starting with - or *
+  // Re-calculate after header resolution using the processed text
+  // We'll handle lists via line-by-line scan at the end
+
+  return { text, styles };
+}
+
+/**
+ * Apply list styles to lines starting with - or 1.
+ * Must be called after other replacements to have correct offsets.
+ */
+function applyListStyles(text, styles) {
+  const lines = text.split("\n");
+  let offset = 0;
+  for (const line of lines) {
+    const trimmed = line.trimStart();
+    const indent = line.length - trimmed.length;
+
+    // Unordered: "- text" or "* text"
+    const ulMatch = trimmed.match(/^[-*]\s+(.+)/);
+    if (ulMatch) {
+      const contentStart = offset + indent;
+      styles.push({ start: contentStart, len: line.length - indent, st: "lst_1" });
+    }
+
+    // Ordered: "1. text" or "1) text"
+    const olMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
+    if (olMatch) {
+      const contentStart = offset + indent;
+      styles.push({ start: contentStart, len: line.length - indent, st: "lst_2" });
+    }
+
+    offset += line.length + 1; // +1 for \n
+  }
+  return text;
+}
+
 export class ZaloPersonalManager {
   constructor({ zaloFactory = () => new Zalo({ logging: false }), fetchImpl = globalThis.fetch } = {}) {
     this.zaloFactory = zaloFactory;
@@ -440,7 +513,19 @@ export class ZaloPersonalManager {
       throw new Error(`rate_limited: ${reason}`);
     }
     const zcaThreadType = threadType === "group" ? ThreadType.Group : ThreadType.User;
-    const result = await session.api.sendMessage({ msg: text }, String(threadId), zcaThreadType);
+
+    // Convert markdown to Zalo-formatted text with styles
+    let parsed = parseMarkdownToZalo(text);
+    parsed.text = applyListStyles(parsed.text, parsed.styles);
+    // Sort styles by start position so they apply correctly
+    parsed.styles.sort((a, b) => a.start - b.start);
+
+    const msgPayload = { msg: parsed.text };
+    if (parsed.styles.length > 0) {
+      msgPayload.styles = parsed.styles;
+    }
+
+    const result = await session.api.sendMessage(msgPayload, String(threadId), zcaThreadType);
     recordSend(accountId);
     return { ok: true, result };
   }
