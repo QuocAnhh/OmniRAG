@@ -5,9 +5,13 @@ import { botsApi } from '../api/bots';
 import type { Document } from '../types/api';
 import type { Bot } from '../types/api';
 import { Button } from '../components/ui/Button';
-import Swal from 'sweetalert2';
+import { DataTable, DataTableShell } from '../components/ui/DataTable';
+import { EmptyState } from '../components/ui/EmptyState';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { Switch } from '../components/ui/Switch';
 import toast from 'react-hot-toast';
 import { getDomainMeta } from '../utils/domainHelpers';
+import { confirmAction } from '../lib/confirmAction';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -141,17 +145,14 @@ export default function DocumentsPage() {
   const handleDelete = async (id: string) => {
     if (!selectedBotId) return;
 
-    const result = await Swal.fire({
+    const confirmed = await confirmAction({
       title: 'Delete Document?',
       text: 'You cannot undo this action.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#3b82f6',
-      confirmButtonText: 'Yes, delete it!'
+      confirmText: 'Delete document',
+      tone: 'danger',
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await documentsApi.delete(selectedBotId, id);
         setDocuments(documents.filter(doc => doc.id !== id));
@@ -169,23 +170,23 @@ export default function DocumentsPage() {
 
   return (
     <Layout breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Knowledge Base' }]}>
-      <div className="p-8 bg-background-off dark:bg-background-dark min-h-full">
+      <div className="p-8 min-h-full">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-text-main dark:text-white">Knowledge Base</h1>
+              <h1 className="text-3xl font-bold text-foreground">Knowledge Base</h1>
               {(() => {
                 const selectedBot = bots.find(b => b.id === selectedBotId);
                 if (!selectedBot) return (
-                  <p className="text-text-muted dark:text-gray-400 mt-1">Upload documents to train your RAG model</p>
+                  <p className="text-muted-foreground mt-1">Upload documents to train your RAG model</p>
                 );
                 const dm = getDomainMeta(selectedBot.config?.domain);
                 const chunkHint = selectedBot.config?.chunking_strategy
                   ? `${selectedBot.config.chunking_strategy} chunking · ${selectedBot.config?.chunk_size ?? '—'} tokens`
                   : dm.chunkingHint;
                 return (
-                  <p className="text-text-muted dark:text-gray-400 mt-1 flex items-center gap-2">
+                  <p className="text-muted-foreground mt-1 flex items-center gap-2">
                     Upload documents to train your RAG model
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${dm.badge}`}>
                       <span className="material-symbols-outlined text-[12px]">{dm.icon}</span>
@@ -199,7 +200,7 @@ export default function DocumentsPage() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-[220px]">
                 <select
-                  className="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark px-3 py-2 text-sm text-text-main dark:text-white"
+                  className="w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={selectedBotId}
                   onChange={handleBotChange}
                   disabled={loadingBots || bots.length === 0}
@@ -227,23 +228,13 @@ export default function DocumentsPage() {
 
           {/* Upload Options */}
           <div className="flex items-center gap-3 mb-4 px-1">
-            <button
-              type="button"
-              onClick={() => setEnableKnowledgeGraph(v => !v)}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enableKnowledgeGraph ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
-              role="switch"
-              aria-checked={enableKnowledgeGraph}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enableKnowledgeGraph ? 'translate-x-4' : 'translate-x-0'}`}
-              />
-            </button>
-            <span className="text-sm font-medium text-text-main dark:text-white">Build Knowledge Graph</span>
-            <span className="text-xs text-text-muted dark:text-gray-400">(for complex or long documents — requires extra processing time)</span>
+            <Switch checked={enableKnowledgeGraph} onCheckedChange={setEnableKnowledgeGraph} />
+            <span className="text-sm font-medium text-foreground">Build Knowledge Graph</span>
+            <span className="text-xs text-muted-foreground">(for complex or long documents — requires extra processing time)</span>
           </div>
 
           {/* Upload Zone */}
-          <div className={`group relative flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed transition-all overflow-hidden py-14 px-4 mb-10 ${selectedBotId ? (uploading ? 'border-primary/50 bg-primary/5' : 'border-border-light dark:border-border-dark hover:border-primary/50 hover:bg-primary/5 cursor-pointer') : 'border-border-light dark:border-border-dark opacity-60 cursor-not-allowed bg-surface-light dark:bg-surface-dark'}`}>
+          <div className={`group relative flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed transition-all overflow-hidden py-14 px-4 mb-10 ${selectedBotId ? (uploading ? 'border-primary/50 bg-primary/5' : 'border-white/10 hover:border-primary/50 hover:bg-primary/5 cursor-pointer') : 'border-white/10 opacity-60 cursor-not-allowed bg-card'}`}>
             <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleUpload} accept=".pdf,.txt,.md,.csv,.docx,.pptx,.xlsx" disabled={!selectedBotId || uploading} />
 
             {/* Background Grid Pattern */}
@@ -299,7 +290,7 @@ export default function DocumentsPage() {
               ) : (
                 // Idle Upload SVG
                 <div className={`relative size-20 transition-transform duration-300 ${selectedBotId ? 'group-hover:-translate-y-2' : ''}`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={`w-full h-full transition-colors ${selectedBotId ? 'text-text-muted dark:text-gray-400 group-hover:text-primary' : 'text-text-muted/50 dark:text-gray-600'}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={`w-full h-full transition-colors ${selectedBotId ? 'text-muted-foreground group-hover:text-primary' : 'text-muted-foreground/50'}`}>
                     <defs>
                       <filter id="idleGlow2" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="3" result="blur" />
@@ -325,10 +316,10 @@ export default function DocumentsPage() {
               )}
 
               <div className="flex flex-col gap-1.5 w-full">
-                <p className={`text-xl font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500 animate-pulse' : 'text-text-main dark:text-white group-hover:text-primary transition-colors'}`}>
+                <p className={`text-xl font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
                   {uploading ? 'Crunching and Extracting Knowledge...' : 'Drag and drop your files here'}
                 </p>
-                <p className="text-sm font-medium text-text-muted dark:text-gray-400">
+                <p className="text-sm font-medium text-muted-foreground">
                   {selectedBotId ? (uploading ? 'Please wait while we vectorize the contents' : 'or click to browse from your computer (max 25MB)') : 'Select a bot to enable uploads'}
                 </p>
               </div>
@@ -336,9 +327,9 @@ export default function DocumentsPage() {
           </div>
 
           {/* Documents Table */}
-          <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-background-off dark:bg-surface-dark text-xs uppercase tracking-wider text-text-muted dark:text-gray-400 font-semibold">
+          <DataTableShell>
+            <DataTable>
+              <thead className="bg-white/[0.03] text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 <tr>
                   <th className="px-6 py-4 w-[40%]">Name</th>
                   <th className="px-6 py-4 w-[20%]">Status</th>
@@ -347,7 +338,7 @@ export default function DocumentsPage() {
                   <th className="px-6 py-4 w-[10%] text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="text-sm divide-y divide-border-light dark:divide-border-dark">
+              <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center">
@@ -356,43 +347,38 @@ export default function DocumentsPage() {
                   </tr>
                 ) : documents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-text-muted dark:text-gray-400">
-                      No documents uploaded yet
+                    <td colSpan={5}>
+                      <EmptyState title="No documents uploaded yet" description="Upload a file to make it searchable by this agent." />
                     </td>
                   </tr>
                 ) : (
                   documents.map((doc) => (
-                    <tr key={doc.id} className="group hover:bg-background-light dark:hover:bg-surface-dark transition-colors">
+                    <tr key={doc.id} className="group hover:bg-white/[0.03] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="size-8 rounded flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                             <span className="material-symbols-outlined text-[20px]">picture_as_pdf</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-medium text-text-main dark:text-white">{doc.filename}</span>
+                            <span className="font-medium text-foreground">{doc.filename}</span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${doc.status === 'completed' || doc.status === 'ready'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : doc.status === 'processing'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>
+                        <StatusBadge tone={doc.status === 'completed' ? 'success' : doc.status === 'processing' ? 'info' : doc.status === 'failed' ? 'danger' : 'warning'}>
                           {doc.status}
-                        </span>
+                        </StatusBadge>
                       </td>
-                      <td className="px-6 py-4 text-text-muted dark:text-gray-400 tabular-nums font-mono text-xs">
+                      <td className="px-6 py-4 text-muted-foreground tabular-nums font-mono text-xs">
                         {doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(2)} MB` : '—'}
                       </td>
-                      <td className="px-6 py-4 text-text-muted dark:text-gray-400 tabular-nums">
+                      <td className="px-6 py-4 text-muted-foreground tabular-nums">
                         {new Date(doc.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => handleDelete(doc.id)}
-                          className="p-1.5 rounded hover:bg-background-off dark:hover:bg-surface-dark text-text-muted hover:text-red-600 transition-colors"
+                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
@@ -401,8 +387,8 @@ export default function DocumentsPage() {
                   ))
                 )}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </DataTableShell>
         </div>
       </div>
     </Layout>

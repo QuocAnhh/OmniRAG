@@ -4,6 +4,7 @@ import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { STORAGE_KEYS } from '../utils/constants';
 import { LogoIcon } from '../components/ui/LogoIcon';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -74,28 +75,28 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden px-4 py-8">
       {/* Organic Background Elements */}
       <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none animate-float" style={{ animationDuration: '8s' }}></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] pointer-events-none animate-float" style={{ animationDuration: '10s', animationDelay: '1s' }}></div>
 
-      <div className="w-full max-w-md p-8 m-4 bg-card border border-border/50 rounded-3xl shadow-xl shadow-primary/5 relative z-10">
-        <div className="text-center mb-8">
-          <div className="size-16 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/10">
+      <div className="relative z-10 w-full min-w-0 max-w-md overflow-hidden p-6 sm:p-8 bg-card border border-border/50 rounded-2xl sm:rounded-3xl shadow-xl shadow-primary/5">
+        <div className="text-center mb-7 sm:mb-8">
+          <div className="size-14 sm:size-16 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/10">
             <LogoIcon className="w-full h-full" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            {isLogin ? 'Welcome back' : 'Join our garden'}
+            {isLogin ? 'Welcome back' : 'Create your workspace'}
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {isLogin ? 'Enter your credentials to access your workspace' : 'Create an account to verify your intelligence'}
+          <p className="mx-auto mt-2 max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
+            {isLogin ? 'Enter your credentials to access your workspace' : 'Set up OmniRAG for your team and documents'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-2">
-              <span className="material-symbols-outlined text-lg">error</span>
+              <AlertCircle className="size-4 flex-shrink-0" />
               {error}
             </div>
           )}
@@ -111,7 +112,7 @@ export default function AuthPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/50"
-                  placeholder="John Doe"
+                  placeholder="Linh Nguyen"
                 />
               </div>
               <div className="space-y-1.5">
@@ -123,7 +124,7 @@ export default function AuthPage() {
                   value={tenantName}
                   onChange={(e) => setTenantName(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/50"
-                  placeholder="Acme Inc."
+                  placeholder="BIVA Research"
                 />
               </div>
             </>
@@ -159,9 +160,7 @@ export default function AuthPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <span className="material-symbols-outlined text-xl">
-                  {showPassword ? 'visibility' : 'visibility_off'}
-                </span>
+                {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
               </button>
             </div>
           </div>
@@ -190,13 +189,13 @@ export default function AuthPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="font-semibold text-primary hover:text-primary-600 hover:underline transition-colors"
+              className="font-semibold text-primary hover:text-primary/85 hover:underline transition-colors"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
           </p>
-          <p className="text-xs text-muted-foreground/60">
-            Protected by reCAPTCHA and subject to the OmniRAG <a href="#" className="hover:text-primary">Privacy Policy</a> and <a href="#" className="hover:text-primary">Terms of Service</a>.
+          <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted-foreground/60">
+            Protected by reCAPTCHA and subject to the OmniRAG privacy policy and terms of service.
           </p>
         </div>
       </div>

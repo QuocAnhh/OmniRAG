@@ -46,7 +46,6 @@ export const useSecurity = () => {
         };
 
         // 3. Clear Console / Show Warning
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let savedConsole: any = {};
 
         // Check if running in production mode using Vite's import.meta.env

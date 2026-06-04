@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { foldersApi, type Folder } from '../../api/folders';
 import { documentsApi } from '../../api/documents';
 import type { Document } from '../../api/documents';
@@ -33,11 +33,7 @@ export default function DocumentOrganizer({ botId, onSelectDocument, onUploadCli
         }
     }
 
-    useEffect(() => {
-        loadContent();
-    }, [botId]); // Reload when bot changes
-
-    const loadContent = async () => {
+    const loadContent = useCallback(async () => {
         setLoading(true);
         try {
             const [fetchedFolders, fetchedDocs] = await Promise.all([
@@ -52,7 +48,11 @@ export default function DocumentOrganizer({ botId, onSelectDocument, onUploadCli
         } finally {
             setLoading(false);
         }
-    };
+    }, [botId]);
+
+    useEffect(() => {
+        loadContent();
+    }, [loadContent]); // Reload when bot changes
 
     const handleCreateFolder = async () => {
         if (!newFolderName.trim()) return;

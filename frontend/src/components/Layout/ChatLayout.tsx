@@ -191,7 +191,11 @@ export default function ChatLayout({
                             </ResizablePanel>
                         )}
 
-                        {!embedded && isDesktop && <ResizableHandle withHandle />}
+                        {!embedded && isDesktop && (
+                            <ResizableHandle className="group relative w-1.5 bg-white/[0.04] transition-colors hover:bg-primary/30 data-[resize-handle-state=drag]:bg-primary/40">
+                                <span className="absolute left-1/2 top-1/2 h-10 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/15 opacity-0 transition-opacity group-hover:opacity-100" />
+                            </ResizableHandle>
+                        )}
 
                         {/* Center Panel: Chat Interface */}
                         <ResizablePanel defaultSize={100 - leftSize - (isRightCollapsed ? 0 : rightSize)} minSize={30}>
@@ -243,7 +247,11 @@ export default function ChatLayout({
                         {/* Right Panel: Evidence / Preview */}
                         {!isRightCollapsed && (
                             <>
-                                {isDesktop && <ResizableHandle withHandle />}
+                                {isDesktop && (
+                                    <ResizableHandle className="group relative w-1.5 bg-white/[0.04] transition-colors hover:bg-primary/30 data-[resize-handle-state=drag]:bg-primary/40">
+                                        <span className="absolute left-1/2 top-1/2 h-10 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/15 opacity-0 transition-opacity group-hover:opacity-100" />
+                                    </ResizableHandle>
+                                )}
                                 <ResizablePanel
                                     defaultSize={rightSize}
                                     minSize={20}

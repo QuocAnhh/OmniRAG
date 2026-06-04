@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen ops-root flex items-center justify-center p-8">
+        <div className="min-h-screen flex items-center justify-center bg-background p-8 text-foreground">
           <div className="max-w-md w-full text-center">
             <div className="mb-6">
               <div className="size-16 mx-auto rounded-2xl bg-red-500/10 flex items-center justify-center">
@@ -35,21 +35,21 @@ export class ErrorBoundary extends Component<Props, State> {
                 </svg>
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-[var(--color-ops-text)] mb-2">
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               Something went wrong
             </h2>
-            <p className="text-sm text-[var(--color-ops-muted)] mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               An unexpected error occurred. Please try reloading the page or return to the dashboard.
             </p>
             {this.state.error && (
-              <pre className="mb-6 p-3 rounded-lg bg-[var(--color-ops-panel)] border border-[var(--color-ops-border)] text-xs text-left text-red-400 overflow-auto max-h-32">
+              <pre className="mb-6 p-3 rounded-lg bg-card border border-white/10 text-xs text-left text-red-400 overflow-auto max-h-32">
                 {this.state.error.message}
               </pre>
             )}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 rounded-lg bg-[var(--color-ops-accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 Reload Page
               </button>
@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => {
                   window.location.href = '/dashboard';
                 }}
-                className="px-4 py-2 rounded-lg border border-[var(--color-ops-border)] text-[var(--color-ops-text)] text-sm font-medium hover:bg-[var(--color-ops-panel)] transition-colors"
+                className="px-4 py-2 rounded-lg border border-white/10 text-foreground text-sm font-medium hover:bg-white/5 transition-colors"
               >
                 Back to Dashboard
               </button>

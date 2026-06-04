@@ -15,29 +15,25 @@ interface DocumentDetailsProps {
 
 export default function DocumentDetails({ botId, document, onUpdate, onDelete }: DocumentDetailsProps) {
     const [folders, setFolders] = useState<Folder[]>([]);
-    const [tags, setTags] = useState<string[]>(document.tags || []);
     const [newTag, setNewTag] = useState('');
-    const [selectedFolderId, setSelectedFolderId] = useState<string>(document.folder_id || '');
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const tags = document.tags || [];
+    const selectedFolderId = document.folder_id || '';
 
 
     useEffect(() => {
-        loadFolders();
+        let cancelled = false;
+        foldersApi.list(botId)
+            .then((data) => {
+                if (!cancelled) setFolders(data);
+            })
+            .catch((error) => {
+                console.error('Failed to load folders', error);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [botId]);
-
-    useEffect(() => {
-        setTags(document.tags || []);
-        setSelectedFolderId(document.folder_id || '');
-    }, [document]);
-
-    const loadFolders = async () => {
-        try {
-            const data = await foldersApi.list(botId);
-            setFolders(data);
-        } catch (error) {
-            console.error('Failed to load folders', error);
-        }
-    };
 
     const handleAddTag = async () => {
         if (!newTag.trim()) return;
@@ -49,7 +45,6 @@ export default function DocumentDetails({ botId, document, onUpdate, onDelete }:
         const updatedTags = [...tags, newTag.trim()];
         try {
             const updatedDoc = await documentsApi.update(botId, document.id, { tags: updatedTags });
-            setTags(updatedDoc.tags || []);
             setNewTag('');
             onUpdate(updatedDoc);
             toast.success('Tag added');
@@ -62,7 +57,6 @@ export default function DocumentDetails({ botId, document, onUpdate, onDelete }:
         const updatedTags = tags.filter(t => t !== tagToRemove);
         try {
             const updatedDoc = await documentsApi.update(botId, document.id, { tags: updatedTags });
-            setTags(updatedDoc.tags || []);
             onUpdate(updatedDoc);
             toast.success('Tag removed');
         } catch (error) {
@@ -74,7 +68,6 @@ export default function DocumentDetails({ botId, document, onUpdate, onDelete }:
         const newFolderId = e.target.value || null;
         try {
             const updatedDoc = await documentsApi.update(botId, document.id, { folder_id: newFolderId });
-            setSelectedFolderId(updatedDoc.folder_id || '');
             onUpdate(updatedDoc);
             toast.success('Folder moved');
         } catch (error) {

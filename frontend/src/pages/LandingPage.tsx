@@ -130,36 +130,37 @@ export default function LandingPage() {
 
       <main className="relative z-10">
         {/* Hero — left-aligned, asymmetric */}
-        <section className="mx-auto max-w-7xl px-6 lg:px-8 pt-36 lg:pt-48 pb-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-48 pb-16 lg:pb-24">
+          <div className="grid min-w-0 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left — text */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="flex flex-col gap-6"
+              className="flex min-w-0 flex-col gap-5 sm:gap-6"
             >
               <motion.div variants={fadeUp}>
-                <span className="inline-flex items-center gap-2 text-[11px] font-medium text-primary/70 border border-primary/20 bg-primary/6 rounded-full px-3 py-1.5 tracking-wide">
+                <span className="inline-flex max-w-full items-center gap-2 text-[11px] font-medium text-primary/70 border border-primary/20 bg-primary/6 rounded-full px-3 py-1.5 tracking-wide">
                   <Database className="w-3 h-3" />
-                  RAG platform · Knowledge graph · Multi-domain
+                  <span className="truncate">RAG platform · Knowledge graph · Multi-domain</span>
                 </span>
               </motion.div>
 
               <motion.h1
                 variants={fadeUp}
-                className="text-[clamp(2.6rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.04em] text-white"
+                className="max-w-[21rem] text-[2.3rem] font-bold leading-[1.08] tracking-tight text-white sm:max-w-none sm:text-[clamp(2.45rem,5vw,4rem)] sm:tracking-[-0.04em]"
               >
-                Your knowledge base,<br />
+                Your knowledge<span className="hidden sm:inline"> base,</span>
+                <span className="sm:hidden"><br />base,</span><br />
                 <span className="text-primary/80">actually useful.</span>
               </motion.h1>
 
-              <motion.p variants={fadeUp} className="text-white/45 text-lg leading-relaxed max-w-lg">
+              <motion.p variants={fadeUp} className="max-w-[21rem] text-white/45 text-base leading-relaxed sm:max-w-lg sm:text-lg">
                 Upload documents, connect a knowledge graph, and deploy AI chatbots that give real answers — with citations.
                 Built for teams that can't afford hallucinations.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="flex items-center gap-3 pt-2">
+              <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3 pt-1 sm:pt-2">
                 {isLoggedIn ? (
                   <Link to="/dashboard" className="px-6 py-3 bg-primary hover:bg-primary/85 active:scale-[0.97] text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2">
                     Go to dashboard <ArrowRight className="w-4 h-4" />
@@ -175,9 +176,9 @@ export default function LandingPage() {
               </motion.div>
 
               {/* Social proof strip */}
-              <motion.div variants={fadeUp} className="flex items-center gap-4 pt-4 border-t border-white/6">
+              <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3 sm:gap-4 pt-4 border-t border-white/6">
                 <div className="text-xs text-white/25">Built with</div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {['FastAPI', 'Qdrant', 'LightRAG', 'OpenRouter'].map(t => (
                     <span key={t} className="text-[11px] text-white/30 font-mono">{t}</span>
                   ))}
@@ -190,9 +191,9 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="relative"
+              className="relative min-w-0 max-w-full overflow-hidden sm:overflow-visible"
             >
-              <div className="rounded-2xl border border-white/8 bg-[#0d0d1c]/90 backdrop-blur-xl shadow-[0_24px_80px_rgba(4,4,20,0.7)] overflow-hidden">
+              <div className="w-full min-w-0 max-w-full rounded-2xl border border-white/8 bg-[#0d0d1c]/90 backdrop-blur-xl shadow-[0_24px_80px_rgba(4,4,20,0.7)] overflow-hidden">
                 {/* Window bar */}
                 <div className="flex items-center px-4 py-3 border-b border-white/6 bg-[#0a0a18]">
                   <div className="flex gap-1.5">
@@ -209,33 +210,33 @@ export default function LandingPage() {
                 </div>
 
                 {/* Chat content */}
-                <div className="p-6 flex flex-col gap-5 min-h-[360px]">
+                <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 min-h-[280px] sm:min-h-[360px]">
                   {/* User message */}
                   <div className="flex justify-end">
-                    <div className="bg-white/6 border border-white/8 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white/70 max-w-[80%]">
+                    <div className="max-w-[85%] break-words bg-white/6 border border-white/8 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white/70">
                       What is our policy on remote work equipment?
                     </div>
                   </div>
 
                   {/* Bot message */}
-                  <div className="flex gap-3 max-w-[90%]">
+                  <div className="flex min-w-0 gap-3 max-w-[95%] sm:max-w-[90%]">
                     <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <BrainCircuit className="w-3.5 h-3.5 text-primary/80" />
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="bg-primary/6 border border-primary/12 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/75 leading-relaxed">
+                    <div className="flex min-w-0 flex-col gap-2">
+                      <div className="min-w-0 break-words bg-primary/6 border border-primary/12 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/75 leading-relaxed">
                         Per <span className="text-primary/80 font-medium">Employee Handbook v2.4</span>, employees are eligible for a $500 stipend covering ergonomic furniture, monitors, headsets, and webcams.
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-white/20 font-mono">Source</span>
-                        <span className="text-[11px] text-primary/40 hover:text-primary/60 cursor-pointer transition-colors">Employee_Handbook_v2.pdf · p.14</span>
+                        <span className="min-w-0 truncate text-[11px] text-primary/40 hover:text-primary/60 cursor-pointer transition-colors">Employee_Handbook_v2.pdf · p.14</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Input bar */}
-                  <div className="mt-auto pt-4 border-t border-white/6 flex items-center gap-3">
-                    <div className="flex-1 text-sm text-white/20 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
+                  <div className="mt-auto pt-3 sm:pt-4 border-t border-white/6 flex items-center gap-3">
+                    <div className="min-w-0 flex-1 truncate text-sm text-white/20 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
                       Ask anything about your documents...
                     </div>
                     <div className="w-8 h-8 bg-primary/15 border border-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -337,8 +338,8 @@ export default function LandingPage() {
             <span className="text-xs font-medium text-white/30">OmniRAG</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Privacy policy</a>
-            <a href="#" className="text-xs text-white/25 hover:text-white/50 transition-colors">Terms of service</a>
+            <span className="text-xs text-white/25">Privacy policy</span>
+            <span className="text-xs text-white/25">Terms of service</span>
           </div>
           <p className="text-xs text-white/20">© 2026 OmniRAG. All rights reserved.</p>
         </div>

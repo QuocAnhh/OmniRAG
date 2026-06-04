@@ -22,21 +22,21 @@ const ZaloPersonalAccountsPage = lazy(() => import('./pages/ZaloPersonalAccounts
 // Premium loading component
 function LoadingScreen() {
   return (
-    <div className="min-h-screen ops-root flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
       <div className="text-center">
-        <div className="size-20 mx-auto mb-6 rounded-xl overflow-hidden border border-[var(--color-ops-border)] bg-[var(--color-ops-panel)] p-3">
+        <div className="size-20 mx-auto mb-6 rounded-xl overflow-hidden border border-white/10 bg-card p-3 shadow-[0_0_28px_rgba(79,142,240,0.14)]">
           <LogoIcon className="w-full h-full" />
         </div>
         <div className="flex justify-center gap-2 mb-4">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="size-2 bg-[var(--color-ops-accent)] rounded-full animate-bounce"
+              className="size-2 bg-primary rounded-full animate-bounce"
               style={{ animationDelay: `${i * 0.15}s` }}
             ></div>
           ))}
         </div>
-        <p className="ops-section-title text-[10px] ops-muted">Loading workspace...</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Loading workspace...</p>
       </div>
     </div>
   );

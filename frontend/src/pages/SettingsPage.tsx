@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout/Layout';
 import toast from 'react-hot-toast';
 import { usersApi, type APIKey } from '../api/users';
+import { confirmAction } from '../lib/confirmAction';
 
 export default function SettingsPage() {
   // --- Profile state ---
@@ -121,7 +122,13 @@ export default function SettingsPage() {
   };
 
   const handleRevokeKey = async (keyId: string, keyName: string) => {
-    if (!confirm(`Revoke "${keyName}"? Any applications using this key will stop working.`)) return;
+    const confirmed = await confirmAction({
+      title: `Revoke "${keyName}"?`,
+      text: 'Any applications using this key will stop working.',
+      confirmText: 'Revoke key',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await usersApi.revokeAPIKey(keyId);
       setApiKeys(prev => prev.filter(k => k.id !== keyId));

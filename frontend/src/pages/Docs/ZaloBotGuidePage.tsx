@@ -2,6 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoIcon } from '../../components/ui/LogoIcon';
 
+function DocScreenshotPlaceholder({ title }: { title: string }) {
+    return (
+        <div className="rounded-xl border border-dashed border-white/12 bg-white/[0.03] aspect-video flex items-center justify-center px-6 text-center">
+            <div>
+                <span className="material-symbols-outlined text-3xl text-muted-foreground/50">image</span>
+                <p className="mt-2 text-sm font-medium text-muted-foreground">{title}</p>
+                <p className="mt-1 text-xs text-muted-foreground/60">Product screenshot pending for this guide step.</p>
+            </div>
+        </div>
+    );
+}
+
 export default function ZaloBotGuidePage() {
     const [activeSection, setActiveSection] = useState('intro');
 
@@ -175,16 +187,7 @@ export default function ZaloBotGuidePage() {
                                 Go to <a href="https://oa.zalo.me/manage/oa" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">Zalo OA Management</a> and ensure you have an Official Account created. If you don't have one, click "Create New OA".
                             </p>
 
-                            <div className="bg-muted rounded-xl border border-border/50 overflow-hidden aspect-video flex items-center justify-center relative group">
-                                <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                                    <p className="text-muted-foreground font-medium text-sm flex items-center gap-2">
-                                        <span className="material-symbols-outlined">image</span>
-                                        Screenshot: Zalo OA Dashboard will be inserted here
-                                    </p>
-                                </div>
-                                {/* Placeholder for screenshot */}
-                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-background/80 backdrop-blur rounded-lg text-xs font-mono border border-border">img: zalo_oa_dashboard.png</div>
-                            </div>
+                            <DocScreenshotPlaceholder title="Zalo OA dashboard" />
 
                             <div className="p-4 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200 text-sm">
                                 <strong>Note:</strong> Your OA should be verified for best results, but you can start testing with a standard OA.
@@ -210,15 +213,7 @@ export default function ZaloBotGuidePage() {
                                 <li>After creation, navigate to <strong>"Official Account"</strong> settings in the left sidebar and link your OA to this app.</li>
                             </ol>
 
-                            <div className="bg-muted rounded-xl border border-border/50 overflow-hidden aspect-video flex items-center justify-center relative group">
-                                <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                                    <p className="text-muted-foreground font-medium text-sm flex items-center gap-2">
-                                        <span className="material-symbols-outlined">image</span>
-                                        Screenshot: Creating Zalo App
-                                    </p>
-                                </div>
-                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-background/80 backdrop-blur rounded-lg text-xs font-mono border border-border">img: create_zalo_app.png</div>
-                            </div>
+                            <DocScreenshotPlaceholder title="Creating a Zalo app" />
                         </div>
                     </section>
 
@@ -247,15 +242,7 @@ export default function ZaloBotGuidePage() {
                                 </p>
                             </div>
 
-                            <div className="bg-muted rounded-xl border border-border/50 overflow-hidden aspect-video flex items-center justify-center relative group">
-                                <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                                    <p className="text-muted-foreground font-medium text-sm flex items-center gap-2">
-                                        <span className="material-symbols-outlined">image</span>
-                                        Screenshot: Copying Bot Token
-                                    </p>
-                                </div>
-                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-background/80 backdrop-blur rounded-lg text-xs font-mono border border-border">img: zalo_token.png</div>
-                            </div>
+                            <DocScreenshotPlaceholder title="Copying the bot token" />
                         </div>
                     </section>
 
@@ -283,15 +270,7 @@ export default function ZaloBotGuidePage() {
                                 <p>OmniRAG will automatically configure the Webhook URL and verify the connection. Once you see the "Connected" status, your bot is live!</p>
                             </div>
 
-                            <div className="bg-muted rounded-xl border border-border/50 overflow-hidden aspect-video flex items-center justify-center relative group shadow-lg">
-                                <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                                    <p className="text-muted-foreground font-medium text-sm flex items-center gap-2">
-                                        <span className="material-symbols-outlined">image</span>
-                                        Screenshot: OmniRAG Zalo Config Screen
-                                    </p>
-                                </div>
-                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-background/80 backdrop-blur rounded-lg text-xs font-mono border border-border">img: omnirag_config.png</div>
-                            </div>
+                            <DocScreenshotPlaceholder title="OmniRAG channel configuration" />
                         </div>
                     </section>
 
@@ -322,7 +301,7 @@ export default function ZaloBotGuidePage() {
 
                             <div className="p-6 bg-card rounded-xl border border-border hover:border-primary/20 transition-colors">
                                 <h4 className="font-bold text-foreground mb-2">Need more help?</h4>
-                                <p className="text-sm text-muted-foreground">Contact our support team directly or check the <a href="#" className="text-primary hover:underline">Full Documentation</a>.</p>
+                                <p className="text-sm text-muted-foreground">Contact our support team directly or return to the <Link to="/" className="text-primary hover:underline">OmniRAG overview</Link>.</p>
                             </div>
                         </div>
                     </section>

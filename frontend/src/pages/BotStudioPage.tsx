@@ -84,7 +84,7 @@ export default function BotStudioPage() {
                                         <div className="flex flex-col min-w-0 pr-2">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold truncate leading-tight">{bot.name}</span>
-                                                {bot.is_active && <span className={`size-1.5 rounded-full shrink-0 ${id === bot.id ? 'bg-primary-foreground' : 'bg-success-500'}`}></span>}
+                                                {bot.is_active && <span className={`size-1.5 rounded-full shrink-0 ${id === bot.id ? 'bg-primary-foreground' : 'bg-emerald-400'}`}></span>}
                                             </div>
                                             <span className={`text-[10px] truncate leading-tight mt-0.5 ${id === bot.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                                                 {bot.config?.model || 'gpt-4o-mini'}
@@ -96,7 +96,9 @@ export default function BotStudioPage() {
                         </div>
                     </ResizablePanel>
 
-                    <ResizableHandle withHandle className="w-1.5 bg-border/40 hover:bg-primary/50 transition-colors z-30" />
+                    <ResizableHandle className="group relative w-1.5 bg-border/40 hover:bg-primary/50 transition-colors z-30">
+                        <span className="absolute left-1/2 top-1/2 h-10 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/20 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </ResizableHandle>
 
                     {/* WORKSPACE AREA */}
                     <ResizablePanel defaultSize={80} className="bg-background">

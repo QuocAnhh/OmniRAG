@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { channelAccountsApi } from '../api/channelAccounts';
 import { botsApi } from '../api/bots';
 import type { ChannelAccount, ChannelAccountAccess } from '../types/api';
+import { confirmAction } from '../lib/confirmAction';
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   connected: { label: 'Connected', color: 'bg-green-100 text-green-800 border-green-300' },
@@ -99,7 +100,13 @@ export default function ZaloPersonalAccountsPage() {
   };
 
   const handleDeleteAccount = async (accountId: string) => {
-    if (!confirm('Disconnect and delete this account?')) return;
+    const confirmed = await confirmAction({
+      title: 'Disconnect and delete this account?',
+      text: 'This account will stop receiving messages for the selected agent.',
+      confirmText: 'Delete account',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await channelAccountsApi.deleteAccount(accountId);
       fetchAccounts();

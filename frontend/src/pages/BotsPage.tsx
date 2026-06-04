@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
 import type { Bot } from '../types/api';
-import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { Bot as BotIcon, Plus, Play, Settings, Trash2, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getDomainMeta } from '../utils/domainHelpers';
+import { confirmAction } from '../lib/confirmAction';
 
 export default function BotsPage() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -31,17 +31,14 @@ export default function BotsPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
-    const result = await Swal.fire({
+    const confirmed = await confirmAction({
       title: 'Delete Agent?',
       text: 'You cannot undo this action.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#3b82f6',
-      confirmButtonText: 'Yes, delete it!'
+      confirmText: 'Delete agent',
+      tone: 'danger',
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await botsApi.delete(id);
         setBots(bots.filter(bot => bot.id !== id));

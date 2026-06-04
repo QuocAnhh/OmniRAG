@@ -49,6 +49,7 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
     const [debugMode, setDebugMode] = useState(false);
     const [debugData, setDebugData] = useState<any>(null);
     const [debugLoading, setDebugLoading] = useState(false);
+    const welcomeMessage = bot?.config?.welcome_message;
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -90,8 +91,8 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                 const sessionList = await chatApi.getSessions(id);
                 setSessions(sessionList);
 
-                // Default welcome message if no session active
-                if (!sessionId && botData.config?.welcome_message) {
+                // Default welcome message after resetting the active session for this bot.
+                if (botData.config?.welcome_message) {
                     setMessages([{
                         id: 'welcome',
                         role: 'assistant',
@@ -134,10 +135,10 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
                     }
                 } else {
                     // Session exists but no history yet (edge case)
-                    setMessages(bot?.config?.welcome_message ? [{
+                    setMessages(welcomeMessage ? [{
                         id: 'welcome',
                         role: 'assistant',
-                        content: bot.config.welcome_message,
+                        content: welcomeMessage,
                         timestamp: new Date().toISOString()
                     }] : []);
                 }
@@ -146,15 +147,14 @@ export default function ChatPage({ embedded = false }: { embedded?: boolean } = 
             }
         };
         loadHistory();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, sessionId]); // We intentionally only run this when session changes
+    }, [id, sessionId, welcomeMessage]);
 
     const handleNewChat = () => {
         setSessionId(null);
-        setMessages(bot?.config?.welcome_message ? [{
+        setMessages(welcomeMessage ? [{
             id: 'welcome',
             role: 'assistant',
-            content: bot.config.welcome_message,
+            content: welcomeMessage,
             timestamp: new Date().toISOString()
         }] : []);
         setSelectedEvidence(null);

@@ -5,6 +5,7 @@ import { createEdgeCurveProgram } from '@sigma/edge-curve'
 import Graph from 'graphology'
 import forceAtlas2 from 'graphology-layout-forceatlas2'
 import '@react-sigma/core/lib/style.css'
+import type { RetrievedChunk } from '../../types/api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface RawNode {
@@ -24,6 +25,7 @@ interface RawLink {
 }
 interface KnowledgeGraphPanelProps {
     botId: string;
+    chunks?: RetrievedChunk[];
     activeEntities?: string[];
     onExpandClick?: () => void;
     defaultTopN?: number;
@@ -256,9 +258,14 @@ function GraphController({
             clickStage: () => { onNodeClick(null, null); onEdgeClick(null); },
             enterNode:  (e) => {
                 setHovered(sigma.getGraph().getNodeAttribute(e.node, 'label') ?? e.node);
-                sigma.getCanvas().style.cursor = 'pointer';
+                const canvas = sigma.getCanvases().mouse ?? Object.values(sigma.getCanvases())[0];
+                if (canvas) canvas.style.cursor = 'pointer';
             },
-            leaveNode: () => { setHovered(null); sigma.getCanvas().style.cursor = ''; },
+            leaveNode: () => {
+                setHovered(null);
+                const canvas = sigma.getCanvases().mouse ?? Object.values(sigma.getCanvases())[0];
+                if (canvas) canvas.style.cursor = '';
+            },
         });
     }, [registerEvents, sigma, onNodeClick, onEdgeClick, setHovered]);
 
@@ -486,12 +493,12 @@ export default function KnowledgeGraphPanel({
     const isFocused   = focusedNodeId === selectedId && selectedId !== null;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0d0f14', color: '#e2e8f0', overflow: 'hidden' }}>
+        <div className="flex h-full flex-col overflow-hidden bg-[#0d0f14] text-slate-200">
 
             {/* Toolbar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+            <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#1e2330] px-3 py-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', flex: 1 }}>Knowledge Graph</span>
+                <span className="flex-1 text-xs font-semibold text-slate-400">Knowledge Graph</span>
                 {focusedNodeId && (
                     <button onClick={() => setFocusedNodeId(null)} title="Exit focus mode" style={{
                         display: 'flex', alignItems: 'center', gap: 4,
@@ -504,54 +511,51 @@ export default function KnowledgeGraphPanel({
                     </button>
                 )}
                 {activeHitCount > 0 && (
-                    <span style={{ fontSize: 11, background: '#F57F17', color: '#000', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>
+                    <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-bold text-black">
                         {activeHitCount} active
                     </span>
                 )}
                 {onExpandClick && (
-                    <button onClick={onExpandClick} title="Full screen" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 2 }}>
+                    <button onClick={onExpandClick} title="Full screen" className="p-0.5 text-slate-500 transition-colors hover:text-slate-300">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                     </button>
                 )}
             </div>
 
             {/* Search bar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+            <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-[#1e2330] px-3 py-1.5">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input
                     type="text"
                     placeholder="Search entities..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    style={{
-                        flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                        fontSize: 11, color: '#e2e8f0', placeholder: '#4b5563',
-                    }}
+                    className="flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
                 />
                 {searchHighlights.size > 0 && (
-                    <span style={{ fontSize: 10, color: '#FFD700', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    <span className="whitespace-nowrap text-[10px] font-bold text-yellow-300">
                         {searchHighlights.size} found
                     </span>
                 )}
                 {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0, lineHeight: 1, fontSize: 12 }}>
+                    <button onClick={() => setSearchQuery('')} className="text-xs leading-none text-slate-500 transition-colors hover:text-slate-300">
                         ✕
                     </button>
                 )}
             </div>
 
             {/* Density slider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap' }}>Density</span>
+            <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#1e2330] px-3 py-1.5">
+                <span className="whitespace-nowrap text-[11px] text-slate-500">Density</span>
                 <input type="range" min={1} max={maxSlider} value={topN}
                     onChange={e => setTopN(+e.target.value)}
-                    style={{ flex: 1, accentColor: '#6366f1', cursor: 'pointer' }}
+                    className="flex-1 cursor-pointer accent-primary"
                 />
-                <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                <span className="whitespace-nowrap text-[11px] text-slate-400">
                     {graph.order}n / {graph.size}e
                 </span>
                 {hoveredLabel && (
-                    <span style={{ fontSize: 11, color: '#f97316', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-orange-400">
                         {hoveredLabel}
                     </span>
                 )}
@@ -559,7 +563,7 @@ export default function KnowledgeGraphPanel({
 
             {/* Type filter pills */}
             {Object.keys(typeCounts).length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '6px 10px', borderBottom: '1px solid #1e2330', flexShrink: 0 }}>
+                <div className="flex flex-shrink-0 flex-wrap gap-1 border-b border-[#1e2330] px-2.5 py-1.5">
                     {Object.entries(typeCounts)
                         .sort((a, b) => b[1] - a[1])
                         .map(([type, count]) => {
@@ -586,29 +590,26 @@ export default function KnowledgeGraphPanel({
 
             {/* Graph summary */}
             {graphSummary && !selectedAttrs && !selectedEdge && (
-                <div style={{
-                    padding: '5px 12px', borderBottom: '1px solid #1e2330', flexShrink: 0,
-                    fontSize: 10, color: '#4b5563', lineHeight: 1.5,
-                }}>
+                <div className="flex-shrink-0 border-b border-[#1e2330] px-3 py-1.5 text-[10px] leading-normal text-slate-600">
                     {graphSummary}
                 </div>
             )}
 
             {/* Graph canvas */}
-            <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+            <div className="relative min-h-0 flex-1">
                 {isLoading && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d0f14', zIndex: 10 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 28, height: 28, border: '3px solid #1e2330', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'kgspin 0.8s linear infinite' }} />
-                            <span style={{ fontSize: 12, color: '#6b7280' }}>Loading graph…</span>
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0d0f14]">
+                        <div className="flex flex-col items-center gap-2.5">
+                            <div className="size-7 animate-spin rounded-full border-[3px] border-[#1e2330] border-t-primary" />
+                            <span className="text-xs text-slate-500">Loading graph…</span>
                         </div>
                     </div>
                 )}
                 {!isLoading && rawNodes.length === 0 && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2d3748" strokeWidth="1.5"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
-                        <span style={{ fontSize: 12, color: '#4b5563' }}>No graph data</span>
-                        <span style={{ fontSize: 11, color: '#374151' }}>Upload documents to build the graph</span>
+                        <span className="text-xs text-slate-600">No graph data</span>
+                        <span className="text-[11px] text-slate-700">Upload documents to build the graph</span>
                     </div>
                 )}
                 {!isLoading && graph.order > 0 && (

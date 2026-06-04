@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Swal from 'sweetalert2';
 import { Skeleton } from '../components/ui/Skeleton';
 import Layout from '../components/Layout/Layout';
 import { botsApi } from '../api/bots';
@@ -11,19 +10,12 @@ import { useAuthStore } from '../store/authStore';
 import type { Bot, Document, PDFParserMode } from '../types/api';
 import RetrievalTester from '../components/retrieval/RetrievalTester';
 import { getDomainMeta } from '../utils/domainHelpers';
+import { confirmAction } from '../lib/confirmAction';
+import { BotConfigHeader } from './bot-config/BotConfigHeader';
+import { useBotDocumentUpload } from './bot-config/useBotDocumentUpload';
 
 
 type TabType = 'playground' | 'basic' | 'knowledge' | 'channels' | 'advanced';
-
-type UploadPhase = 'uploading' | 'processing' | 'done' | 'kg_processing' | 'kg_done' | 'failed' | 'cancelled';
-interface UploadStatusState {
-  phase: UploadPhase;
-  filename: string;
-  elapsedSeconds: number;
-  kgElapsedSeconds: number;
-  docId?: string;
-  errorMsg?: string;
-}
 
 const KG_STEPS = [
   'Extracting entities and relationships from document',
@@ -65,14 +57,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatusState | null>(null);
-  const uploadAbortControllerRef = useRef<AbortController | null>(null);
-  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const kgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const kgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const kgDocIdRef = useRef<string>('');
-  const processingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [error, setError] = useState('');
 
   // Zalo Bot connect state
@@ -122,6 +106,26 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     zalo_personal: null as any,
     telegram: null as any,
     facebook: null as any
+  });
+
+  const setEnableKnowledgeGraph = useCallback((enabled: boolean) => {
+    setFormData(prev => ({ ...prev, enable_knowledge_graph: enabled }));
+  }, []);
+
+  const {
+    dismissUploadStatus,
+    handleCancelUpload,
+    handleUpload,
+    isLocked,
+    uploading,
+    uploadStatus,
+  } = useBotDocumentUpload({
+    botId: id,
+    bot,
+    documents,
+    setDocuments,
+    enableKnowledgeGraph: formData.enable_knowledge_graph,
+    setEnableKnowledgeGraph,
   });
 
   const loadBot = async (botId: string) => {
@@ -177,7 +181,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   };
 
-  const loadMemories = async (botId: string) => {
+  const loadMemories = useCallback(async (botId: string) => {
     if (!user?.id) return;
     setMemoriesLoading(true);
     try {
@@ -189,20 +193,18 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     } finally {
       setMemoriesLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const handleClearMemories = async () => {
     if (!id || !user?.id) return;
-    const result = await Swal.fire({
+    const confirmed = await confirmAction({
       title: 'Clear all memories?',
       text: 'Bot sẽ quên toàn bộ lịch sử nhớ về bạn. Không thể hoàn tác.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Xoá hết',
-      cancelButtonText: 'Huỷ',
-      confirmButtonColor: 'hsl(var(--destructive))',
+      confirmText: 'Xoá hết',
+      cancelText: 'Huỷ',
+      tone: 'danger',
     });
-    if (!result.isConfirmed) return;
+    if (!confirmed) return;
     try {
       await botsApi.clearMemories(id, user.id);
       setMemories([]);
@@ -219,19 +221,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   }, [id]);
 
-  // Polling for document processing status
-  useEffect(() => {
-    if (!id || documents.length === 0) return;
-    const isProcessing = documents.some(doc => doc.status === 'processing' || doc.status === 'pending');
-    if (isProcessing) {
-      const interval = setInterval(() => {
-        // Silent load to update background state without triggering skeleton
-        documentsApi.list(id).then(docs => setDocuments(docs)).catch(console.error);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [id, documents]);
-
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
     if (tab && ['playground', 'basic', 'knowledge', 'channels', 'advanced'].includes(tab)) {
@@ -244,14 +233,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     if (activeTab === 'knowledge' && id) {
       loadMemories(id);
     }
-  }, [activeTab, id]);
+  }, [activeTab, id, loadMemories]);
 
-  // Cleanup all upload timers/pollers on unmount
   useEffect(() => {
     return () => {
-      if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
-      if (kgTimerRef.current) clearInterval(kgTimerRef.current);
-      if (kgPollRef.current) clearInterval(kgPollRef.current);
       if (zaloPersonalPollRef.current) clearInterval(zaloPersonalPollRef.current);
     };
   }, []);
@@ -299,48 +284,6 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
       }
     }, 2500);
   };
-
-  // Resume KG polling if user navigated away while a KG build was still in progress
-  useEffect(() => {
-    if (!id || uploadStatus !== null || documents.length === 0) return;
-    const kgProcessingDoc = documents.find(doc => doc.doc_metadata?.kg_status === 'processing');
-    if (!kgProcessingDoc || kgPollRef.current) return;
-
-    kgDocIdRef.current = kgProcessingDoc.id;
-    const kgStart = Date.now();
-    setUploadStatus({
-      phase: 'kg_processing',
-      filename: kgProcessingDoc.filename,
-      elapsedSeconds: 0,
-      kgElapsedSeconds: 0,
-      docId: kgProcessingDoc.id,
-    });
-
-    kgTimerRef.current = setInterval(() => {
-      setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-    }, 1000);
-
-    kgPollRef.current = setInterval(async () => {
-      try {
-        const docs = await documentsApi.list(id);
-        setDocuments(docs);
-        const updated = docs.find(d => d.id === kgDocIdRef.current);
-        const kgStatus = updated?.doc_metadata?.kg_status;
-        if (kgStatus === 'completed') {
-          clearUploadTimers();
-          setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-          setFormData(prev => ({ ...prev, enable_knowledge_graph: true }));
-          // Persist the KG flag to the backend by merging with the latest config
-          botsApi.get(id!).then(latest => {
-            botsApi.update(id!, { config: { ...latest.config, enable_knowledge_graph: true } }).catch(console.error);
-          }).catch(console.error);
-        } else if (kgStatus === 'failed') {
-          clearUploadTimers();
-          setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
-        }
-      } catch { /* ignore poll errors */ }
-    }, 4000);
-  }, [id, documents, uploadStatus]);
 
   const handleSaveBasicSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,145 +335,17 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     }
   };
 
-  const clearUploadTimers = () => {
-    if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
-    if (kgTimerRef.current) { clearInterval(kgTimerRef.current); kgTimerRef.current = null; }
-    if (kgPollRef.current) { clearInterval(kgPollRef.current); kgPollRef.current = null; }
-    if (processingPollRef.current) { clearInterval(processingPollRef.current); processingPollRef.current = null; }
-  };
-
-  const handleCancelUpload = () => {
-    uploadAbortControllerRef.current?.abort();
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-
-    // Prevent double submission
-    if (uploading) {
-      console.log("Upload already in progress, ignoring duplicate submission");
-      e.target.value = ''; // Clear input to prevent re-submission on page reload
-      return;
-    }
-
-    const abortController = new AbortController();
-    uploadAbortControllerRef.current = abortController;
-    clearUploadTimers();
-
-    const uploadStart = Date.now();
-    setUploading(true);
-    setUploadStatus({ phase: 'uploading', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0 });
-
-    elapsedTimerRef.current = setInterval(() => {
-      setUploadStatus(prev => prev ? { ...prev, elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000) } : prev);
-    }, 1000);
-
-    try {
-      // Pass the bot's configured chunking_strategy (backend resolves domain defaults if not set)
-      const effectiveStrategy = bot?.config?.chunking_strategy || 'recursive';
-      const uploadPromise = documentsApi.upload(id, file, effectiveStrategy, formData.enable_knowledge_graph, abortController.signal);
-      const delayPromise = new Promise(resolve => setTimeout(resolve, 2500));
-      const [doc] = await Promise.all([uploadPromise, delayPromise]);
-
-      // Clear input value after successful upload to prevent F5 re-submission
-      e.target.value = '';
-
-      // HTTP upload done → now wait for Celery processing to finish
-      setUploading(false);
-      setUploadStatus({
-        phase: 'processing',
-        filename: file.name,
-        elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
-        kgElapsedSeconds: 0,
-      });
-
-      // Poll document status until Celery task completes
-      const uploadedDocId = doc.id;
-      processingPollRef.current = setInterval(async () => {
-        try {
-          const docs = await documentsApi.list(id!);
-          const updatedDoc = docs.find(d => d.id === uploadedDocId);
-          if (updatedDoc?.status === 'completed') {
-            clearInterval(processingPollRef.current!);
-            processingPollRef.current = null;
-            clearUploadTimers();
-            await loadDocuments(id!);
-
-            if (!formData.enable_knowledge_graph) {
-              setUploadStatus({
-                phase: 'done',
-                filename: file.name,
-                elapsedSeconds: Math.floor((Date.now() - uploadStart) / 1000),
-                kgElapsedSeconds: 0,
-              });
-            } else {
-              // Document vectorized → now wait for KG to finish
-              kgDocIdRef.current = uploadedDocId;
-              const kgStart = Date.now();
-              setUploadStatus(prev => prev ? {
-                ...prev,
-                phase: 'kg_processing',
-                docId: uploadedDocId,
-                kgElapsedSeconds: 0,
-              } : prev);
-
-              kgTimerRef.current = setInterval(() => {
-                setUploadStatus(prev => prev ? { ...prev, kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-              }, 1000);
-
-              kgPollRef.current = setInterval(async () => {
-                try {
-                  const docs2 = await documentsApi.list(id!);
-                  const updated2 = docs2.find(d => d.id === kgDocIdRef.current);
-                  const kgStatus = updated2?.doc_metadata?.kg_status;
-                  if (kgStatus === 'completed') {
-                    clearUploadTimers();
-                    setUploadStatus(prev => prev ? { ...prev, phase: 'kg_done', kgElapsedSeconds: Math.floor((Date.now() - kgStart) / 1000) } : prev);
-                    await loadDocuments(id!);
-                  } else if (kgStatus === 'failed') {
-                    clearUploadTimers();
-                    setUploadStatus(prev => prev ? { ...prev, phase: 'failed', errorMsg: 'Knowledge graph build failed.' } : prev);
-                  }
-                } catch { /* ignore poll errors */ }
-              }, 4000);
-            }
-          } else if (updatedDoc?.status === 'failed') {
-            clearInterval(processingPollRef.current!);
-            processingPollRef.current = null;
-            clearUploadTimers();
-            setUploadStatus({ phase: 'failed', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0, errorMsg: `Processing failed: "${file.name}"` });
-          }
-        } catch { /* ignore poll errors */ }
-      }, 2000);
-    } catch (err: any) {
-      clearUploadTimers();
-      setUploading(false);
-      if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') {
-        setUploadStatus({ phase: 'cancelled', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0 });
-      } else {
-        setUploadStatus({ phase: 'failed', filename: file.name, elapsedSeconds: 0, kgElapsedSeconds: 0, errorMsg: `Upload failed: "${file.name}"` });
-      }
-      uploadAbortControllerRef.current = null;
-    } finally {
-      e.target.value = '';
-    }
-  };
-
   const handleDeleteDocument = async (docId: string) => {
     if (!id) return;
     
-    const result = await Swal.fire({
+    const confirmed = await confirmAction({
       title: 'Delete Document?',
       text: 'You cannot undo this action.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#3b82f6',
-      confirmButtonText: 'Yes, delete it!'
+      confirmText: 'Delete document',
+      tone: 'danger',
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await documentsApi.delete(id, docId);
         setDocuments(documents.filter(doc => doc.id !== docId));
@@ -559,88 +374,19 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
     );
   }
 
-  // Block new uploads only during active file transfer.
-  // KG processing runs in background after document is already 'completed' — no need to block.
-  const isLocked = uploading;
-
   return (
     <Layout hideSidebar={embedded} breadcrumbs={[{ label: 'Home', path: '/' }, { label: 'Agents', path: '/bots' }, { label: bot?.name || 'Config' }]}>
       <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
 
-        {/* Top Header Card */}
-        <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative">
-          {/* Subtle background glow */}
-          <div className="absolute top-0 right-1/4 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
-
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-8 py-6 border-b border-white/5 gap-4 relative z-10">
-            <div className="flex items-center gap-5">
-              <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.2)] border border-primary/20">
-                <span className="material-symbols-outlined text-3xl">settings</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-xl font-bold text-foreground">
-                    {bot?.name || 'Agent Configuration'}
-                  </h2>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${bot?.is_active
-                    ? 'bg-success-50 text-success-700 border-success-200'
-                    : 'bg-muted text-muted-foreground border-border'
-                    }`}>
-                    {bot?.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                  {bot && (() => {
-                    const dm = getDomainMeta(bot.config?.domain);
-                    return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${dm.badge}`}>
-                        <span className="material-symbols-outlined text-[11px]">{dm.icon}</span>
-                        {dm.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">Manage behavior, knowledge, and integrations</p>
-                </div>
-              </div>
-            {!embedded && (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => navigate(`/bots/${id}/chat`)}
-                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
-                  Open Playground
-                </button>
-                <button
-                  onClick={() => navigate('/bots')}
-                  className="px-4 py-2 bg-background border border-border text-foreground hover:bg-muted/50 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                  Back
-                </button>
-              </div>
-            )}
-          </div>
-
-
-          {/* Connected Tabs */}
-          <div className="px-4 py-2 bg-black/20 relative z-10 backdrop-blur-md border-t border-white/5">
-            <nav className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all duration-300 font-medium text-sm relative overflow-hidden ${activeTab === tab.id
-                    ? 'text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.15)] bg-primary/10 border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
-                    }`}
-                >
-                  <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
-                  <span className="whitespace-nowrap">{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
+        <BotConfigHeader
+          bot={bot}
+          embedded={embedded}
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab as TabType)}
+          onOpenPlayground={() => navigate(`/bots/${id}/chat`)}
+          onBack={() => navigate('/bots')}
+        />
 
         {/* Content Area */}
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -733,10 +479,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
 
                 {/* Behavior Column */}
                 <div className="bg-background/40 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 space-y-6 md:col-span-2 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-accent-600/5 rounded-full blur-[60px] pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] pointer-events-none"></div>
                   <h3 className="text-xl font-bold text-foreground flex items-center gap-3 relative z-10">
-                    <div className="p-2 rounded-lg bg-accent-600/10 border border-accent-600/20">
-                      <span className="material-symbols-outlined text-accent-600 text-xl">psychology</span>
+                    <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                      <span className="material-symbols-outlined text-primary text-xl">psychology</span>
                     </div>
                     Behavior Engine
                   </h3>
@@ -1130,7 +876,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   )}
 
                   <div className="flex flex-col gap-1.5 mt-2">
-                    <p className={`text-base font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-600 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
+                    <p className={`text-base font-bold ${uploading ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-400 animate-pulse' : 'text-foreground group-hover:text-primary transition-colors'}`}>
                       {uploading ? 'Vectorizing and Indexing...' : 'Drag & drop knowledge files'}
                     </p>
                     <p className="text-xs font-medium text-muted-foreground">
@@ -1236,7 +982,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           <span className="material-symbols-outlined text-[16px]">chat</span>
                           Start Chatting
                         </button>
-                        <button type="button" onClick={() => setUploadStatus(null)}
+                        <button type="button" onClick={dismissUploadStatus}
                           className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
                           Dismiss
                         </button>
@@ -1260,7 +1006,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                           <span className="material-symbols-outlined text-[16px]">chat</span>
                           Start Chatting
                         </button>
-                        <button type="button" onClick={() => setUploadStatus(null)}
+                        <button type="button" onClick={dismissUploadStatus}
                           className="text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
                           Dismiss
                         </button>
@@ -1272,7 +1018,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {uploadStatus.phase === 'cancelled' && (
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-muted-foreground">Upload cancelled.</p>
-                      <button type="button" onClick={() => setUploadStatus(null)}
+                      <button type="button" onClick={dismissUploadStatus}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
                         Dismiss
                       </button>
@@ -1283,7 +1029,7 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                   {uploadStatus.phase === 'failed' && (
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-destructive">{uploadStatus.errorMsg || 'Upload failed.'}</p>
-                      <button type="button" onClick={() => setUploadStatus(null)}
+                      <button type="button" onClick={dismissUploadStatus}
                         className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground border border-white/10 px-3 py-1.5 rounded-full transition-colors">
                         Dismiss
                       </button>
@@ -1340,8 +1086,8 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                             </td>
                             <td className="px-6 py-3">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${doc.status === 'completed'
-                                ? 'bg-success-50 text-success-700 border-success-200'
-                                : 'bg-warning-50 text-warning-700 border-warning-200'
+                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
                                 }`}>
                                 {doc.status}
                               </span>
@@ -1452,10 +1198,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.telegram?.is_active
-                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                     : 'bg-muted text-muted-foreground border border-border'
                     }`}>
-                    <span className={`size-2 rounded-full ${formData.telegram?.is_active ? 'bg-success-500 animate-pulse' : 'bg-muted-foreground'}`}></span>
+                    <span className={`size-2 rounded-full ${formData.telegram?.is_active ? 'bg-emerald-400 animate-pulse' : 'bg-muted-foreground'}`}></span>
                     {formData.telegram?.is_active ? 'CONNECTED' : 'NOT CONNECTED'}
                   </div>
                 </div>
@@ -1463,12 +1209,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 {/* Connected State */}
                 {formData.telegram?.bot_token ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <span className="material-symbols-outlined text-emerald-300">check_circle</span>
                         <div>
-                          <p className="text-sm font-bold text-success-800">Telegram Bot Connected</p>
-                          <p className="text-xs text-success-700 mt-0.5">
+                          <p className="text-sm font-bold text-emerald-200">Telegram Bot Connected</p>
+                          <p className="text-xs text-emerald-300/80 mt-0.5">
                             Bot: {formData.telegram.bot_username || formData.telegram.bot_info?.username || formData.telegram.bot_info?.first_name || '(unknown)'}
                           </p>
                         </div>
@@ -1525,7 +1271,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       <button
                         onClick={async () => {
                           if (!id) return;
-                          if (!confirm('Disconnect Telegram Bot? Your bot will stop responding on Telegram.')) return;
+                          const confirmed = await confirmAction({
+                            title: 'Disconnect Telegram Bot?',
+                            text: 'Your bot will stop responding on Telegram.',
+                            confirmText: 'Disconnect',
+                            tone: 'danger',
+                          });
+                          if (!confirmed) return;
                           try {
                             await apiClient.post(`/api/v1/channels/telegram/disconnect/${id}`);
                             setFormData({ ...formData, telegram: null });
@@ -1633,10 +1385,10 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.zalo_bot?.is_active
-                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                     : 'bg-muted text-muted-foreground border border-border'
                     }`}>
-                    <span className={`size-2 rounded-full ${formData.zalo_bot?.is_active ? 'bg-success-500 animate-pulse' : 'bg-muted-foreground'}`}></span>
+                    <span className={`size-2 rounded-full ${formData.zalo_bot?.is_active ? 'bg-emerald-400 animate-pulse' : 'bg-muted-foreground'}`}></span>
                     {formData.zalo_bot?.is_active ? 'CONNECTED' : 'NOT CONNECTED'}
                   </div>
                 </div>
@@ -1644,12 +1396,12 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                 {/* Connected State */}
                 {formData.zalo_bot?.bot_token ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <span className="material-symbols-outlined text-emerald-300">check_circle</span>
                         <div>
-                          <p className="text-sm font-bold text-success-800">Zalo Bot Connected</p>
-                          <p className="text-xs text-success-700 mt-0.5">
+                          <p className="text-sm font-bold text-emerald-200">Zalo Bot Connected</p>
+                          <p className="text-xs text-emerald-300/80 mt-0.5">
                             Bot Info: {JSON.stringify(formData.zalo_bot.bot_info?.result || formData.zalo_bot.bot_info || {})}
                           </p>
                         </div>
@@ -1706,7 +1458,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       <button
                         onClick={async () => {
                           if (!id) return;
-                          if (!confirm('Disconnect Zalo Bot? Your bot will stop responding on Zalo.')) return;
+                          const confirmed = await confirmAction({
+                            title: 'Disconnect Zalo Bot?',
+                            text: 'Your bot will stop responding on Zalo.',
+                            confirmText: 'Disconnect',
+                            tone: 'danger',
+                          });
+                          if (!confirmed) return;
                           try {
                             await apiClient.post(`/api/v1/channels/zalo-bot/disconnect/${id}`);
                             setFormData({ ...formData, zalo_bot: null });
@@ -1847,24 +1605,24 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${formData.facebook?.status === 'connected'
-                    ? 'bg-success-50 text-success-600 border border-success-200'
+                    ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                     : formData.facebook?.status === 'expired'
                       ? 'bg-red-50 text-red-600 border border-red-200'
                       : 'bg-muted text-muted-foreground border border-border'
                     }`}>
-                    <span className={`size-2 rounded-full ${formData.facebook?.status === 'connected' ? 'bg-success-500 animate-pulse' : formData.facebook?.status === 'expired' ? 'bg-red-500' : 'bg-muted-foreground'}`}></span>
+                    <span className={`size-2 rounded-full ${formData.facebook?.status === 'connected' ? 'bg-emerald-400 animate-pulse' : formData.facebook?.status === 'expired' ? 'bg-red-500' : 'bg-muted-foreground'}`}></span>
                     {formData.facebook?.status === 'connected' ? 'CONNECTED' : formData.facebook?.status === 'expired' ? 'COOKIES EXPIRED' : 'NOT CONNECTED'}
                   </div>
                 </div>
 
                 {formData.facebook?.status === 'connected' ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-success-50/50 border border-success-200 rounded-xl">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-success-600">check_circle</span>
+                        <span className="material-symbols-outlined text-emerald-300">check_circle</span>
                         <div>
-                          <p className="text-sm font-bold text-success-800">Logged in as {formData.facebook.display_name || '(unknown name)'}</p>
-                          <p className="text-xs text-success-700 mt-0.5">UID: <code className="font-mono">{formData.facebook.uid}</code></p>
+                          <p className="text-sm font-bold text-emerald-200">Logged in as {formData.facebook.display_name || '(unknown name)'}</p>
+                          <p className="text-xs text-emerald-300/80 mt-0.5">UID: <code className="font-mono">{formData.facebook.uid}</code></p>
                         </div>
                       </div>
                     </div>
@@ -1879,7 +1637,13 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                       <button
                         onClick={async () => {
                           if (!id) return;
-                          if (!confirm('Disconnect Facebook Messenger? Bot will stop replying in Messenger groups.')) return;
+                          const confirmed = await confirmAction({
+                            title: 'Disconnect Facebook Messenger?',
+                            text: 'Bot will stop replying in Messenger groups.',
+                            confirmText: 'Disconnect',
+                            tone: 'danger',
+                          });
+                          if (!confirmed) return;
                           try {
                             await apiClient.post(`/api/v1/channels/facebook/disconnect/${id}`);
                             setFormData({ ...formData, facebook: null });

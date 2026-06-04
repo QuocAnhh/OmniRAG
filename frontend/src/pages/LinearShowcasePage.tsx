@@ -216,7 +216,7 @@ export default function LinearShowcasePage() {
               <tbody>
                 <tr>
                   <td className="font-medium text-[var(--color-text-primary)]">
-                    John Doe
+                    Linh Nguyen
                   </td>
                   <td>
                     <span className="linear-badge linear-badge-success">Active</span>

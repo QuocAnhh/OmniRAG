@@ -64,7 +64,7 @@ function PersonalityStep({ onNext, onBack, data, updateData }: any) {
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="bg-card rounded-2xl border border-border p-8">
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-accent-600">psychology</span>
+                    <span className="material-symbols-outlined text-primary">psychology</span>
                     Personality & Tone
                 </h3>
 

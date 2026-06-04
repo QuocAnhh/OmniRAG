@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { documentsApi } from '../../api/documents';
 import type { Document } from '../../types/api';
@@ -17,19 +17,7 @@ export default function DocumentPreview({ isOpen, onClose, document, botId }: Do
     const [error, setError] = useState<string | null>(null);
     const [textContent, setTextContent] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen && document && botId) {
-            loadPreview();
-        } else {
-            // Reset state on close
-            setPreviewUrl(null);
-            setContentType(null);
-            setTextContent(null);
-            setError(null);
-        }
-    }, [isOpen, document, botId]);
-
-    const loadPreview = async () => {
+    const loadPreview = useCallback(async () => {
         if (!document) return;
 
         setLoading(true);
@@ -67,7 +55,19 @@ export default function DocumentPreview({ isOpen, onClose, document, botId }: Do
         } finally {
             setLoading(false);
         }
-    };
+    }, [botId, document]);
+
+    useEffect(() => {
+        if (isOpen && document && botId) {
+            loadPreview();
+        } else {
+            // Reset state on close
+            setPreviewUrl(null);
+            setContentType(null);
+            setTextContent(null);
+            setError(null);
+        }
+    }, [isOpen, document, botId, loadPreview]);
 
     const isPdf = contentType === 'application/pdf';
     const isImage = contentType?.startsWith('image/');
