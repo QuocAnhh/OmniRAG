@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     log.info("fb-channel-worker starting v=%s", __version__)
     if not settings.WORKER_API_TOKEN or not settings.INBOUND_SECRET:
         log.warning("WORKER_API_TOKEN or INBOUND_SECRET not configured — refusing privileged calls")
+    await manager.auto_restore()
     yield
     log.info("fb-channel-worker shutting down — stopping all sessions")
     await manager.stop_all()

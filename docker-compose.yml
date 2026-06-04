@@ -185,6 +185,8 @@ services:
       - ./backend/.env
     expose:
       - "9100"
+    volumes:
+      - fb_cookies_data:/data/fb-cookies
     environment:
       - BACKEND_URL=http://backend:8000
       - WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
@@ -300,4 +302,5 @@ volumes:
   qdrant_data:
   huggingface_cache:
   ollama_data:
+  fb_cookies_data:
   zalo_personal_sessions:

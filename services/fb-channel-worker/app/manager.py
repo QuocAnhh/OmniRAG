@@ -820,6 +820,26 @@ class BotManager:
     def list_ids(self) -> list[str]:
         return list(self._sessions.keys())
 
+    async def auto_restore(self) -> None:
+        """Restore all saved bot sessions from cookies dir on startup."""
+        import glob
+        if not os.path.isdir(settings.COOKIES_DIR):
+            return
+        for path in glob.glob(os.path.join(settings.COOKIES_DIR, "*.json")):
+            bot_id = os.path.splitext(os.path.basename(path))[0]
+            try:
+                with open(path, "r") as f:
+                    cookies = json.load(f)
+                # Use default reply_policy — will be updated by backend on next status sync
+                await self.load(bot_id, cookies, reply_policy="mention_only")
+                log.info("auto_restore: loaded saved session bot=%s", bot_id)
+            except Exception:
+                log.exception("auto_restore: failed to restore bot=%s, removing stale cookies", bot_id)
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
     async def stop_all(self) -> None:
         async with self._lock:
             sessions = list(self._sessions.values())

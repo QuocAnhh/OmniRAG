@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     FB_INBOUND_SECRET: str = ""
     LOG_LEVEL: str = "INFO"
 
-    COOKIES_DIR: str = "/tmp/fb-cookies"
+    COOKIES_DIR: str = "/data/fb-cookies"
     PROBE_INTERVAL_SECONDS: int = 300
     PROBE_MAX_CONSECUTIVE_FAILS: int = 3
     INBOUND_HTTP_TIMEOUT_SECONDS: float = 10.0
