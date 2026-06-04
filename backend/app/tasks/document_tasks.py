@@ -230,7 +230,6 @@ def build_knowledge_graph_task(self, bot_id: str, full_text: str, filename: str,
 
     except json.JSONDecodeError as e:
         # Specific handling for JSON parsing errors from LLM
-        import json
         import traceback
         error_stack = traceback.format_exc()
         logger.error(f"[LightRAG] JSONDecodeError from LLM response for {filename}: {e}\n{error_stack}")
