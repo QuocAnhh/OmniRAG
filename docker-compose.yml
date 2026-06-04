@@ -111,6 +111,9 @@ services:
       - ZALO_PERSONAL_INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
       - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
       - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
+      - PUBLIC_URL=${PUBLIC_URL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -163,6 +166,9 @@ services:
       - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
       - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
       - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
+      - PUBLIC_URL=${PUBLIC_URL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-}
     depends_on:
       - db
       - mongodb
