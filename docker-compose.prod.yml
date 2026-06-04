@@ -220,19 +220,8 @@ services:
           cpus: '1'
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-      args:
-        - VITE_API_URL=${VITE_API_URL}
-        - VITE_WS_URL=${VITE_WS_URL}
-        - VITE_ENABLE_ZALO_PERSONAL=${VITE_ENABLE_ZALO_PERSONAL:-false}
-    ports:
-      - "${FRONTEND_HOST_PORT:-80}:80"
     environment:
       - VITE_EXTRA_HOSTS=${VITE_EXTRA_HOSTS}
-    depends_on:
-      - gateway
     restart: always
 
 volumes:
