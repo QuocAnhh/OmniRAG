@@ -118,6 +118,13 @@ class FacebookMessengerService:
     async def get_status(self, bot_id: str) -> dict[str, Any]:
         return await self._get(f"/bots/{bot_id}/status")
 
+    async def send_typing(self, bot_id: str, thread_id: str) -> None:
+        """Fire typing indicator — best-effort, never raises."""
+        try:
+            await self._post(f"/bots/{bot_id}/typing", {"thread_id": thread_id}, timeout=5.0)
+        except Exception:
+            pass
+
     async def send_message(
         self,
         bot_id: str,
@@ -514,6 +521,8 @@ class FacebookMessengerService:
                     bot_id, thread_id, is_group, len(conversation_history),
                     len(image_urls), bool(web_ctx), raw_text[:60], text[:60],
                 )
+                # Fire typing indicator (non-blocking) while RAG processes
+                asyncio.ensure_future(self.send_typing(str(bot.id), thread_id))
                 result = await self.rag_service.chat(
                     bot_id=str(bot.id),
                     query=effective_query,

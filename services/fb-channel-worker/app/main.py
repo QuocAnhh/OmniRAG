@@ -62,6 +62,9 @@ class ReactRequest(BaseModel):
     emoji: str = "👍"
 
 
+class TypingRequest(BaseModel):
+    thread_id: str
+
 class LeaveThreadRequest(BaseModel):
     thread_id: str
 
@@ -116,6 +119,18 @@ async def send_message(bot_id: str, req: SendRequest) -> dict[str, Any]:
         raise HTTPException(status_code=502, detail=f"send failed: {type(e).__name__}: {e}")
     return {"ok": True, **result}
 
+
+@app.post("/bots/{bot_id}/typing", dependencies=[Depends(require_bearer)])
+async def send_typing(bot_id: str, req: TypingRequest) -> dict[str, Any]:
+    session = manager.get(bot_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="bot not loaded")
+    try:
+        await session.send_typing(req.thread_id)
+    except Exception as e:
+        log.warning("typing failed bot=%s thread=%s: %s", bot_id, req.thread_id, e)
+        return {"ok": False, "error": str(e)}
+    return {"ok": True}
 
 @app.post("/bots/{bot_id}/react", dependencies=[Depends(require_bearer)])
 async def react_to_message(bot_id: str, req: ReactRequest) -> dict[str, Any]:

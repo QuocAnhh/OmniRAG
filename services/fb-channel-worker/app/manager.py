@@ -657,6 +657,16 @@ class BotSession:
 
         return context
 
+    async def send_typing(self, thread_id: str) -> None:
+        """Send typing indicator — fire and forget, never raises."""
+        if not self._client:
+            return
+        thread_type = ThreadType.GROUP if self.reply_policy == "mention_only" else ThreadType.USER
+        try:
+            await self._client.typing(thread_id, True, thread_type)
+        except Exception:
+            pass  # best-effort
+
     async def send(
         self,
         thread_id: str,
