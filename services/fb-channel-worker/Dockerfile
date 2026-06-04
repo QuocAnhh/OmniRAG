@@ -21,7 +21,8 @@ RUN pip install --upgrade pip && pip install \
 
 COPY app ./app
 
-RUN useradd -m -u 1000 worker && chown -R worker:worker /worker
+RUN useradd -m -u 1000 worker && chown -R worker:worker /worker && \
+    mkdir -p /data/fb-cookies && chown -R worker:worker /data
 USER worker
 
 EXPOSE 9100
