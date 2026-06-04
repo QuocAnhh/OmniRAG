@@ -9,7 +9,8 @@ export default defineConfig({
     port: 5173,
     allowedHosts: [
       'localhost',
-      '127.0.0.1'
+      '127.0.0.1',
+      ...(process.env.VITE_EXTRA_HOSTS || '').split(',').filter(Boolean),
     ],
     proxy: {
       '/api': {
