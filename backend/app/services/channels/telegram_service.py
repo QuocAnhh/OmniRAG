@@ -34,6 +34,7 @@ class TelegramBotService:
     def __init__(self):
         self.rag_service = get_openrouter_rag_service()
         self._bot_cache: dict[str, Bot] = {}  # bot_token -> Bot instance
+        self._polling_tasks: dict[str, asyncio.Task] = {}  # bot_id -> polling task
 
     def _get_bot(self, bot_token: str) -> Bot:
         """Get or create an aiogram Bot instance for the given token."""
@@ -89,29 +90,92 @@ class TelegramBotService:
         """
         Full connection flow:
         1. getMe -> verify token + get bot info
-        2. Generate webhook secret
-        3. setWebhook -> register our endpoint on Telegram
-        4. Return info for saving to bot.config
+        2. If HTTPS: setWebhook. If HTTP: start polling (Telegram requires HTTPS for webhooks).
+        3. Return info for saving to bot.config
         """
         bot_info = await self.get_me(bot_token)
         logger.info(f"Telegram Bot verified: {bot_info}")
 
+        use_polling = not webhook_base_url.startswith("https://")
         webhook_secret = secrets.token_urlsafe(24)
-        webhook_url = f"{webhook_base_url}/api/v1/channels/telegram/webhook/{bot_id}"
 
-        await self.set_webhook(bot_token, webhook_url, webhook_secret)
-        logger.info(f"Telegram webhook registered: {webhook_url}")
+        if use_polling:
+            logger.info(f"Telegram: No HTTPS — using polling mode for bot {bot_id}")
+            await self._start_polling(bot_id, bot_token)
+            return {
+                "bot_info": bot_info,
+                "webhook_url": None,
+                "webhook_secret": webhook_secret,
+                "mode": "polling",
+            }
+        else:
+            webhook_url = f"{webhook_base_url}/api/v1/channels/telegram/webhook/{bot_id}"
+            await self.set_webhook(bot_token, webhook_url, webhook_secret)
+            logger.info(f"Telegram webhook registered: {webhook_url}")
+            return {
+                "bot_info": bot_info,
+                "webhook_url": webhook_url,
+                "webhook_secret": webhook_secret,
+                "mode": "webhook",
+            }
 
-        return {
-            "bot_info": bot_info,
-            "webhook_url": webhook_url,
-            "webhook_secret": webhook_secret,
-        }
+    async def disconnect(self, bot_token: str, bot_id: str | None = None) -> None:
+        """Remove webhook / stop polling and clean up bot session."""
+        # Stop polling if active
+        if bot_id and bot_id in self._polling_tasks:
+            task = self._polling_tasks.pop(bot_id)
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+            logger.info(f"Telegram polling stopped for bot {bot_id}")
+        # Remove webhook (best-effort, works even if polling was used)
+        try:
+            await self.delete_webhook(bot_token)
+        except Exception:
+            pass
+        logger.info("Telegram session cleaned up")
 
-    async def disconnect(self, bot_token: str) -> None:
-        """Remove webhook and clean up bot session."""
-        await self.delete_webhook(bot_token)
-        logger.info("Telegram webhook removed and session closed")
+    async def _start_polling(self, bot_id: str, bot_token: str) -> None:
+        """Start polling for updates (used when HTTPS webhook is unavailable)."""
+        from aiogram import Dispatcher
+        from aiogram.types import Update as AiogramUpdate
+        from aiogram.filters import Command
+
+        # Stop any existing polling for this bot
+        if bot_id in self._polling_tasks:
+            existing = self._polling_tasks.pop(bot_id)
+            existing.cancel()
+            try:
+                await existing
+            except Exception:
+                pass
+
+        aiogram_bot = self._get_bot(bot_token)
+        dp = Dispatcher()
+
+        # Catch-all handler for all message types
+        @dp.message()
+        async def handle_all(msg: Message) -> None:
+            try:
+                update_dict = {"update_id": 0, "message": msg.model_dump()}
+                await self.handle_webhook(bot_id, update_dict)
+            except Exception:
+                logger.exception("Telegram polling handler error bot=%s", bot_id)
+
+        async def _poll():
+            logger.info("Telegram polling started for bot=%s", bot_id)
+            try:
+                await dp.start_polling(aiogram_bot)
+            except asyncio.CancelledError:
+                logger.info("Telegram polling cancelled for bot=%s", bot_id)
+            except Exception:
+                logger.exception("Telegram polling error bot=%s", bot_id)
+            finally:
+                logger.info("Telegram polling stopped for bot=%s", bot_id)
+
+        self._polling_tasks[bot_id] = asyncio.create_task(_poll())
 
     # ─── Handle Incoming Webhook ─────────────────────────
 

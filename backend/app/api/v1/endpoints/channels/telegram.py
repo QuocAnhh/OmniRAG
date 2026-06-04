@@ -163,7 +163,7 @@ async def disconnect_telegram(
         try:
             from app.services.channels.telegram_service import get_telegram_bot_service
             service = get_telegram_bot_service()
-            await service.disconnect(bot_token)
+            await service.disconnect(bot_token, bot_id=bot_id)
         except Exception as e:
             logger.warning(f"Telegram disconnect cleanup failed: {e}")
 
