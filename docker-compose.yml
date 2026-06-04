@@ -109,6 +109,8 @@ services:
       - ZALO_PERSONAL_WORKER_URL=http://zalo-personal-worker:9200
       - ZALO_PERSONAL_WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
       - ZALO_PERSONAL_INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
+      - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
+      - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -159,6 +161,8 @@ services:
       - PDF_MARKDOWN_WITH_HTML=true
       - PDF_HYBRID_MODE=docling-fast
       - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
+      - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
+      - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
     depends_on:
       - db
       - mongodb
