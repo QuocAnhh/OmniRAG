@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
+import uuid
 from datetime import datetime
 from typing import Any, Optional
 
@@ -19,6 +20,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.api.deps import get_current_user, get_db
 from app.core.config import settings
 from app.models.bot import Bot as BotModel
+from app.models.channel_account import ChannelAccount
 from app.models.user import User
 from app.services.channels.facebook_messenger_service import (
     get_facebook_messenger_service,
@@ -68,6 +70,26 @@ def _verify_inbound_signature(body: bytes, signature_header: str | None) -> bool
         settings.FB_INBOUND_SECRET.encode("utf-8"), body, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature_header)
+
+
+# ─── Multi-account ──────────────────────────────────────────────────────
+
+@router.get("/bots/{bot_id}/accounts")
+async def list_fb_accounts(
+    bot_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List Facebook Messenger accounts for a bot."""
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == bot_id, BotModel.tenant_id == current_user.tenant_id
+        )
+    ).scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    service = get_facebook_messenger_service()
+    return await service.list_accounts(bot_id)
 
 
 # ─── Inbound webhook (public, HMAC-protected, called by worker) ────────
@@ -140,6 +162,34 @@ async def fb_connect(
     }
     bot.config = config
     flag_modified(bot, "config")
+
+    # Also save to channel_accounts table for multi-account support
+    existing = db.execute(
+        select(ChannelAccount).where(
+            ChannelAccount.bot_id == bot.id,
+            ChannelAccount.channel_type == "facebook_messenger",
+            ChannelAccount.channel_uid == status_data.get("uid"),
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.status = "connected"
+        existing.display_name = status_data.get("name")
+        existing.connected_at = datetime.utcnow()
+        existing.is_active = True
+        existing.last_error = None
+    else:
+        db.add(ChannelAccount(
+            id=uuid.uuid4(),
+            bot_id=bot.id,
+            tenant_id=bot.tenant_id,
+            channel_type="facebook_messenger",
+            display_name=status_data.get("name"),
+            channel_uid=status_data.get("uid"),
+            status="connected",
+            reply_policy="mention_only",
+            thread_whitelist=data.thread_whitelist or [],
+            connected_at=datetime.utcnow(),
+        ))
     db.commit()
 
     logger.info("fb_connect_ok bot=%s uid=%s", bot.id, status_data.get("uid"))

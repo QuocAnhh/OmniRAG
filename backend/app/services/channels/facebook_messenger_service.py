@@ -49,10 +49,53 @@ _LEAVE_GROUP_PREFIX_RE = re.compile(
 class FacebookMessengerService:
     """Backend-side facade over the fb-channel-worker REST API."""
 
+    CHANNEL_TYPE = "facebook_messenger"
+
     def __init__(self) -> None:
         self.rag_service = get_openrouter_rag_service()
         # {bot_id:thread_id → (ctx_dict, expires_at)}
         self._participants_cache: dict[str, tuple[dict, float]] = {}
+
+    # ─── Multi-account helpers ──────────────────────────────────────────
+
+    async def list_accounts(self, bot_id: str) -> list[dict[str, Any]]:
+        """List all Facebook Messenger accounts for a bot from channel_accounts table."""
+        from app.models.channel_account import ChannelAccount
+        from uuid import UUID
+        from app.db.session import SessionLocal
+        from sqlalchemy import select
+        db = SessionLocal()
+        try:
+            accounts = db.execute(
+                select(ChannelAccount)
+                .where(ChannelAccount.bot_id == UUID(bot_id),
+                       ChannelAccount.channel_type == self.CHANNEL_TYPE)
+                .order_by(ChannelAccount.created_at.desc())
+            ).scalars().all()
+            return [self._account_to_dict(a) for a in accounts]
+        finally:
+            db.close()
+
+    @staticmethod
+    def _account_to_dict(account: Any) -> dict[str, Any]:
+        return {
+            "id": str(account.id),
+            "bot_id": str(account.bot_id),
+            "tenant_id": str(account.tenant_id),
+            "channel_type": account.channel_type,
+            "display_name": account.display_name,
+            "channel_uid": account.channel_uid,
+            "status": account.status,
+            "reply_policy": account.reply_policy,
+            "thread_whitelist": account.thread_whitelist,
+            "connected_at": account.connected_at.isoformat() if account.connected_at else None,
+            "last_event_at": account.last_event_at.isoformat() if account.last_event_at else None,
+            "last_error": account.last_error,
+            "error_count": account.error_count,
+            "is_active": account.is_active,
+            "created_at": account.created_at.isoformat() if account.created_at else None,
+            "updated_at": account.updated_at.isoformat() if account.updated_at else None,
+        }
 
     # ─── HTTP helpers ──────────────────────────────────────────────────
 

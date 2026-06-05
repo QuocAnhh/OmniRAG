@@ -159,7 +159,7 @@ export interface ChannelAccount {
   id: string;
   bot_id: string;
   tenant_id: string;
-  channel_type: 'zalo_personal' | 'facebook_messenger';
+  channel_type: 'zalo_personal' | 'facebook_messenger' | 'telegram';
   display_name?: string;
   channel_uid?: string;
   avatar_url?: string;

@@ -6,6 +6,7 @@ Pattern mirrors zalo_bot.py exactly — Telegram Bot API is nearly identical.
 import asyncio
 import hmac
 import logging
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Request, HTTPException, Depends
@@ -18,6 +19,7 @@ from app.api.deps import get_current_user, get_db
 from app.core.config import settings
 from app.models.user import User
 from app.models.bot import Bot as BotModel
+from app.models.channel_account import ChannelAccount
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,6 +30,26 @@ router = APIRouter()
 class TelegramConnectRequest(BaseModel):
     bot_id: str
     bot_token: str
+
+
+# ─── Multi-account ──────────────────────────────────────────────────────
+
+@router.get("/bots/{bot_id}/accounts")
+async def list_telegram_accounts(
+    bot_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List Telegram accounts for a bot."""
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == bot_id, BotModel.tenant_id == current_user.tenant_id
+        )
+    ).scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    from app.services.channels.telegram_service import get_telegram_bot_service
+    return await get_telegram_bot_service().list_accounts(bot_id)
 
 
 # ─── Webhook Endpoint (Public — called by Telegram) ──
@@ -125,6 +147,33 @@ async def connect_telegram(
         }
         bot.config = config
         flag_modified(bot, "config")
+
+        # Also save to channel_accounts table for multi-account support
+        existing = db.execute(
+            select(ChannelAccount).where(
+                ChannelAccount.bot_id == bot.id,
+                ChannelAccount.channel_type == "telegram",
+                ChannelAccount.channel_uid == f"@{bot_info.get('username', '')}" if bot_info.get("username") else None,
+            )
+        ).scalar_one_or_none()
+        if existing:
+            existing.status = "connected"
+            existing.display_name = bot_info.get("first_name", "")
+            existing.session_data = {"bot_token": data.bot_token, "webhook_secret": result["webhook_secret"]}
+            existing.connected_at = datetime.utcnow()
+            existing.is_active = True
+        else:
+            db.add(ChannelAccount(
+                id=uuid.uuid4(),
+                bot_id=bot.id,
+                tenant_id=bot.tenant_id,
+                channel_type="telegram",
+                display_name=bot_info.get("first_name", ""),
+                channel_uid=f"@{bot_info.get('username', '')}" if bot_info.get("username") else None,
+                status="connected",
+                session_data={"bot_token": data.bot_token, "webhook_secret": result["webhook_secret"]},
+                connected_at=datetime.utcnow(),
+            ))
         db.commit()
 
         logger.info(f"Telegram Bot connected for bot '{bot.name}' (ID: {bot.id})")

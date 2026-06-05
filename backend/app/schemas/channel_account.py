@@ -4,9 +4,11 @@ from datetime import datetime
 
 
 class ChannelAccountCreate(BaseModel):
-    channel_type: str = Field(pattern="^(zalo_personal|facebook_messenger)$")
+    channel_type: str = Field(pattern="^(zalo_personal|facebook_messenger|telegram)$")
     reply_policy: str = Field(default="mention_only", pattern="^(mention_only|all)$")
     thread_whitelist: Optional[list[str]] = None
+    # For Facebook: cookies payload (list or dict). For Telegram: bot_token string.
+    credentials: Optional[Any] = None
 
 
 class ChannelAccountUpdate(BaseModel):
