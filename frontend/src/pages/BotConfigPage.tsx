@@ -1292,6 +1292,20 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                         Disconnect
                       </button>
                     </div>
+
+                    {/* Manage Accounts link */}
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                      <div>
+                        <p className="text-sm font-medium">Manage Telegram bots</p>
+                        <p className="text-xs text-muted-foreground">View all connected Telegram bot accounts.</p>
+                      </div>
+                      <Link
+                        to={`/bots/${id}/telegram-accounts`}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                      >
+                        Manage Accounts
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   /* Not Connected State — Connect Form */
@@ -1657,6 +1671,20 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                         <span className="material-symbols-outlined text-sm mr-1">link_off</span>
                         Disconnect
                       </button>
+                    </div>
+
+                    {/* Manage Accounts link */}
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                      <div>
+                        <p className="text-sm font-medium">Manage Facebook accounts</p>
+                        <p className="text-xs text-muted-foreground">View all connected Facebook Messenger accounts.</p>
+                      </div>
+                      <Link
+                        to={`/bots/${id}/facebook-accounts`}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                      >
+                        Manage Accounts
+                      </Link>
                     </div>
                   </div>
                 ) : (
