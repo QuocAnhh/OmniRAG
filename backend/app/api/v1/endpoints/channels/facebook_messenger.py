@@ -263,6 +263,18 @@ async def fb_connect_credentials(
             reply_policy="mention_only",
             connected_at=datetime.utcnow(),
         ))
+    # Also sync to bot.config.facebook for backward compatibility with channels tab
+    config = dict(bot.config or {})
+    config["facebook"] = {
+        "uid": result.get("uid"),
+        "display_name": result.get("display_name"),
+        "status": "connected",
+        "reply_policy": "mention_only",
+        "connected_at": datetime.utcnow().isoformat(),
+        "last_event_at": None,
+    }
+    bot.config = config
+    flag_modified(bot, "config")
     db.commit()
 
     logger.info("fb_credentials_connect_ok bot=%s uid=%s", bot.id, result.get("uid"))
