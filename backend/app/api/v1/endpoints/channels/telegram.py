@@ -34,6 +34,40 @@ class TelegramConnectRequest(BaseModel):
 
 # ─── Multi-account ──────────────────────────────────────────────────────
 
+@router.delete("/accounts/{account_id}")
+async def delete_telegram_account(
+    account_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a specific Telegram account."""
+    account = db.execute(
+        select(ChannelAccount).where(
+            ChannelAccount.id == account_id,
+            ChannelAccount.tenant_id == current_user.tenant_id,
+            ChannelAccount.channel_type == "telegram",
+        )
+    ).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    # Disconnect from Telegram
+    if account.session_data and isinstance(account.session_data, dict):
+        bot_token = account.session_data.get("bot_token")
+        if bot_token:
+            try:
+                from app.services.channels.telegram_service import get_telegram_bot_service
+                await get_telegram_bot_service().disconnect(bot_token, bot_id=str(account.bot_id))
+            except Exception as e:
+                logger.warning("telegram_delete_account_worker_fail account=%s err=%s", account_id, e)
+
+    db.delete(account)
+    db.commit()
+    return {"status": "deleted"}
+
+
+# ─── Multi-account ──────────────────────────────────────────────────────
+
 @router.get("/bots/{bot_id}/accounts")
 async def list_telegram_accounts(
     bot_id: str,

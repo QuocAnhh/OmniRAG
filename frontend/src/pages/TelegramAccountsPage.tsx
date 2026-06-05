@@ -49,14 +49,14 @@ export default function TelegramAccountsPage() {
   const handleDisconnect = async (accountId: string) => {
     const { confirmAction } = await import('../lib/confirmAction');
     const confirmed = await confirmAction({
-      title: 'Disconnect Telegram Bot?',
+      title: 'Disconnect this Telegram bot?',
       text: 'This bot will stop responding on Telegram.',
       confirmText: 'Disconnect',
       tone: 'danger',
     });
     if (!confirmed) return;
     try {
-      await apiClient.post(`/api/v1/channels/telegram/disconnect/${botId}`);
+      await apiClient.delete(`/api/v1/channels/telegram/accounts/${accountId}`);
       toast.success('Disconnected');
       fetchAccounts();
     } catch (err: any) {

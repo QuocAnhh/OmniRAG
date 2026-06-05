@@ -53,17 +53,17 @@ export default function FacebookAccountsPage() {
     }
   }, [botId, fetchAccounts]);
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = async (accountId: string) => {
     const { confirmAction } = await import('../lib/confirmAction');
     const confirmed = await confirmAction({
-      title: 'Disconnect Facebook Messenger?',
-      text: 'Bot will stop replying in Messenger groups.',
+      title: 'Disconnect this Facebook account?',
+      text: 'This account will stop replying in Messenger.',
       confirmText: 'Disconnect',
       tone: 'danger',
     });
-    if (!confirmed || !botId) return;
+    if (!confirmed) return;
     try {
-      await apiClient.post(`/api/v1/channels/facebook/disconnect/${botId}`);
+      await apiClient.delete(`/api/v1/channels/facebook/accounts/${accountId}`);
       toast.success('Disconnected');
       fetchAccounts();
     } catch (err: any) {
@@ -229,7 +229,7 @@ export default function FacebookAccountsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <StatusBadge status={acc.status} />
-                <button onClick={handleDisconnect}
+                <button onClick={() => handleDisconnect(acc.id)}
                   className="px-3 py-1.5 bg-red-500/10 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-500/20 transition-colors border border-red-200">
                   Disconnect
                 </button>

@@ -281,6 +281,37 @@ async def fb_connect_credentials(
     return {"status": "connected", "uid": result.get("uid"), "display_name": result.get("display_name")}
 
 
+# ─── Multi-account delete ──────────────────────────────────────────────
+
+@router.delete("/accounts/{account_id}")
+async def delete_fb_account(
+    account_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a specific Facebook Messenger account."""
+    account = db.execute(
+        select(ChannelAccount).where(
+            ChannelAccount.id == account_id,
+            ChannelAccount.tenant_id == current_user.tenant_id,
+            ChannelAccount.channel_type == "facebook_messenger",
+        )
+    ).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    # Unload from worker
+    try:
+        service = get_facebook_messenger_service()
+        await service.unload(str(account.bot_id))
+    except Exception as e:
+        logger.warning("fb_delete_account_worker_fail account=%s err=%s", account_id, e)
+
+    db.delete(account)
+    db.commit()
+    return {"status": "deleted"}
+
+
 # ─── Disconnect (authenticated) ────────────────────────────────────────
 
 @router.post("/disconnect/{bot_id}")

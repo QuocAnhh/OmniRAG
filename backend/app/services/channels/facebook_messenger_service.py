@@ -168,6 +168,10 @@ class FacebookMessengerService:
     async def disconnect(self, bot_id: str) -> dict[str, Any]:
         return await self._post(f"/bots/{bot_id}/unload", {})
 
+    async def unload(self, bot_id: str) -> dict[str, Any]:
+        """Alias for disconnect — unload a bot session from the worker."""
+        return await self.disconnect(bot_id)
+
     async def leave_thread(self, bot_id: str, thread_id: str) -> dict[str, Any]:
         return await self._post(f"/bots/{bot_id}/threads/leave", {"thread_id": thread_id})
 
