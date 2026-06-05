@@ -46,6 +46,24 @@ export default function TelegramAccountsPage() {
     }
   }, [botId, fetchAccounts]);
 
+  const handleDisconnect = async (accountId: string) => {
+    const { confirmAction } = await import('../lib/confirmAction');
+    const confirmed = await confirmAction({
+      title: 'Disconnect Telegram Bot?',
+      text: 'This bot will stop responding on Telegram.',
+      confirmText: 'Disconnect',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      await apiClient.post(`/api/v1/channels/telegram/disconnect/${botId}`);
+      toast.success('Disconnected');
+      fetchAccounts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to disconnect');
+    }
+  };
+
   const handleConnect = async () => {
     if (!botId || !telegramBotToken.trim()) { toast.error('Please enter your Bot Token'); return; }
     setTelegramConnecting(true);
@@ -106,7 +124,13 @@ export default function TelegramAccountsPage() {
                   <p className="text-xs text-muted-foreground">{acc.channel_uid || 'No username'} · {acc.connected_at ? new Date(acc.connected_at).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>
-              <StatusBadge status={acc.status} />
+              <div className="flex items-center gap-3">
+                <StatusBadge status={acc.status} />
+                <button onClick={() => handleDisconnect(acc.id)}
+                  className="px-3 py-1.5 bg-red-500/10 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-500/20 transition-colors border border-red-200">
+                  Disconnect
+                </button>
+              </div>
             </div>
           ))}
         </div>
