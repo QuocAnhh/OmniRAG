@@ -50,8 +50,14 @@ export const channelAccountsApi = {
   listFbAccounts: (botId: string) =>
     apiClient.get(`/api/v1/channels/facebook-messenger/bots/${botId}/accounts`).then((r) => r.data),
 
+  deleteFbAccount: (accountId: string) =>
+    apiClient.delete(`/api/v1/channels/facebook/accounts/${accountId}`).then((r) => r.data),
+
   // ── Telegram ──────────────────────────────────────────────────────────
 
   listTelegramAccounts: (botId: string) =>
     apiClient.get(`/api/v1/channels/telegram/bots/${botId}/accounts`).then((r) => r.data),
+
+  deleteTelegramAccount: (accountId: string) =>
+    apiClient.delete(`/api/v1/channels/telegram/accounts/${accountId}`).then((r) => r.data),
 };
