@@ -1308,80 +1308,18 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                 ) : (
-                  /* Not Connected State — Connect Form */
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Bot Token</label>
-                        <input
-                          type="password"
-                          placeholder="e.g. 1234567890:ABCdefGHIJklmNOPqrstUVwxyz"
-                          value={telegramBotToken}
-                          onChange={(e) => setTelegramBotToken(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
-                        />
-                        <p className="text-[10px] text-muted-foreground pl-1">Get this from <strong>@BotFather</strong> on Telegram when you create a bot.</p>
-                      </div>
-
-                      <button
-                        onClick={async () => {
-                          if (!id || !telegramBotToken.trim()) {
-                            toast.error('Please enter your Bot Token');
-                            return;
-                          }
-                          setTelegramConnecting(true);
-                          const connectToast = toast.loading('Connecting Telegram Bot...');
-                          try {
-                            const res = await apiClient.post('/api/v1/channels/telegram/connect', {
-                              bot_id: id,
-                              bot_token: telegramBotToken.trim(),
-                            });
-                            if (id) await loadBot(id);
-                            setTelegramBotToken('');
-                            toast.success('Telegram Bot connected successfully!', { id: connectToast });
-                          } catch (err: any) {
-                            toast.error(err.response?.data?.detail || 'Connection failed', { id: connectToast });
-                          } finally {
-                            setTelegramConnecting(false);
-                          }
-                        }}
-                        disabled={telegramConnecting || !telegramBotToken.trim()}
-                        className="w-full px-6 py-3 bg-[#24A1DE] text-white font-bold rounded-xl hover:bg-[#24A1DE]/90 transition-all shadow-lg shadow-[#24A1DE]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {telegramConnecting ? (
-                          <><span className="animate-spin">⏳</span> Connecting...</>
-                        ) : (
-                          <><span className="material-symbols-outlined text-sm">link</span> Connect Telegram Bot</>
-                        )}
-                      </button>
+                  /* Not Connected — link to Manage Accounts page */
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                    <div>
+                      <p className="text-sm font-medium">No Telegram bots connected</p>
+                      <p className="text-xs text-muted-foreground">Add and manage Telegram bot accounts from the accounts page.</p>
                     </div>
-
-                    {/* Quick Guide */}
-                    <div className="bg-muted/10 rounded-2xl p-5 border border-border">
-                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary text-lg">rocket_launch</span>
-                        Quick Setup (30 seconds)
-                      </h4>
-                      <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">1</span>
-                          <p>Open <strong>@BotFather</strong> on Telegram and send <code>/newbot</code> to create a bot.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">2</span>
-                          <p>Copy the <strong>Bot Token</strong> that @BotFather gives you.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">3</span>
-                          <p>Paste the token above and click <strong>Connect</strong> — we'll auto-configure the webhook. Done!</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                        <p className="text-[10px] text-primary-700 font-medium">
-                          <strong>How it works:</strong> We call <code>getMe</code> + <code>setWebhook</code> on the Telegram Bot API automatically. Your bot will start responding to Telegram messages instantly.
-                        </p>
-                      </div>
-                    </div>
+                    <Link
+                      to={`/bots/${id}/telegram-accounts`}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                    >
+                      Manage Accounts
+                    </Link>
                   </div>
                 )}
               </div>
@@ -1688,126 +1626,18 @@ export default function BotConfigPage({ embedded = false }: { embedded?: boolean
                     </div>
                   </div>
                 ) : (
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Facebook Cookies (JSON)</label>
-                        <textarea
-                          placeholder='Paste JSON exported from Cookie-Editor extension here — supports both {"url":"...","cookies":[...]} and plain [...] formats.'
-                          value={fbCookiesText}
-                          onChange={(e) => { setFbCookiesText(e.target.value); setFbCookiesError(''); }}
-                          rows={6}
-                          className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
-                        />
-                        <div
-                          onDragOver={(e) => { e.preventDefault(); }}
-                          onDrop={async (e) => {
-                            e.preventDefault();
-                            const file = e.dataTransfer.files?.[0];
-                            if (!file) return;
-                            try { setFbCookiesText(await file.text()); setFbCookiesError(''); }
-                            catch { toast.error('Cannot read file'); }
-                          }}
-                          onClick={() => fbFileInputRef.current?.click()}
-                          className="cursor-pointer rounded-xl border-2 border-dashed border-border bg-muted/10 hover:bg-muted/30 transition-colors p-4 text-center"
-                        >
-                          <p className="text-xs text-muted-foreground">
-                            <span className="material-symbols-outlined text-sm align-middle mr-1">upload_file</span>
-                            Drag-drop a <code>.json</code> file here or click to browse
-                          </p>
-                          <input
-                            ref={fbFileInputRef}
-                            type="file"
-                            accept="application/json,.json"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try { setFbCookiesText(await file.text()); setFbCookiesError(''); }
-                              catch { toast.error('Cannot read file'); }
-                            }}
-                          />
-                        </div>
-                        {fbCookiesError && <p className="text-[11px] text-red-600 pl-1">{fbCookiesError}</p>}
-                      </div>
-
-                      <button
-                        onClick={async () => {
-                          if (!id || !fbCookiesText.trim()) {
-                            setFbCookiesError('Please paste cookies JSON first.');
-                            return;
-                          }
-                          let parsed: any;
-                          try { parsed = JSON.parse(fbCookiesText.trim()); }
-                          catch { setFbCookiesError('Not valid JSON — re-export from Cookie-Editor.'); return; }
-
-                          const cookiesList: any[] = Array.isArray(parsed)
-                            ? parsed
-                            : (parsed && Array.isArray(parsed.cookies) ? parsed.cookies : []);
-                          if (!cookiesList.length) {
-                            setFbCookiesError('JSON does not contain a cookies array.');
-                            return;
-                          }
-                          const names = new Set(cookiesList.map((c: any) => c?.name || c?.key));
-                          const required = ['c_user', 'xs', 'fr', 'datr', 'sb'];
-                          const missing = required.filter((n) => !names.has(n));
-                          if (missing.length) {
-                            setFbCookiesError(`Missing required cookies: ${missing.join(', ')}. Make sure you exported after logging in.`);
-                            return;
-                          }
-
-                          setFbConnecting(true);
-                          const t = toast.loading('Connecting Facebook Messenger...');
-                          try {
-                            const res = await apiClient.post('/api/v1/channels/facebook/connect', {
-                              bot_id: id,
-                              cookies: cookiesList,
-                            });
-                            if (id) await loadBot(id);
-                            setFbCookiesText('');
-                            toast.success(`Connected as ${res.data.display_name || res.data.uid}`, { id: t });
-                          } catch (err: any) {
-                            toast.error(err.response?.data?.detail || 'Connection failed', { id: t });
-                          } finally {
-                            setFbConnecting(false);
-                          }
-                        }}
-                        disabled={fbConnecting || !fbCookiesText.trim()}
-                        className="w-full px-6 py-3 bg-[#0866FF] text-white font-bold rounded-xl hover:bg-[#0866FF]/90 transition-all shadow-lg shadow-[#0866FF]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {fbConnecting ? (
-                          <><span className="animate-spin">⏳</span> Connecting...</>
-                        ) : (
-                          <><span className="material-symbols-outlined text-sm">link</span> Connect Facebook</>
-                        )}
-                      </button>
+                  /* Not Connected — link to Manage Accounts page */
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                    <div>
+                      <p className="text-sm font-medium">No Facebook accounts connected</p>
+                      <p className="text-xs text-muted-foreground">Add and manage Facebook Messenger accounts from the accounts page.</p>
                     </div>
-
-                    <div className="bg-muted/10 rounded-2xl p-5 border border-border">
-                      <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary text-lg">info</span>
-                        How to get cookies
-                      </h4>
-                      <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">1</span>
-                          <p>Use a <strong>dummy Facebook account</strong> in a separate browser session (never your main account).</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">2</span>
-                          <p>Install <strong>Cookie-Editor</strong> extension and log in to facebook.com.</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="size-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">3</span>
-                          <p>Click the extension → <strong>Export → JSON</strong> → paste here or drag the file.</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-                        <p className="text-[10px] text-red-700 font-medium">
-                          ⚠️ <strong>Risks:</strong> This uses an unofficial Messenger API. Facebook may ban automated accounts. E2EE limits replies to <strong>group chats</strong> only (no 1-1 DMs). Cookies expire and must be refreshed.
-                        </p>
-                      </div>
-                    </div>
+                    <Link
+                      to={`/bots/${id}/facebook-accounts`}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                    >
+                      Manage Accounts
+                    </Link>
                   </div>
                 )}
               </div>

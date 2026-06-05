@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { channelAccountsApi } from '../api/channelAccounts';
 import { botsApi } from '../api/bots';
+import { apiClient } from '../api/client';
 import type { ChannelAccount } from '../types/api';
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -25,18 +27,14 @@ export default function TelegramAccountsPage() {
   const [botName, setBotName] = useState('');
   const [accounts, setAccounts] = useState<ChannelAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState('');
+  const [telegramConnecting, setTelegramConnecting] = useState(false);
+  const [telegramBotToken, setTelegramBotToken] = useState('');
 
   const fetchAccounts = useCallback(async () => {
     if (!botId) return;
     try {
       const data = await channelAccountsApi.listTelegramAccounts(botId);
       setAccounts(Array.isArray(data) ? data : []);
-      // Detect mode from first account's session_data
-      if (Array.isArray(data) && data.length > 0) {
-        const first = data[0] as any;
-        setMode(first.session_data?.mode || first.mode || '');
-      }
     } catch { /* ignore */ }
     setLoading(false);
   }, [botId]);
@@ -48,42 +46,64 @@ export default function TelegramAccountsPage() {
     }
   }, [botId, fetchAccounts]);
 
+  const handleConnect = async () => {
+    if (!botId || !telegramBotToken.trim()) { toast.error('Please enter your Bot Token'); return; }
+    setTelegramConnecting(true);
+    const t = toast.loading('Connecting Telegram Bot...');
+    try {
+      await apiClient.post('/api/v1/channels/telegram/connect', { bot_id: botId, bot_token: telegramBotToken.trim() });
+      setTelegramBotToken('');
+      toast.success('Connected!', { id: t });
+      fetchAccounts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Connection failed', { id: t });
+    } finally { setTelegramConnecting(false); }
+  };
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link to={`/bots/${botId}/config?tab=channels`} className="text-sm text-muted-foreground hover:text-primary mb-1 block">
-            ← Back to {botName || 'Bot'} settings
-          </Link>
-          <h1 className="text-2xl font-bold">Telegram Bot Accounts</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage Telegram bots connected to this agent. Connect new bots from the Channels tab.
-          </p>
-        </div>
+      <div>
+        <Link to={`/bots/${botId}/config?tab=channels`} className="text-sm text-muted-foreground hover:text-primary mb-1 block">
+          ← Back to {botName || 'Bot'} settings
+        </Link>
+        <h1 className="text-2xl font-bold">Telegram Bot Accounts</h1>
+        <p className="text-sm text-muted-foreground mt-1">Connect and manage Telegram bots for this agent.</p>
       </div>
 
+      {/* Connect Form */}
+      <div className="p-6 bg-black/10 rounded-2xl border border-white/5 space-y-4">
+        <h3 className="text-lg font-bold">Connect New Bot</h3>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Bot Token</label>
+          <input type="password" placeholder="e.g. 1234567890:ABCdefGHIJklmNOPqrstUVwxyz"
+            value={telegramBotToken} onChange={(e) => setTelegramBotToken(e.target.value)}
+            className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" />
+          <p className="text-[10px] text-muted-foreground pl-1">Get this from <strong>@BotFather</strong> on Telegram.</p>
+        </div>
+        <button onClick={handleConnect} disabled={telegramConnecting || !telegramBotToken.trim()}
+          className="px-6 py-3 bg-[#24A1DE] text-white font-bold rounded-xl hover:bg-[#24A1DE]/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+          {telegramConnecting ? <><span className="animate-spin">⏳</span> Connecting...</> : <><span className="material-symbols-outlined text-sm">link</span> Connect</>}
+        </button>
+      </div>
+
+      {/* Account List */}
       {accounts.length === 0 ? (
-        <div className="text-center py-16 bg-black/10 rounded-2xl border border-white/5">
-          <span className="material-symbols-outlined text-4xl text-muted-foreground mb-3 block">send</span>
-          <p className="text-muted-foreground">No Telegram bots connected yet.</p>
-          <Link
-            to={`/bots/${botId}/config?tab=channels`}
-            className="inline-block mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Connect Telegram Bot
-          </Link>
+        <div className="text-center py-12 bg-black/10 rounded-2xl border border-white/5">
+          <span className="material-symbols-outlined text-3xl text-muted-foreground mb-2 block">send</span>
+          <p className="text-muted-foreground">No bots connected yet. Paste a token above to connect.</p>
         </div>
       ) : (
         <div className="space-y-3">
+          <h3 className="text-lg font-bold">Connected Bots ({accounts.length})</h3>
           {accounts.map((acc) => (
             <div key={acc.id} className="p-4 bg-black/10 rounded-2xl border border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-2xl text-sky-400">send</span>
                 <div>
                   <p className="font-medium">{acc.display_name || 'Unnamed Bot'}</p>
-                  <p className="text-xs text-muted-foreground">{acc.channel_uid || 'No username'} · {mode || 'webhook'} · Connected {acc.connected_at ? new Date(acc.connected_at).toLocaleDateString() : 'N/A'}</p>
+                  <p className="text-xs text-muted-foreground">{acc.channel_uid || 'No username'} · {acc.connected_at ? new Date(acc.connected_at).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>
               <StatusBadge status={acc.status} />
