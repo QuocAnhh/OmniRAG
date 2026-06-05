@@ -31,6 +31,11 @@ export default function FacebookAccountsPage() {
   const [fbCookiesText, setFbCookiesText] = useState('');
   const [fbCookiesError, setFbCookiesError] = useState('');
   const fbFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [loginMode, setLoginMode] = useState<'password' | 'cookies'>('password');
+  const [fbUsername, setFbUsername] = useState('');
+  const [fbPassword, setFbPassword] = useState('');
+  const [fbTwofa, setFbTwofa] = useState('');
+  const [showTwofa, setShowTwofa] = useState(false);
 
   const fetchAccounts = useCallback(async () => {
     if (!botId) return;
@@ -47,6 +52,30 @@ export default function FacebookAccountsPage() {
       fetchAccounts();
     }
   }, [botId, fetchAccounts]);
+
+  const handleCredentialsConnect = async () => {
+    if (!botId || !fbUsername.trim() || !fbPassword.trim()) {
+      toast.error('Please enter email and password');
+      return;
+    }
+    setFbConnecting(true);
+    const t = toast.loading('Logging in to Facebook...');
+    try {
+      const body: any = { bot_id: botId, username: fbUsername.trim(), password: fbPassword };
+      if (showTwofa && fbTwofa.trim()) body.twofa_code = fbTwofa.trim();
+      await apiClient.post('/api/v1/channels/facebook/connect/credentials', body);
+      setFbUsername(''); setFbPassword(''); setFbTwofa('');
+      toast.success('Connected!', { id: t });
+      fetchAccounts();
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || 'Login failed';
+      toast.error(detail, { id: t });
+      // If 2FA required, show the field
+      if (detail.toLowerCase().includes('two') || detail.toLowerCase().includes('2fa') || detail.toLowerCase().includes('1348162')) {
+        setShowTwofa(true);
+      }
+    } finally { setFbConnecting(false); }
+  };
 
   const handleConnect = async () => {
     if (!botId || !fbCookiesText.trim()) {
@@ -92,30 +121,74 @@ export default function FacebookAccountsPage() {
 
       {/* Connect Form */}
       <div className="p-6 bg-black/10 rounded-2xl border border-white/5 space-y-4">
-        <h3 className="text-lg font-bold">Connect New Account</h3>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Facebook Cookies (JSON)</label>
-          <textarea
-            placeholder='Paste JSON from Cookie-Editor — supports {"url":"...","cookies":[...]} or [...]'
-            value={fbCookiesText}
-            onChange={(e) => { setFbCookiesText(e.target.value); setFbCookiesError(''); }}
-            rows={5}
-            className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
-          />
-          <div onClick={() => fbFileInputRef.current?.click()} className="cursor-pointer rounded-xl border-2 border-dashed border-border bg-muted/10 hover:bg-muted/30 transition-colors p-3 text-center">
-            <p className="text-xs text-muted-foreground">
-              <span className="material-symbols-outlined text-sm align-middle mr-1">upload_file</span>
-              Drop a <code>.json</code> file or click to browse
-            </p>
-            <input ref={fbFileInputRef} type="file" accept=".json" className="hidden"
-              onChange={async (e) => { const f = e.target.files?.[0]; if (f) try { setFbCookiesText(await f.text()); setFbCookiesError(''); } catch { toast.error('Cannot read file'); } }} />
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-bold">Connect New Account</h3>
+          <div className="flex bg-muted/30 rounded-lg p-0.5">
+            <button onClick={() => setLoginMode('password')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${loginMode === 'password' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+              Email/Password
+            </button>
+            <button onClick={() => setLoginMode('cookies')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${loginMode === 'cookies' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+              Cookies JSON
+            </button>
           </div>
-          {fbCookiesError && <p className="text-[11px] text-red-600 pl-1">{fbCookiesError}</p>}
         </div>
-        <button onClick={handleConnect} disabled={fbConnecting || !fbCookiesText.trim()}
-          className="px-6 py-3 bg-[#0866FF] text-white font-bold rounded-xl hover:bg-[#0866FF]/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-          {fbConnecting ? <><span className="animate-spin">⏳</span> Connecting...</> : <><span className="material-symbols-outlined text-sm">link</span> Connect</>}
-        </button>
+
+        {loginMode === 'password' ? (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Email or Phone</label>
+              <input type="text" placeholder="facebook@email.com" value={fbUsername}
+                onChange={(e) => setFbUsername(e.target.value)}
+                className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Password</label>
+              <input type="password" placeholder="Facebook password" value={fbPassword}
+                onChange={(e) => setFbPassword(e.target.value)}
+                className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            </div>
+            {!showTwofa ? (
+              <button type="button" onClick={() => setShowTwofa(true)}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors pl-1">
+                + I have 2-Factor Authentication enabled
+              </button>
+            ) : (
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">2FA Code</label>
+                <input type="text" placeholder="6-digit code from Google Authenticator" value={fbTwofa}
+                  onChange={(e) => setFbTwofa(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" />
+              </div>
+            )}
+            <button onClick={handleCredentialsConnect} disabled={fbConnecting || !fbUsername.trim() || !fbPassword.trim()}
+              className="px-6 py-3 bg-[#0866FF] text-white font-bold rounded-xl hover:bg-[#0866FF]/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {fbConnecting ? <><span className="animate-spin">⏳</span> Logging in...</> : <><span className="material-symbols-outlined text-sm">login</span> Login & Connect</>}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Facebook Cookies (JSON)</label>
+              <textarea
+                placeholder='Paste JSON from Cookie-Editor — supports {"url":"...","cookies":[...]} or [...]'
+                value={fbCookiesText} onChange={(e) => { setFbCookiesText(e.target.value); setFbCookiesError(''); }}
+                rows={5}
+                className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" />
+              <div onClick={() => fbFileInputRef.current?.click()} className="cursor-pointer rounded-xl border-2 border-dashed border-border bg-muted/10 hover:bg-muted/30 transition-colors p-3 text-center">
+                <p className="text-xs text-muted-foreground"><span className="material-symbols-outlined text-sm align-middle mr-1">upload_file</span>Drop a <code>.json</code> file or click to browse</p>
+                <input ref={fbFileInputRef} type="file" accept=".json" className="hidden"
+                  onChange={async (e) => { const f = e.target.files?.[0]; if (f) try { setFbCookiesText(await f.text()); setFbCookiesError(''); } catch { toast.error('Cannot read file'); } }} />
+              </div>
+              {fbCookiesError && <p className="text-[11px] text-red-600 pl-1">{fbCookiesError}</p>}
+            </div>
+            <button onClick={handleConnect} disabled={fbConnecting || !fbCookiesText.trim()}
+              className="px-6 py-3 bg-[#0866FF] text-white font-bold rounded-xl hover:bg-[#0866FF]/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {fbConnecting ? <><span className="animate-spin">⏳</span> Connecting...</> : <><span className="material-symbols-outlined text-sm">link</span> Connect</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Account List */}

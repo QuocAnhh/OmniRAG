@@ -41,6 +41,13 @@ class FacebookConnectRequest(BaseModel):
     thread_whitelist: Optional[list[str]] = None
 
 
+class FacebookCredentialsRequest(BaseModel):
+    bot_id: str
+    username: str
+    password: str
+    twofa_code: Optional[str] = None
+
+
 # ─── Helpers ───────────────────────────────────────────────────────────
 
 def _normalize_cookies(payload: Any) -> list[dict[str, Any]]:
@@ -194,6 +201,72 @@ async def fb_connect(
 
     logger.info("fb_connect_ok bot=%s uid=%s", bot.id, status_data.get("uid"))
     return {"status": "connected", "uid": status_data.get("uid"), "display_name": status_data.get("name")}
+
+
+# ─── Connect via Email/Password ─────────────────────────────────────────
+
+@router.post("/connect/credentials")
+async def fb_connect_credentials(
+    data: FacebookCredentialsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Connect Facebook using email/password (+ optional 2FA)."""
+    bot = db.execute(
+        select(BotModel).where(
+            BotModel.id == data.bot_id, BotModel.tenant_id == current_user.tenant_id
+        )
+    ).scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    if not settings.FB_WORKER_API_TOKEN or not settings.FB_INBOUND_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Facebook channel not configured on the server",
+        )
+
+    service = get_facebook_messenger_service()
+    try:
+        result = await service.connect_with_credentials(
+            bot_id=str(bot.id),
+            username=data.username,
+            password=data.password,
+            twofa_code=data.twofa_code,
+        )
+    except Exception as e:
+        logger.error("fb_credentials_connect_failed bot=%s err=%s", bot.id, e, exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Login failed: {e}")
+
+    # Save to channel_accounts table
+    existing = db.execute(
+        select(ChannelAccount).where(
+            ChannelAccount.bot_id == bot.id,
+            ChannelAccount.channel_type == "facebook_messenger",
+            ChannelAccount.channel_uid == result.get("uid"),
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.status = "connected"
+        existing.display_name = result.get("display_name")
+        existing.connected_at = datetime.utcnow()
+        existing.is_active = True
+    else:
+        db.add(ChannelAccount(
+            id=uuid.uuid4(),
+            bot_id=bot.id,
+            tenant_id=bot.tenant_id,
+            channel_type="facebook_messenger",
+            display_name=result.get("display_name"),
+            channel_uid=result.get("uid"),
+            status="connected",
+            reply_policy="mention_only",
+            connected_at=datetime.utcnow(),
+        ))
+    db.commit()
+
+    logger.info("fb_credentials_connect_ok bot=%s uid=%s", bot.id, result.get("uid"))
+    return {"status": "connected", "uid": result.get("uid"), "display_name": result.get("display_name")}
 
 
 # ─── Disconnect (authenticated) ────────────────────────────────────────

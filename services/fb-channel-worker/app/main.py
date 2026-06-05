@@ -50,6 +50,14 @@ class LoadRequest(BaseModel):
     thread_whitelist: Optional[list[str]] = None
 
 
+class CredentialsLoginRequest(BaseModel):
+    username: str
+    password: str
+    twofa_code: Optional[str] = None
+    reply_policy: str = "mention_only"
+    thread_whitelist: Optional[list[str]] = None
+
+
 class SendRequest(BaseModel):
     thread_id: str
     text: str
@@ -85,6 +93,24 @@ async def health() -> dict[str, Any]:
 @app.get("/bots", dependencies=[Depends(require_bearer)])
 async def list_bots() -> dict[str, Any]:
     return {"bot_ids": manager.list_ids()}
+
+
+@app.post("/bots/{bot_id}/login/credentials", dependencies=[Depends(require_bearer)])
+async def login_with_credentials(bot_id: str, req: CredentialsLoginRequest) -> dict[str, Any]:
+    """Login to Facebook with email/password (+ optional 2FA) and start session."""
+    try:
+        result = await manager.login_with_credentials(
+            bot_id=bot_id,
+            username=req.username,
+            password=req.password,
+            twofa_code=req.twofa_code,
+            reply_policy=req.reply_policy,
+            thread_whitelist=req.thread_whitelist,
+        )
+        return {"ok": True, **result}
+    except Exception as e:
+        log.exception("credentials_login_failed bot=%s", bot_id)
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/bots/{bot_id}/load", dependencies=[Depends(require_bearer)])

@@ -137,6 +137,19 @@ class FacebookMessengerService:
 
     # ─── Connect / Disconnect ──────────────────────────────────────────
 
+    async def connect_with_credentials(
+        self,
+        bot_id: str,
+        username: str,
+        password: str,
+        twofa_code: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Connect Facebook using email/password (+ optional 2FA)."""
+        body: dict[str, Any] = {"username": username, "password": password}
+        if twofa_code:
+            body["twofa_code"] = twofa_code
+        return await self._post(f"/bots/{bot_id}/login/credentials", body, timeout=30.0)
+
     async def connect(
         self,
         bot_id: str,

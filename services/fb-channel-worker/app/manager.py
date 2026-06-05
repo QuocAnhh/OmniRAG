@@ -820,6 +820,46 @@ class BotManager:
     def list_ids(self) -> list[str]:
         return list(self._sessions.keys())
 
+    async def login_with_credentials(
+        self,
+        bot_id: str,
+        username: str,
+        password: str,
+        twofa_code: Optional[str] = None,
+        reply_policy: str = "mention_only",
+        thread_whitelist: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
+        """Login to Facebook with email/password (+ optional 2FA), save cookies, and start session."""
+        import asyncio
+        from app.fb_login import loginFacebook
+
+        # Run blocking FB login in thread
+        loop = asyncio.get_running_loop()
+        fb = loginFacebook(username, password, twofa_code)
+        result = await loop.run_in_executor(None, fb.main)
+
+        if "error" in result:
+            err = result["error"]
+            raise RuntimeError(err.get("description") or err.get("title") or "Login failed")
+
+        success = result["success"]
+        cookies_list = success.get("cookiesKey-ValueList") or []
+
+        # Convert [{name, value, ...}] to dict format expected by _write_cookies
+        cookies_payload = [
+            {"name": c.get("name"), "value": c.get("value"),
+             "domain": c.get("domain", ".facebook.com"), "path": c.get("path", "/")}
+            for c in cookies_list
+        ]
+
+        # Load session using existing flow (same as cookie paste)
+        status = await self.load(bot_id, cookies_payload, reply_policy, thread_whitelist)
+        return {
+            "uid": status.uid,
+            "display_name": status.name,
+            "status": status.status,
+        }
+
     async def auto_restore(self) -> None:
         """Restore all saved bot sessions from cookies dir on startup."""
         import glob

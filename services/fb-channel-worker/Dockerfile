@@ -17,7 +17,8 @@ RUN pip install --upgrade pip && pip install \
     "uvicorn[standard]>=0.32.0" \
     "httpx>=0.27.0" \
     "pydantic>=2.9.0" \
-    "pydantic-settings>=2.5.0"
+    "pydantic-settings>=2.5.0" \
+    "pyotp>=2.9.0"
 
 COPY app ./app
 
