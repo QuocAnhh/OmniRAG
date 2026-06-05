@@ -48,7 +48,7 @@ export const channelAccountsApi = {
   // ── Facebook Messenger ────────────────────────────────────────────────
 
   listFbAccounts: (botId: string) =>
-    apiClient.get(`/api/v1/channels/facebook-messenger/bots/${botId}/accounts`).then((r) => r.data),
+    apiClient.get(`/api/v1/channels/facebook/bots/${botId}/accounts`).then((r) => r.data),
 
   deleteFbAccount: (accountId: string) =>
     apiClient.delete(`/api/v1/channels/facebook/accounts/${accountId}`).then((r) => r.data),
