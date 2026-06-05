@@ -44,4 +44,14 @@ export const channelAccountsApi = {
   /** Revoke user access */
   revokeAccess: (accountId: string, accessId: string) =>
     apiClient.delete(`${ZALO_PERSONAL_PREFIX}/accounts/${accountId}/access/${accessId}`).then((r) => r.data),
+
+  // ── Facebook Messenger ────────────────────────────────────────────────
+
+  listFbAccounts: (botId: string) =>
+    apiClient.get(`/api/v1/channels/facebook-messenger/bots/${botId}/accounts`).then((r) => r.data),
+
+  // ── Telegram ──────────────────────────────────────────────────────────
+
+  listTelegramAccounts: (botId: string) =>
+    apiClient.get(`/api/v1/channels/telegram/bots/${botId}/accounts`).then((r) => r.data),
 };
