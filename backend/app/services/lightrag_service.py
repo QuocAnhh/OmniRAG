@@ -1,6 +1,7 @@
 import os
 import logging
 import asyncio
+import re
 import time
 import numpy as np
 from typing import List, Dict, Any, Optional
@@ -21,8 +22,19 @@ _KG_CACHE_MAX_SIZE = 256
 _KG_CACHE_TTL_SEC = 300  # 5 minutes
 
 
-def _make_cache_key(query_text: str, mode: str) -> str:
-    return f"{mode}:{query_text.strip().lower()[:200]}"
+# bot_id becomes a filesystem path segment and a Qdrant workspace name.
+# Hex, dashes and underscores only — no dots, no separators, so "..", "/" and
+# absolute paths can never appear.
+_SAFE_BOT_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+_RAG_STORAGE_ROOT = "./rag_storage"
+
+
+def _make_cache_key(bot_id: str, query_text: str, mode: str) -> str:
+    # bot_id MUST be part of the key. _kg_query_cache is a module-level global
+    # shared by every LightRAGService instance in the process, so a key of only
+    # (mode, query) served one bot's knowledge-graph context to a different
+    # bot — and therefore a different tenant — whenever the query text matched.
+    return f"{bot_id}:{mode}:{query_text.strip().lower()[:200]}"
 
 
 def _cache_get(key: str) -> Optional[str]:
@@ -102,13 +114,28 @@ class LightRAGService:
     """
 
     def __init__(self, bot_id: str = "default_bot"):
+        # bot_id is interpolated into a filesystem path below and into the
+        # LightRAG/Qdrant workspace name. Reject anything that is not a plain
+        # path segment — "x/../../etc" would otherwise create directories and
+        # write storage files anywhere the process can reach.
+        #
+        # This validates and rejects; it deliberately does NOT rewrite bot_id.
+        # Hashing or slugifying it would change working_dir for every existing
+        # bot and orphan every knowledge graph already on disk.
+        if not _SAFE_BOT_ID.fullmatch(bot_id):
+            raise ValueError(f"Invalid bot_id for LightRAG workspace: {bot_id!r}")
+
         self.bot_id = bot_id
         self._storages_initialized = False  # Cache flag — initialize_storages() is expensive
         self.working_dir = f"./rag_storage/lightrag_{bot_id}"
-        
+
+        storage_root = os.path.realpath(_RAG_STORAGE_ROOT)
+        if not os.path.realpath(self.working_dir).startswith(storage_root + os.sep):
+            raise ValueError(f"LightRAG working_dir escapes {storage_root}: {self.working_dir!r}")
+
         if not os.path.exists(self.working_dir):
             os.makedirs(self.working_dir, exist_ok=True)
-            
+
         logger.info(f"Initializing LightRAG [{LIGHTRAG_LLM_MODEL} via OpenRouter] → {self.working_dir}")
 
         self.rag = LightRAG(
@@ -199,7 +226,7 @@ class LightRAGService:
         - Query result cache (5-min TTL, 256 entries max)
         - Skip LLM keyword extraction (pass keywords from query text directly)
         """
-        cache_key = _make_cache_key(query_text, mode)
+        cache_key = _make_cache_key(self.bot_id, query_text, mode)
         cached = _cache_get(cache_key)
         if cached is not None:
             logger.info(f"[KG Cache HIT] mode={mode}: {query_text[:60]}...")

@@ -2860,12 +2860,15 @@ Answer:"""
             mongo_db = await get_mongodb()
             conversations_collection = mongo_db.conversations
             
+            # Both filters apply: session_id narrows the result set, it never
+            # replaces the ownership constraint. Using elif here let any tenant
+            # member read another user's transcripts by passing their session_id.
             query = {"bot_id": bot_id}
+            if user_id:
+                query["user_id"] = user_id
             if session_id:
                 query["session_id"] = session_id
-            elif user_id:
-                query["user_id"] = user_id
-            
+
             cursor = conversations_collection.find(query).sort("timestamp", -1).limit(limit)
             conversations = await cursor.to_list(length=limit)
             

@@ -18,18 +18,17 @@ async def zalo_central_hub_webhook(request: Request):
     It receives messages for ALL connected Zalo accounts and routes them.
 
     Security: verifies the x-hub-secret header using constant-time comparison
-    to prevent both unauthorized requests and timing attacks.
-    Set ZALO_HUB_WEBHOOK_SECRET in .env to enable verification.
+    to prevent both unauthorized requests and timing attacks. Fails closed —
+    an unset ZALO_HUB_WEBHOOK_SECRET rejects every request rather than
+    disabling verification, matching the other channel webhooks.
     """
-    # Verify webhook secret if configured
     expected_secret = settings.ZALO_HUB_WEBHOOK_SECRET
-    if expected_secret:
-        received_secret = request.headers.get("x-hub-secret", "")
-        if not received_secret or not hmac.compare_digest(
-            received_secret.encode(), expected_secret.encode()
-        ):
-            logger.warning("Zalo Hub webhook: invalid or missing x-hub-secret header")
-            raise HTTPException(status_code=403, detail="Invalid webhook secret")
+    received_secret = request.headers.get("x-hub-secret", "")
+    if not expected_secret or not hmac.compare_digest(
+        received_secret.encode(), expected_secret.encode()
+    ):
+        logger.warning("Zalo Hub webhook: invalid or missing x-hub-secret header")
+        raise HTTPException(status_code=403, detail="Invalid webhook secret")
 
     try:
         payload = await request.json()
