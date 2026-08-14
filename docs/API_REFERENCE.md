@@ -300,17 +300,18 @@ Tạo account:
 | `POST` | `/channels/facebook/disconnect/{bot_id}` | Ngắt kết nối |
 | `GET` | `/channels/facebook/status/{bot_id}` | Trạng thái kết nối |
 
-## OpenRouter Utilities
+## OpenRouter Utilities (đã gỡ bỏ)
 
-| Method | Path | Mô tả |
-| --- | --- | --- |
-| `GET` | `/openrouter/test` | Kiểm tra cấu hình provider |
-| `POST` | `/openrouter/chat` | Gọi chat completion test |
-| `POST` | `/openrouter/embeddings` | Gọi embeddings test |
-| `POST` | `/openrouter/rag/ingest` | Test ingest RAG |
-| `POST` | `/openrouter/rag/chat` | Test RAG chat |
-| `GET` | `/openrouter/models/chat` | Liệt kê chat models |
-| `GET` | `/openrouter/models/embeddings` | Liệt kê embedding models |
+Nhóm route `/openrouter/*` đã được gỡ khỏi API vì thiếu kiểm tra quyền sở hữu bot: chúng nhận
+`bot_id` trực tiếp từ client nên bất kỳ người dùng đã đăng nhập nào cũng đọc và ghi được kho
+tri thức của tenant khác.
+
+Dùng các endpoint có kiểm quyền thay thế:
+
+| Thay cho | Dùng |
+| --- | --- |
+| `POST /openrouter/rag/chat` | `POST /bots/{bot_id}/chat` hoặc `/bots/{bot_id}/chat-stream` |
+| `POST /openrouter/rag/ingest` | `POST /bots/{bot_id}/documents` |
 
 ## Health, Docs và Metrics
 
