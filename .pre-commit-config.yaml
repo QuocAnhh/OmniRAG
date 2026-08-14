@@ -1,0 +1,28 @@
+# Install once per clone:
+#   pip install pre-commit && pre-commit install
+#
+# gitleaks is the one that matters: a real OpenRouter key was committed to this
+# repo's history once, and history rewrites do not un-publish a key. Blocking
+# the commit is the only cheap point in that chain.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+        exclude: '\.(docx|xlsx|pdf|png|jpg|svg|drawio)$'
+      - id: trailing-whitespace
+        exclude: '\.(docx|xlsx|pdf|png|jpg|svg|drawio|md)$'
+      - id: check-yaml
+        # docker-compose uses YAML merge keys (<<: *anchor), which the plain
+        # parser rejects without this flag.
+        args: ["--allow-multiple-documents"]

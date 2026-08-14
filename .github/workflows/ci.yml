@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        # The security regression tests import app.core.bot_config only, which
+        # is kept free of heavy dependencies so this stays fast.
+        run: pip install pytest pydantic
+      - name: Run tests
+        run: python -m pytest backend/tests/ -v
+
+  gateway:
+    name: Gateway tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache-dependency-path: gateway/go.sum
+      - name: Build and test
+        working-directory: gateway
+        run: |
+          go build ./...
+          go test ./... -race -count=1
+
+  frontend:
+    name: Frontend typecheck and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - working-directory: frontend
+        run: npm run lint
+      - working-directory: frontend
+        run: npm run build
+
+  compose:
+    name: Compose config and exposed ports
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-placeholder
+      JWT_SECRET: ci-placeholder
+      POSTGRES_PASSWORD: ci-placeholder
+      MONGO_PASSWORD: ci-placeholder
+      MINIO_ROOT_USER: ci-placeholder
+      MINIO_ROOT_PASSWORD: ci-placeholder
+      OPENROUTER_API_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          docker compose config > /dev/null
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config > /dev/null
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config > /dev/null
+      - name: Only the gateway and frontend may publish ports
+        run: |
+          published=$(docker compose config | grep -c 'published' || true)
+          echo "published port mappings: $published"
+          if [ "$published" -ne 2 ]; then
+            echo "::error::Expected exactly 2 published ports (gateway, frontend), found $published."
+            docker compose config | grep -B10 published
+            exit 1
+          fi
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
