@@ -1,0 +1,66 @@
+# ─── Local development override ───────────────────────────────────────────────
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Everything here trades safety for developer convenience, which is why it is a
+# separate file you have to ask for rather than the default. It publishes the
+# datastore ports so you can attach psql/mongosh/redis-cli, mounts the source
+# into the containers for hot reload, and runs in development mode.
+#
+# Never use this file on a server. Docker publishes to 0.0.0.0 and its iptables
+# rules bypass ufw, so these ports would be reachable from the internet.
+#
+# You still need a .env — compose interpolates every file before merging them,
+# so the required variables in docker-compose.yml apply here too:
+#   cp .env.example .env   (then fill in the generated values it describes)
+
+services:
+  gateway:
+    environment:
+      ENVIRONMENT: "development"
+
+  db:
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+
+  mongodb:
+    ports:
+      - "${MONGODB_HOST_PORT:-27017}:27017"
+
+  redis:
+    ports:
+      - "${REDIS_HOST_PORT:-6380}:6379"
+
+  minio:
+    ports:
+      - "${MINIO_API_HOST_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+
+  qdrant:
+    ports:
+      - "${QDRANT_HOST_PORT:-6333}:6333"
+
+  opendataloader-hybrid:
+    ports:
+      - "${PDF_HYBRID_HOST_PORT:-5002}:5002"
+
+  backend:
+    ports:
+      - "${BACKEND_HOST_PORT:-8001}:8000"
+    volumes:
+      - ./backend:/app
+      - huggingface_cache:/app/.cache/huggingface
+    environment:
+      ENVIRONMENT: "development"
+
+  celery_worker:
+    volumes:
+      - ./backend:/app
+      - huggingface_cache:/app/.cache/huggingface
+    environment:
+      ENVIRONMENT: "development"
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules

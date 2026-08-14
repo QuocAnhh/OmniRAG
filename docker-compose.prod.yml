@@ -1,13 +1,19 @@
 # ─── Production Override (minimal) ────────────────────────────────────────
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
-# This file ONLY overrides what differs from local dev. The base
-# docker-compose.yml provides all service definitions and defaults.
+# The base docker-compose.yml is already secure by default: it publishes only
+# the gateway and the frontend, and requires every credential via ${VAR:?}.
+# This file adds restart policies and resource limits on top.
+#
+# It is deliberately NOT the security boundary. An earlier version was expected
+# to close the datastore ports, but the documented launch command in README.md
+# loads the base file alone — so anything fixed only here never took effect.
+# Keep hardening in the base file.
 #
 # Set production values in .env (gitignored, never committed):
-#   CORS_ORIGINS=http://YOUR_IP:5173,http://...
-#   OPENROUTER_SITE_URL=http://YOUR_IP:5173
-#   VITE_EXTRA_HOSTS=IP1,IP2
+#   cp .env.example .env
+#   CORS_ORIGINS=https://your-domain
+#   OPENROUTER_SITE_URL=https://your-domain
 
 services:
   gateway:
