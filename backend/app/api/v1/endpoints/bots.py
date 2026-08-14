@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Literal, Optional
 import uuid
 from uuid import UUID
 import secrets
@@ -622,17 +622,29 @@ async def generate_bot_prompt(
     if request.bot_id:
         try:
             bot_uuid = UUID(request.bot_id)
-            documents = (await db.execute(
-                select(DocumentModel).where(
-                    DocumentModel.bot_id == bot_uuid,
-                    DocumentModel.tenant_id == current_user.tenant_id if hasattr(DocumentModel, 'tenant_id') else True,
+            # Authorize through the bot. Document has no tenant_id column, so
+            # the previous attribute-probing ternary evaluated to the literal
+            # True and SQLAlchemy folded the tenant constraint out of the
+            # emitted SQL entirely — the filter was never applied.
+            owned_bot = (await db.execute(
+                select(BotModel).where(
+                    BotModel.id == bot_uuid,
+                    BotModel.tenant_id == current_user.tenant_id,
                 )
+            )).scalar_one_or_none()
+            if not owned_bot:
+                raise HTTPException(status_code=404, detail="Bot not found")
+
+            documents = (await db.execute(
+                select(DocumentModel).where(DocumentModel.bot_id == owned_bot.id)
             )).scalars().all()
             
             if documents:
                 file_types = list(set([Path(doc.filename).suffix for doc in documents]))
                 doc_context = f"\n\nContextual Information:\nThe agent has access to a Knowledge Base containing files with types: {', '.join(file_types)}."
                 doc_context += "\nInstruction: The generated prompt must be generic and refer to 'the provided knowledge base' or 'retrieved context' rather than listing specific filenames."
+        except HTTPException:
+            raise  # a bot the caller does not own must surface as 404
         except Exception as e:
             logger.warning(f"Could not fetch documents for context: {e}")
 
@@ -669,7 +681,7 @@ async def generate_bot_prompt(
 
 
 class FeedbackRequest(BaseModel):
-    score: int  # 1 = thumbs up, -1 = thumbs down
+    score: Literal[-1, 1]  # 1 = thumbs up, -1 = thumbs down
 
 
 class RetrieveRequest(BaseModel):
@@ -796,21 +808,28 @@ async def debug_retrieval(
 
 @router.post("/{bot_id}/chat/{message_id}/feedback", status_code=200)
 async def submit_message_feedback(
-    bot_id: str,
     message_id: str,
     feedback_in: FeedbackRequest,
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot_async),
+    current_user: User = Depends(deps.get_current_active_user_async),
 ):
     """Store thumbs-up / thumbs-down feedback for a specific AI message."""
     try:
         from app.db.mongodb import get_mongodb
         mongo_db = await get_mongodb()
+        # The match key is scoped to the caller. Matching on message_id alone
+        # let anyone overwrite another tenant's feedback record — including its
+        # tenant_id and user_id — for any message id they cared to guess.
         await mongo_db.message_feedback.update_one(
-            {"message_id": message_id},
+            {
+                "message_id": message_id,
+                "bot_id": str(bot.id),
+                "user_id": str(current_user.id),
+            },
             {
                 "$set": {
                     "message_id": message_id,
-                    "bot_id": bot_id,
+                    "bot_id": str(bot.id),
                     "user_id": str(current_user.id),
                     "tenant_id": str(current_user.tenant_id),
                     "score": feedback_in.score,

@@ -206,6 +206,54 @@ def test_zalo_hub_webhook_fails_closed_without_secret():
     assert not re.search(r"^\s+if expected_secret:\s*$", source, re.MULTILINE)
 
 
+# ── Authorization ────────────────────────────────────────────────────────────
+
+def _read(*parts: str) -> str:
+    with open(os.path.join(BACKEND_ROOT, *parts), encoding="utf-8") as fh:
+        return fh.read()
+
+
+def test_is_active_is_enforced_in_the_base_dependency():
+    """The check lived only in get_current_active_user, and ~40 endpoints used
+    the unchecked get_current_user — so deactivating a user revoked nothing."""
+    source = _read("app", "api", "deps.py")
+
+    for fn in ("def get_current_user(", "async def get_current_user_async("):
+        start = source.index(fn)
+        body = source[start : start + 1400]
+        assert "if not user.is_active:" in body, f"{fn} does not check is_active"
+
+
+def test_role_dependency_exists():
+    assert "def require_role(" in _read("app", "api", "deps.py")
+
+
+def test_generate_prompt_has_no_dead_hasattr_tenant_guard():
+    """`X if hasattr(...) else True` yielded the literal True, and SQLAlchemy
+    folded the tenant constraint out of the emitted SQL entirely."""
+    source = _read("app", "api", "v1", "endpoints", "bots.py")
+    assert "hasattr(DocumentModel, 'tenant_id')" not in source
+
+
+def test_feedback_endpoint_is_bot_scoped():
+    source = _read("app", "api", "v1", "endpoints", "bots.py")
+    start = source.index("async def submit_message_feedback")
+    body = source[start : start + 1600]
+    assert "deps.get_current_bot_async" in body
+    # the Mongo match key, not just the $set payload, must be scoped
+    assert '"user_id": str(current_user.id),' in body.split("$set")[0]
+
+
+def test_folder_update_validates_new_parent():
+    """parent_id was applied unvalidated, so a folder could be re-parented
+    under another tenant's folder — which then cascades on delete."""
+    source = _read("app", "api", "v1", "endpoints", "folders.py")
+    start = source.index("def update_folder")
+    body = source[start : start + 2500]
+    assert "FolderModel.bot_id == folder.bot_id" in body
+    assert "Circular folder hierarchy" in body
+
+
 # ── The cross-tenant router must stay gone ───────────────────────────────────
 
 def test_openrouter_router_is_not_registered():
