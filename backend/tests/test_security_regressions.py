@@ -254,6 +254,45 @@ def test_folder_update_validates_new_parent():
     assert "Circular folder hierarchy" in body
 
 
+# ── Hardening ────────────────────────────────────────────────────────────────
+
+def test_api_docs_are_disabled_in_production():
+    source = _read("app", "main.py")
+    assert "docs_url=None if _IS_PRODUCTION" in source
+    assert "redoc_url=None if _IS_PRODUCTION" in source
+    assert "openapi_url=None if _IS_PRODUCTION" in source
+
+
+def test_cors_localhost_regex_is_development_only():
+    """The regex allowed any localhost origin with allow_credentials=True,
+    in production too."""
+    source = _read("app", "main.py")
+    start = source.index("_cors_origin_regex")
+    assert "if not _IS_PRODUCTION:" in source[start : start + 400]
+
+
+def test_password_policy_is_applied():
+    source = _read("app", "schemas", "user.py")
+    assert "min_length=12" in source
+    # bcrypt truncates at 72 bytes, so an upper bound is required too
+    assert "max_length=128" in source
+    assert "password: Password" in source
+
+
+def test_top_k_is_bounded_defensively_in_the_service():
+    """Schema bounds are not the only path in — top_k also arrives from the
+    free-form bot.config JSONB."""
+    source = _read("app", "services", "openrouter_rag_service.py")
+    assert "top_k = min(max(int(top_k), 1), 50)" in source
+
+
+def test_zalo_bot_token_is_not_logged_on_timeout():
+    """url[:60] was meant to redact the token, but the base URL is 28 chars,
+    so it logged the first 32 characters of the token."""
+    source = _read("app", "services", "channels", "zalo_bot_service.py")
+    assert "url[:60]" not in source
+
+
 # ── The cross-tenant router must stay gone ───────────────────────────────────
 
 def test_openrouter_router_is_not_registered():

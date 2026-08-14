@@ -11,6 +11,7 @@ from app.core.rate_limit import limiter
 import asyncio
 import httpx
 import logging
+import secrets
 import structlog
 from app.core.config import settings
 from app.core.middleware import RequestIDMiddleware
@@ -86,9 +87,16 @@ async def lifespan(app: FastAPI):
     logger.info("shutdown_complete")
 
 
+_IS_PRODUCTION = settings.ENVIRONMENT == "production"
+
+# The interactive docs map every route, parameter and schema, and /docs offers
+# a live "Try it out" console. Useful in development, free reconnaissance in
+# production — FastAPI enables /docs and /redoc unless explicitly disabled.
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=None if _IS_PRODUCTION else f"{settings.API_V1_STR}/openapi.json",
+    docs_url=None if _IS_PRODUCTION else "/docs",
+    redoc_url=None if _IS_PRODUCTION else "/redoc",
     lifespan=lifespan,
     redirect_slashes=True,
 )
@@ -97,13 +105,20 @@ app = FastAPI(
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(RequestIDMiddleware)
 
+# In production the allowlist is the whole policy. The localhost/devtunnels
+# regex is a development convenience and must not be combined with
+# allow_credentials on a public deployment.
+_cors_origin_regex = None
+if not _IS_PRODUCTION:
+    _cors_origin_regex = (
+        r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?"
+        r"|https://[a-z0-9-]+-\d+\.asse\.devtunnels\.ms"
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[str(o) for o in settings.BACKEND_CORS_ORIGINS],
-    allow_origin_regex=(
-        r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?"
-        + (r"|https://[a-z0-9-]+-\d+\.asse\.devtunnels\.ms" if settings.ENVIRONMENT != "production" else "")
-    ),
+    allow_origin_regex=_cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -176,7 +191,20 @@ async def health_check():
 
 
 @app.get("/metrics")
-def prometheus_metrics():
+def prometheus_metrics(request: Request):
+    """Prometheus scrape endpoint.
+
+    Gated on a bearer token when METRICS_TOKEN is set. Left open otherwise so
+    local development and existing scrapers keep working, but the port is not
+    published outside the compose network.
+    """
+    expected = settings.METRICS_TOKEN
+    if expected:
+        provided = request.headers.get("authorization", "")
+        prefix = "bearer "
+        token = provided[len(prefix):] if provided.lower().startswith(prefix) else ""
+        if not secrets.compare_digest(token, expected):
+            return JSONResponse(content={"detail": "Not authorized"}, status_code=401)
     return metrics_response()
 
 

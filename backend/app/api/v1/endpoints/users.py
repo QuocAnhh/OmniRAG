@@ -9,6 +9,7 @@ import hashlib
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
+from app.schemas.user import Password
 from app.core.security import get_password_hash
 
 router = APIRouter()
@@ -18,8 +19,10 @@ router = APIRouter()
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    # current_password stays unconstrained so existing short passwords can
+    # still be verified; only the replacement must satisfy the policy.
     current_password: Optional[str] = None
-    new_password: Optional[str] = None
+    new_password: Optional[Password] = None
 
 
 class APIKeyCreate(BaseModel):

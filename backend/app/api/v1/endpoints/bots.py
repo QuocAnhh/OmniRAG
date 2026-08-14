@@ -38,12 +38,12 @@ EXTENSION_MIME_MAP = {
     ".csv":  ("text/", "application/csv", "application/vnd.ms-excel"),
 }
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ValidationError
 from app.api import deps
 from app.models.bot import Bot as BotModel
 from app.models.document import Document as DocumentModel
 from app.models.user import User
-from app.schemas.bot import Bot, BotCreate, BotUpdate
+from app.schemas.bot import Bot, BotConfig, BotCreate, BotUpdate
 from app.schemas.document import Document
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.openrouter_rag_service import get_openrouter_rag_service
@@ -156,7 +156,17 @@ def update_bot(
     # belong to the /channels/*/connect flows and hold live credentials.
     incoming_config = update_data.pop("config", None)
     if incoming_config is not None:
-        bot.config = merge_config(bot.config, incoming_config)
+        merged = merge_config(bot.config, incoming_config)
+        # Validate the merged result, not the incoming patch. Declaring
+        # BotUpdate.config as BotConfig instead would make pydantic fill in
+        # defaults for every field the client omitted, so a partial update
+        # (say, top_k alone) would silently reset a custom system_prompt.
+        # BotConfig allows extra keys, so channel sub-objects survive.
+        try:
+            BotConfig.model_validate(merged)
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=exc.errors())
+        bot.config = merged
         flag_modified(bot, "config")
 
     for field, value in update_data.items():
@@ -686,7 +696,9 @@ class FeedbackRequest(BaseModel):
 
 class RetrieveRequest(BaseModel):
     query: str
-    top_k: int = 5
+    # Bounded: top_k is multiplied by 4 for the initial Qdrant fetch and the
+    # whole candidate list is held in memory for cross-encoder reranking.
+    top_k: int = Field(default=5, ge=1, le=50)
 
 
 @router.post("/{bot_id}/retrieve")
@@ -722,7 +734,7 @@ async def test_retrieval(
 async def debug_retrieval(
     bot_id: str,
     query: str = Query(..., description="Query to debug"),
-    top_k: int = Query(5, description="Number of chunks to retrieve"),
+    top_k: int = Query(5, ge=1, le=50, description="Number of chunks to retrieve"),
     bot: BotModel = Depends(deps.get_current_bot),
 ):
     """

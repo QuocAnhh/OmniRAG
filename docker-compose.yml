@@ -159,7 +159,11 @@ services:
     build: ./backend
     image: omnirag-backend
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # --forwarded-allow-ips lets slowapi see the real client instead of the
+    # gateway's container IP, which had collapsed every user into one shared
+    # rate-limit bucket. Safe only because port 8000 is not published: anyone
+    # who could reach the backend directly could otherwise forge the header.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
     volumes:
       - huggingface_cache:/app/.cache/huggingface
     expose:

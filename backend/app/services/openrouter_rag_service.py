@@ -1199,6 +1199,13 @@ class OpenRouterRAGService:
         the caller does one final rerank after merging all variant results).
         """
         reranker = self._get_reranker() if rerank else None
+        # Defensive clamp. top_k also arrives from bot.config, which is a free
+        # JSONB blob, so the schema bounds alone are not the only path in — and
+        # the value is amplified 4x below and held in memory for reranking.
+        try:
+            top_k = min(max(int(top_k), 1), 50)
+        except (TypeError, ValueError):
+            top_k = 5
         initial_limit = max(top_k * 4, 20)
         
         bot_filter = Filter(
