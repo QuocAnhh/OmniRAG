@@ -200,21 +200,31 @@ func TestProxyToPython_CacheBypassOnNoCacheHeader(t *testing.T) {
 
 func TestGenerateCacheKey_DifferentPathsDifferentKeys(t *testing.T) {
 	h := &ProxyHandler{}
-	k1 := h.generateCacheKey("/a|b", "c", "token")
-	k2 := h.generateCacheKey("/a", "b|c", "token")
+	k1 := h.generateCacheKey("/a|b", "", "c", "token")
+	k2 := h.generateCacheKey("/a", "", "b|c", "token")
 	assert.NotEqual(t, k1, k2, "length-prefixed keys must not collide on ambiguous inputs")
 }
 
 func TestGenerateCacheKey_SameInputsSameKey(t *testing.T) {
 	h := &ProxyHandler{}
-	k1 := h.generateCacheKey("/api/v1/bots", "", "Bearer abc")
-	k2 := h.generateCacheKey("/api/v1/bots", "", "Bearer abc")
+	k1 := h.generateCacheKey("/api/v1/bots", "", "", "Bearer abc")
+	k2 := h.generateCacheKey("/api/v1/bots", "", "", "Bearer abc")
 	assert.Equal(t, k1, k2)
 }
 
 func TestGenerateCacheKey_DifferentAuthDifferentKeys(t *testing.T) {
 	h := &ProxyHandler{}
-	k1 := h.generateCacheKey("/api/v1/bots", "", "Bearer user1")
-	k2 := h.generateCacheKey("/api/v1/bots", "", "Bearer user2")
+	k1 := h.generateCacheKey("/api/v1/bots", "", "", "Bearer user1")
+	k2 := h.generateCacheKey("/api/v1/bots", "", "", "Bearer user2")
 	assert.NotEqual(t, k1, k2, "different auth tokens must yield different cache keys")
+}
+
+func TestGenerateCacheKey_DifferentQueryDifferentKeys(t *testing.T) {
+	// The query string is part of the upstream URL. Omitting it from the key
+	// collapsed paginated and filtered GETs onto one entry, so a request for
+	// page 2 was served page 1 for the whole TTL.
+	h := &ProxyHandler{}
+	k1 := h.generateCacheKey("/api/v1/bots", "skip=0&limit=1", "", "Bearer abc")
+	k2 := h.generateCacheKey("/api/v1/bots", "skip=50&limit=50", "", "Bearer abc")
+	assert.NotEqual(t, k1, k2, "different query strings must yield different cache keys")
 }

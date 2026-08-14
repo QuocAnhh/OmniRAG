@@ -20,6 +20,10 @@ func CORS(allowedOrigins []string) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		// The response varies by Origin, so any shared cache in front of the
+		// gateway must not reuse the header minted for one origin on another.
+		c.Writer.Header().Add("Vary", "Origin")
+
 		origin := c.GetHeader("Origin")
 		if _, allowed := originSet[strings.ToLower(origin)]; allowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)

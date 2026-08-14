@@ -77,6 +77,11 @@ services:
       ENVIRONMENT: "${ENVIRONMENT:-production}"
       PYTHON_BACKEND_URL: "http://backend:8000"
       REDIS_URL: "redis://redis:6379/0"
+      # Empty means trust no proxy and key the rate limiter on RemoteAddr.
+      # Set to your load balancer's CIDR if one sits in front of the gateway;
+      # leaving it wrong in either direction breaks rate limiting (spoofable
+      # if too broad, one shared bucket for everyone if the LB is untrusted).
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
       RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_RPS: "${RATE_LIMIT_RPS:-100}"
       CORS_ALLOWED_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}"

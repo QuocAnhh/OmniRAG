@@ -61,8 +61,10 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 		health["redis"] = "healthy"
 	}
 
-	// Check Python backend reachability.
-	backendURL := h.config.PythonBackendURL + "/docs"
+	// Check Python backend reachability. Probes /health, not /docs — the
+	// interactive docs are disabled in production, which would otherwise make
+	// a healthy backend report as down.
+	backendURL := h.config.PythonBackendURL + "/health"
 	backendReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, backendURL, nil)
 	if err != nil {
 		h.logger.Error("Failed to build backend health request", zap.Error(err))

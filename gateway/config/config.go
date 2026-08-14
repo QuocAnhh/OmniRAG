@@ -27,6 +27,12 @@ type Config struct {
 	JWTSecret     string
 	JWTExpiration int // seconds
 
+	// Proxy
+	// CIDRs or IPs allowed to set X-Forwarded-For. Empty means trust nothing
+	// and use RemoteAddr — Gin's default of trusting everyone makes the
+	// client IP, and therefore the rate-limit key, attacker-controlled.
+	TrustedProxies []string
+
 	// Redis
 	RedisURL string
 	CacheTTL int // seconds
@@ -66,6 +72,14 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
+	rawProxies := getEnv("TRUSTED_PROXIES", "")
+	trustedProxies := make([]string, 0)
+	for _, p := range strings.Split(rawProxies, ",") {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			trustedProxies = append(trustedProxies, trimmed)
+		}
+	}
+
 	cfg := &Config{
 		Port:               getEnv("GATEWAY_PORT", "8080"),
 		Environment:        env,
@@ -73,8 +87,13 @@ func LoadConfig() (*Config, error) {
 		PythonBackendURL:   getEnv("PYTHON_BACKEND_URL", "http://backend:8000"),
 		JWTSecret:          jwtSecret,
 		JWTExpiration:      getEnvInt("JWT_EXPIRATION", 3600),
+		TrustedProxies:     trustedProxies,
 		RedisURL:           getEnv("REDIS_URL", "redis://redis:6379/0"),
-		CacheTTL:           getEnvInt("CACHE_TTL", 3600),
+		// Must stay below the backend's 30-minute JWT lifetime. A cache HIT is
+		// served without contacting the backend, so the token is never
+		// revalidated — at the old 3600s a stolen or expired token kept
+		// reading cached responses for up to half an hour after it died.
+		CacheTTL: getEnvInt("CACHE_TTL", 60),
 		RateLimitEnabled:   getEnv("RATE_LIMIT_ENABLED", "true") == "true",
 		RateLimitRPS:       getEnvInt("RATE_LIMIT_RPS", 100),
 		OpenRouterAPIKey:   getEnv("OPENROUTER_API_KEY", ""),
