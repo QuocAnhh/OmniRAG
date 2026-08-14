@@ -12,6 +12,15 @@ import logging
 import json
 from datetime import datetime, timezone
 
+from sqlalchemy.orm.attributes import flag_modified
+
+from app.core.bot_config import (
+    CHANNEL_CONFIG_KEYS,
+    contains_redacted_sentinel,
+    merge_config,
+    redact_config,
+)
+
 # ─── File upload constants ────────────────────────────────────────────────────
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".pptx", ".xlsx", ".csv", ".md"}
 LEGACY_OFFICE_EXTENSIONS = {".doc", ".ppt", ".xls"}
@@ -48,6 +57,18 @@ logger = logging.getLogger(__name__)
 rag_service = get_openrouter_rag_service()
 router = APIRouter()
 
+
+def _bot_response(bot: BotModel) -> Bot:
+    """Serialize a bot with channel credentials redacted.
+
+    Builds a detached copy — the ORM instance is never mutated, or SQLAlchemy
+    would flush the redaction sentinel back into the database.
+    """
+    return Bot.model_validate(bot).model_copy(
+        update={"config": redact_config(bot.config), "api_key": None}
+    )
+
+
 @router.get("/", response_model=List[Bot])
 async def read_bots(
     skip: int = 0,
@@ -61,7 +82,7 @@ async def read_bots(
         .where(BotModel.tenant_id == current_user.tenant_id)
         .offset(skip).limit(limit)
     )
-    return result.scalars().all()
+    return [_bot_response(bot) for bot in result.scalars().all()]
 
 @router.post("/", response_model=Bot, status_code=201)
 def create_bot(
@@ -79,14 +100,14 @@ def create_bot(
     db.add(bot)
     db.commit()
     db.refresh(bot)
-    return bot
+    return _bot_response(bot)
 
 @router.get("/{bot_id}", response_model=Bot)
 async def read_bot(
     bot: BotModel = Depends(deps.get_current_bot_async),
 ):
     """Get a specific bot"""
-    return bot
+    return _bot_response(bot)
 
 @router.put("/{bot_id}", response_model=Bot)
 def update_bot(
@@ -98,6 +119,19 @@ def update_bot(
     from app.services.domain_config import get_domain_profile, is_domain_locked
 
     update_data = bot_in.model_dump(exclude_unset=True)
+
+    # A client echoing a redacted read is expected and harmless for the channel
+    # sub-objects — merge_config drops those wholesale. Only a sentinel that
+    # reached some *other* part of the config is a bug worth surfacing, since
+    # that value would otherwise be written verbatim.
+    _incoming_cfg = update_data.get("config") or {}
+    if contains_redacted_sentinel(
+        {k: v for k, v in _incoming_cfg.items() if k not in CHANNEL_CONFIG_KEYS}
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Config contains redacted placeholder values; send only fields you changed",
+        )
 
     # When domain is locked, enforce optimized defaults for prompt + generation params
     effective_domain = update_data.get("config", {}).get("domain") if update_data.get("config") else None
@@ -115,13 +149,23 @@ def update_bot(
         update_data["config"]["temperature"] = profile.temperature
         update_data["config"]["max_tokens"] = profile.max_tokens
 
+    # config is merged, never replaced: the frontend reads the whole config and
+    # PUTs it back (including an automatic save after a knowledge-graph build),
+    # so a wholesale assignment would drop any key the client did not resend.
+    # merge_config also discards client-supplied channel sub-objects — those
+    # belong to the /channels/*/connect flows and hold live credentials.
+    incoming_config = update_data.pop("config", None)
+    if incoming_config is not None:
+        bot.config = merge_config(bot.config, incoming_config)
+        flag_modified(bot, "config")
+
     for field, value in update_data.items():
         setattr(bot, field, value)
 
     db.add(bot)
     db.commit()
     db.refresh(bot)
-    return bot
+    return _bot_response(bot)
 
 @router.delete("/{bot_id}", status_code=204)
 def delete_bot(
