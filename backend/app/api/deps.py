@@ -49,15 +49,40 @@ def get_current_user(
     user = db.execute(select(User).where(User.id == token_data.sub)).scalar_one_or_none()
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
     return user
 
 
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    """Kept as an alias so existing call sites keep working.
+
+    The is_active check now lives in get_current_user itself. It used to be
+    here only, and ~40 endpoints — all of /users, /dashboard, /integrations and
+    every channel management route — depended on the unchecked variant, so
+    deactivating an account did not actually revoke its access.
+    """
     return current_user
+
+
+def require_role(*allowed: str):
+    """Dependency factory gating an endpoint on User.role.
+
+    Roles exist in the model (owner/admin/member) but were enforced in exactly
+    one place, so a member could delete bots, read every conversation in the
+    tenant and manage channels exactly like an owner.
+    """
+    def _require(current_user: User = Depends(get_current_active_user)) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions",
+            )
+        return current_user
+
+    return _require
 
 
 def get_current_bot(
@@ -111,14 +136,15 @@ async def get_current_user_async(
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
     return user
 
 
 async def get_current_active_user_async(
     current_user: User = Depends(get_current_user_async),
 ) -> User:
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    """Alias — see get_current_active_user."""
     return current_user
 
 

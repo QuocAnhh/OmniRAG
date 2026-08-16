@@ -44,7 +44,7 @@ touch .env
 Các biến tối thiểu thường dùng:
 
 ```env
-SECRET_KEY=change-me
+SECRET_KEY=  # bắt buộc, sinh bằng: openssl rand -hex 32
 OPENROUTER_API_KEY=sk-or-v1-your-key
 OPENAI_API_KEY=sk-your-openai-key
 SQLALCHEMY_DATABASE_URI=postgresql://postgres:password@db:5432/omnirag
@@ -57,10 +57,17 @@ MINIO_SECRET_KEY=minioadmin
 RAG_COLLECTION_NAME=omnirag_openrouter_collection_v3
 ```
 
-Khởi động stack:
+Khởi động stack (production — chỉ gateway và frontend mở ra ngoài):
 
 ```bash
+cp .env.example .env   # điền các secret, sinh bằng: openssl rand -hex 32
 docker compose up -d --build
+```
+
+Khi phát triển local, thêm override để mở cổng datastore và bật hot reload:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 Các endpoint quan trọng:

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Bearer token required to scrape /metrics. Empty leaves it open, which is
+    # fine while the backend port is not published outside the compose network.
+    METRICS_TOKEN: str = ""
+
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v: str, values: dict) -> str:
         if not v:

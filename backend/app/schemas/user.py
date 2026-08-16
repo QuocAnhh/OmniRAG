@@ -1,5 +1,10 @@
-from pydantic import BaseModel, EmailStr, UUID4
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field, UUID4
+from typing import Annotated, Optional
+
+# bcrypt silently truncates at 72 bytes, so the upper bound is a correctness
+# guard as much as a limit — without it, two different long passwords sharing a
+# 72-byte prefix authenticate interchangeably.
+Password = Annotated[str, Field(min_length=12, max_length=128)]
 
 
 # Token schemas
@@ -20,19 +25,19 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: Password
     tenant_id: UUID4
 
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str
+    password: Password
     full_name: Optional[str] = None
     tenant_name: str  # For creating a new tenant
 
 
 class UserUpdate(UserBase):
-    password: Optional[str] = None
+    password: Optional[Password] = None
 
 
 class UserInDB(UserBase):

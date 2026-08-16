@@ -107,7 +107,7 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 	// Cache only GET requests; include Authorization to prevent cross-user leaks.
 	if method == "GET" && !isStreamingEndpoint && !isDynamicEndpoint && !bypassCache {
 		authHeader := c.GetHeader("Authorization")
-		cacheKey := h.generateCacheKey(path, string(bodyBytes), authHeader)
+		cacheKey := h.generateCacheKey(path, c.Request.URL.RawQuery, string(bodyBytes), authHeader)
 		if cached, err := h.getFromCache(c.Request.Context(), cacheKey); err == nil && cached != nil {
 			h.logger.Info("Cache HIT", zap.String("path", path))
 			c.Header("X-Cache", "HIT")
@@ -174,7 +174,7 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 		var responseData interface{}
 		if err := json.Unmarshal(respBody, &responseData); err == nil {
 			authHeader := c.GetHeader("Authorization")
-			cacheKey := h.generateCacheKey(path, string(bodyBytes), authHeader)
+			cacheKey := h.generateCacheKey(path, c.Request.URL.RawQuery, string(bodyBytes), authHeader)
 			h.saveToCache(c.Request.Context(), cacheKey, responseData)
 		}
 	}
@@ -184,7 +184,7 @@ func (h *ProxyHandler) ProxyToPython(c *gin.Context) {
 		(method == "PUT" || method == "PATCH" || method == "DELETE") &&
 		!isDynamicEndpoint {
 		authHeader := c.GetHeader("Authorization")
-		getCacheKey := h.generateCacheKey(path, "", authHeader)
+		getCacheKey := h.generateCacheKey(path, c.Request.URL.RawQuery, "", authHeader)
 		h.deleteFromCache(c.Request.Context(), getCacheKey)
 	}
 
@@ -262,8 +262,12 @@ func (h *ProxyHandler) proxyStreaming(c *gin.Context, req *http.Request, path st
 // generateCacheKey creates a collision-resistant SHA-256 cache key.
 // Length-prefixed fields prevent ambiguous collisions (e.g. "/a|b" + "c" vs "/a" + "b|c").
 // authToken is included so user A never sees user B's cached data.
-func (h *ProxyHandler) generateCacheKey(path, body, authToken string) string {
-	raw := fmt.Sprintf("%d:%s|%d:%s|%d:%s", len(path), path, len(body), body, len(authToken), authToken)
+// rawQuery is included because it is part of the upstream URL: without it,
+// /bots?skip=0&limit=1 and /bots?skip=50&limit=50 collapsed onto one entry and
+// served each other's results for the whole TTL.
+func (h *ProxyHandler) generateCacheKey(path, rawQuery, body, authToken string) string {
+	raw := fmt.Sprintf("%d:%s|%d:%s|%d:%s|%d:%s",
+		len(path), path, len(rawQuery), rawQuery, len(body), body, len(authToken), authToken)
 	hash := sha256.Sum256([]byte(raw))
 	return fmt.Sprintf("gateway:cache:%s", hex.EncodeToString(hash[:]))
 }

@@ -22,10 +22,17 @@ FROM alpine:3.21
 # Install ca-certificates for HTTPS
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+# Run unprivileged. This is the internet-facing service and the binary is a
+# static CGO-disabled build that needs no privileges at all.
+RUN adduser -D -H -u 10001 appuser
+
+WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /app/gateway .
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 # Expose port
 EXPOSE 8080

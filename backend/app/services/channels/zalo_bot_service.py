@@ -43,11 +43,15 @@ class ZaloBotService:
                 r.raise_for_status()
                 return data
             except httpx.ConnectTimeout:
-                logger.error(f"Zalo Bot API timeout connecting to {url[:60]}...")
+                # Never build the token into a logged string. The previous
+                # truncation was meant to redact it, but ZALO_BOT_API_BASE is
+                # 28 characters long, so the slice kept the first 32 characters
+                # of the token itself.
+                logger.error("Zalo Bot API timeout: method=%s host=bot-api.zapps.me", method)
                 raise Exception("Cannot connect to Zalo Bot API — check your Bot Token")
             except httpx.HTTPStatusError as e:
                 logger.error(f"Zalo Bot API error: {e.response.status_code} - {e.response.text}")
-                raise Exception(f"Zalo API returned {e.response.status_code}: {e.response.text}")
+                raise Exception(f"Zalo API returned {e.response.status_code}")
             except Exception as e:
                 logger.error(f"Zalo Bot API call failed: {e}")
                 raise

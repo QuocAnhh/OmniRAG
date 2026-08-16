@@ -1,0 +1,16 @@
+# Fingerprints of reviewed false positives.
+#
+# `gitleaks detect` scans the diff of every commit in the range, so a finding
+# introduced by an earlier commit stays reported no matter what later commits
+# do — an inline `gitleaks:allow` added afterwards cannot reach back and change
+# that commit's diff. Fingerprints are the mechanism for exactly this case.
+#
+# Add an entry only with a one-line justification. Never add a real secret here:
+# if a credential was committed, rotate it — an ignore rule does not un-publish
+# anything.
+
+# FastAPI's openapi_url parameter. generic-api-key fires on the parameter name
+# containing "api" beside a string literal; the value is the route path
+# /api/v1/openapi.json, not a credential. Verified against a fixture containing
+# real randomly-generated secrets — those are still reported.
+65f5b890f6c41a80f0637c4feca3f69c9cc79c69:backend/app/main.py:generic-api-key:97

@@ -112,14 +112,32 @@ def update_folder(
     # Update logic
     update_data = folder_in.model_dump(exclude_unset=True)
     
-    # Validation loop check if parent_id changed
+    # The folder being edited is tenant-checked above, but the *new* parent was
+    # not. Re-parenting under another tenant's folder was accepted by the FK,
+    # and since the relationship cascades on delete, that tenant deleting their
+    # own folder would silently destroy this one.
     if 'parent_id' in update_data and update_data['parent_id']:
         if update_data['parent_id'] == folder.id:
             raise HTTPException(status_code=400, detail="Cannot set folder as its own parent")
-            
-        # Also check circular dependency (simplified for now)
-        # In production would need recursive check
-        
+
+        parent = db.execute(
+            select(FolderModel).where(
+                FolderModel.id == update_data['parent_id'],
+                FolderModel.bot_id == folder.bot_id,  # same bot ⇒ same tenant
+            )
+        ).scalar_one_or_none()
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent folder not found")
+
+        # Walk the ancestor chain so a cycle cannot be created.
+        seen = {folder.id}
+        cursor = parent
+        while cursor is not None:
+            if cursor.id in seen:
+                raise HTTPException(status_code=400, detail="Circular folder hierarchy")
+            seen.add(cursor.id)
+            cursor = cursor.parent
+
     for field, value in update_data.items():
         setattr(folder, field, value)
 

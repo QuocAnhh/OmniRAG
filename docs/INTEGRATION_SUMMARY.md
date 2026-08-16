@@ -70,7 +70,7 @@ API chính hiện có:
 - Analytics: `/api/v1/analytics/*`
 - Integrations: `/api/v1/integrations/*`
 - Channels: `/api/v1/channels/zalo/*`, `/zalo-bot/*`, `/facebook/*`
-- OpenRouter utilities: `/api/v1/openrouter/*`
+- OpenRouter utilities: đã gỡ bỏ (thiếu kiểm tra tenant) — dùng `/api/v1/bots/{bot_id}/*`
 
 Chi tiết xem `docs/API_REFERENCE.md`.
 

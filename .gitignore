@@ -2,6 +2,11 @@
 backend/.env
 **/.env
 **/.env.*
+# Templates carry placeholders only and must stay tracked. Without these
+# negations the rule above silently swallows them and `git add` is a no-op.
+!.env.example
+!.env.prod.example
+!backend/.env.example
 
 # Python
 __pycache__/

@@ -9,6 +9,7 @@ from functools import lru_cache
 from lightrag import LightRAG, QueryParam
 from lightrag.utils import EmbeddingFunc
 from lightrag.llm.openai import openai_complete
+from app.core.bot_config import kg_cache_key, validate_bot_id
 from app.core.config import settings
 from app.services.openrouter_service import get_openrouter_service
 
@@ -21,8 +22,10 @@ _KG_CACHE_MAX_SIZE = 256
 _KG_CACHE_TTL_SEC = 300  # 5 minutes
 
 
-def _make_cache_key(query_text: str, mode: str) -> str:
-    return f"{mode}:{query_text.strip().lower()[:200]}"
+_RAG_STORAGE_ROOT = "./rag_storage"
+
+# Re-exported for readability at the call sites below.
+_make_cache_key = kg_cache_key
 
 
 def _cache_get(key: str) -> Optional[str]:
@@ -102,13 +105,25 @@ class LightRAGService:
     """
 
     def __init__(self, bot_id: str = "default_bot"):
-        self.bot_id = bot_id
+        # bot_id is interpolated into a filesystem path below and into the
+        # LightRAG/Qdrant workspace name. Reject anything that is not a plain
+        # path segment — "x/../../etc" would otherwise create directories and
+        # write storage files anywhere the process can reach.
+        #
+        # validate_bot_id rejects; it deliberately does NOT rewrite bot_id.
+        # Hashing or slugifying it would change working_dir for every existing
+        # bot and orphan every knowledge graph already on disk.
+        self.bot_id = validate_bot_id(bot_id)
         self._storages_initialized = False  # Cache flag — initialize_storages() is expensive
         self.working_dir = f"./rag_storage/lightrag_{bot_id}"
-        
+
+        storage_root = os.path.realpath(_RAG_STORAGE_ROOT)
+        if not os.path.realpath(self.working_dir).startswith(storage_root + os.sep):
+            raise ValueError(f"LightRAG working_dir escapes {storage_root}: {self.working_dir!r}")
+
         if not os.path.exists(self.working_dir):
             os.makedirs(self.working_dir, exist_ok=True)
-            
+
         logger.info(f"Initializing LightRAG [{LIGHTRAG_LLM_MODEL} via OpenRouter] → {self.working_dir}")
 
         self.rag = LightRAG(
@@ -199,7 +214,7 @@ class LightRAGService:
         - Query result cache (5-min TTL, 256 entries max)
         - Skip LLM keyword extraction (pass keywords from query text directly)
         """
-        cache_key = _make_cache_key(query_text, mode)
+        cache_key = _make_cache_key(self.bot_id, query_text, mode)
         cached = _cache_get(cache_key)
         if cached is not None:
             logger.info(f"[KG Cache HIT] mode={mode}: {query_text[:60]}...")

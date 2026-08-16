@@ -1199,6 +1199,13 @@ class OpenRouterRAGService:
         the caller does one final rerank after merging all variant results).
         """
         reranker = self._get_reranker() if rerank else None
+        # Defensive clamp. top_k also arrives from bot.config, which is a free
+        # JSONB blob, so the schema bounds alone are not the only path in — and
+        # the value is amplified 4x below and held in memory for reranking.
+        try:
+            top_k = min(max(int(top_k), 1), 50)
+        except (TypeError, ValueError):
+            top_k = 5
         initial_limit = max(top_k * 4, 20)
         
         bot_filter = Filter(
@@ -2860,12 +2867,15 @@ Answer:"""
             mongo_db = await get_mongodb()
             conversations_collection = mongo_db.conversations
             
+            # Both filters apply: session_id narrows the result set, it never
+            # replaces the ownership constraint. Using elif here let any tenant
+            # member read another user's transcripts by passing their session_id.
             query = {"bot_id": bot_id}
+            if user_id:
+                query["user_id"] = user_id
             if session_id:
                 query["session_id"] = session_id
-            elif user_id:
-                query["user_id"] = user_id
-            
+
             cursor = conversations_collection.find(query).sort("timestamp", -1).limit(limit)
             conversations = await cursor.to_list(length=limit)
             

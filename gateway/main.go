@@ -60,6 +60,19 @@ func main() {
 	}
 
 	router := gin.New()
+
+	// Gin trusts every peer by default (0.0.0.0/0), so ClientIP() returns the
+	// leftmost X-Forwarded-For entry — fully attacker-controlled. Since that is
+	// the rate-limit key, a random header per request made the limiter a no-op.
+	// With no TRUSTED_PROXIES configured we trust nothing and fall back to
+	// RemoteAddr; behind a load balancer, set it to the LB's CIDR.
+	if err := router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		logger.Fatal("Invalid TRUSTED_PROXIES", zap.Error(err))
+	}
+	if len(cfg.TrustedProxies) == 0 {
+		logger.Info("No trusted proxies configured; using RemoteAddr for client IP")
+	}
+
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(cfg.CORSAllowedOrigins))
 	router.Use(middleware.Logger(logger))
@@ -86,9 +99,15 @@ func main() {
 	})
 
 	router.Any("/api/*path", proxyHandler.ProxyToPython)
-	router.Any("/docs", proxyHandler.ProxyToPython)
-	router.Any("/redoc", proxyHandler.ProxyToPython)
-	router.Any("/openapi.json", proxyHandler.ProxyToPython)
+
+	// The interactive API docs are proxied only outside production. They dump
+	// every route, parameter and schema, and /docs offers a "Try it out"
+	// console against the live backend.
+	if cfg.Environment != "production" {
+		router.Any("/docs", proxyHandler.ProxyToPython)
+		router.Any("/redoc", proxyHandler.ProxyToPython)
+		router.Any("/openapi.json", proxyHandler.ProxyToPython)
+	}
 
 	// NOTE: WriteTimeout is 0 to support long-lived SSE streaming connections.
 	// Individual handler timeouts are managed via request contexts.

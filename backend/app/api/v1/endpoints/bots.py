@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Literal, Optional
 import uuid
 from uuid import UUID
 import secrets
@@ -11,6 +11,15 @@ from pathlib import Path
 import logging
 import json
 from datetime import datetime, timezone
+
+from sqlalchemy.orm.attributes import flag_modified
+
+from app.core.bot_config import (
+    CHANNEL_CONFIG_KEYS,
+    contains_redacted_sentinel,
+    merge_config,
+    redact_config,
+)
 
 # ─── File upload constants ────────────────────────────────────────────────────
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".pptx", ".xlsx", ".csv", ".md"}
@@ -29,12 +38,12 @@ EXTENSION_MIME_MAP = {
     ".csv":  ("text/", "application/csv", "application/vnd.ms-excel"),
 }
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ValidationError
 from app.api import deps
 from app.models.bot import Bot as BotModel
 from app.models.document import Document as DocumentModel
 from app.models.user import User
-from app.schemas.bot import Bot, BotCreate, BotUpdate
+from app.schemas.bot import Bot, BotConfig, BotCreate, BotUpdate
 from app.schemas.document import Document
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.openrouter_rag_service import get_openrouter_rag_service
@@ -47,6 +56,18 @@ logger = logging.getLogger(__name__)
 # Initialize the correct RAG service
 rag_service = get_openrouter_rag_service()
 router = APIRouter()
+
+
+def _bot_response(bot: BotModel) -> Bot:
+    """Serialize a bot with channel credentials redacted.
+
+    Builds a detached copy — the ORM instance is never mutated, or SQLAlchemy
+    would flush the redaction sentinel back into the database.
+    """
+    return Bot.model_validate(bot).model_copy(
+        update={"config": redact_config(bot.config), "api_key": None}
+    )
+
 
 @router.get("/", response_model=List[Bot])
 async def read_bots(
@@ -61,7 +82,7 @@ async def read_bots(
         .where(BotModel.tenant_id == current_user.tenant_id)
         .offset(skip).limit(limit)
     )
-    return result.scalars().all()
+    return [_bot_response(bot) for bot in result.scalars().all()]
 
 @router.post("/", response_model=Bot, status_code=201)
 def create_bot(
@@ -79,14 +100,14 @@ def create_bot(
     db.add(bot)
     db.commit()
     db.refresh(bot)
-    return bot
+    return _bot_response(bot)
 
 @router.get("/{bot_id}", response_model=Bot)
 async def read_bot(
     bot: BotModel = Depends(deps.get_current_bot_async),
 ):
     """Get a specific bot"""
-    return bot
+    return _bot_response(bot)
 
 @router.put("/{bot_id}", response_model=Bot)
 def update_bot(
@@ -98,6 +119,19 @@ def update_bot(
     from app.services.domain_config import get_domain_profile, is_domain_locked
 
     update_data = bot_in.model_dump(exclude_unset=True)
+
+    # A client echoing a redacted read is expected and harmless for the channel
+    # sub-objects — merge_config drops those wholesale. Only a sentinel that
+    # reached some *other* part of the config is a bug worth surfacing, since
+    # that value would otherwise be written verbatim.
+    _incoming_cfg = update_data.get("config") or {}
+    if contains_redacted_sentinel(
+        {k: v for k, v in _incoming_cfg.items() if k not in CHANNEL_CONFIG_KEYS}
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Config contains redacted placeholder values; send only fields you changed",
+        )
 
     # When domain is locked, enforce optimized defaults for prompt + generation params
     effective_domain = update_data.get("config", {}).get("domain") if update_data.get("config") else None
@@ -115,13 +149,33 @@ def update_bot(
         update_data["config"]["temperature"] = profile.temperature
         update_data["config"]["max_tokens"] = profile.max_tokens
 
+    # config is merged, never replaced: the frontend reads the whole config and
+    # PUTs it back (including an automatic save after a knowledge-graph build),
+    # so a wholesale assignment would drop any key the client did not resend.
+    # merge_config also discards client-supplied channel sub-objects — those
+    # belong to the /channels/*/connect flows and hold live credentials.
+    incoming_config = update_data.pop("config", None)
+    if incoming_config is not None:
+        merged = merge_config(bot.config, incoming_config)
+        # Validate the merged result, not the incoming patch. Declaring
+        # BotUpdate.config as BotConfig instead would make pydantic fill in
+        # defaults for every field the client omitted, so a partial update
+        # (say, top_k alone) would silently reset a custom system_prompt.
+        # BotConfig allows extra keys, so channel sub-objects survive.
+        try:
+            BotConfig.model_validate(merged)
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=exc.errors())
+        bot.config = merged
+        flag_modified(bot, "config")
+
     for field, value in update_data.items():
         setattr(bot, field, value)
 
     db.add(bot)
     db.commit()
     db.refresh(bot)
-    return bot
+    return _bot_response(bot)
 
 @router.delete("/{bot_id}", status_code=204)
 def delete_bot(
@@ -578,17 +632,29 @@ async def generate_bot_prompt(
     if request.bot_id:
         try:
             bot_uuid = UUID(request.bot_id)
-            documents = (await db.execute(
-                select(DocumentModel).where(
-                    DocumentModel.bot_id == bot_uuid,
-                    DocumentModel.tenant_id == current_user.tenant_id if hasattr(DocumentModel, 'tenant_id') else True,
+            # Authorize through the bot. Document has no tenant_id column, so
+            # the previous attribute-probing ternary evaluated to the literal
+            # True and SQLAlchemy folded the tenant constraint out of the
+            # emitted SQL entirely — the filter was never applied.
+            owned_bot = (await db.execute(
+                select(BotModel).where(
+                    BotModel.id == bot_uuid,
+                    BotModel.tenant_id == current_user.tenant_id,
                 )
+            )).scalar_one_or_none()
+            if not owned_bot:
+                raise HTTPException(status_code=404, detail="Bot not found")
+
+            documents = (await db.execute(
+                select(DocumentModel).where(DocumentModel.bot_id == owned_bot.id)
             )).scalars().all()
             
             if documents:
                 file_types = list(set([Path(doc.filename).suffix for doc in documents]))
                 doc_context = f"\n\nContextual Information:\nThe agent has access to a Knowledge Base containing files with types: {', '.join(file_types)}."
                 doc_context += "\nInstruction: The generated prompt must be generic and refer to 'the provided knowledge base' or 'retrieved context' rather than listing specific filenames."
+        except HTTPException:
+            raise  # a bot the caller does not own must surface as 404
         except Exception as e:
             logger.warning(f"Could not fetch documents for context: {e}")
 
@@ -625,12 +691,14 @@ async def generate_bot_prompt(
 
 
 class FeedbackRequest(BaseModel):
-    score: int  # 1 = thumbs up, -1 = thumbs down
+    score: Literal[-1, 1]  # 1 = thumbs up, -1 = thumbs down
 
 
 class RetrieveRequest(BaseModel):
     query: str
-    top_k: int = 5
+    # Bounded: top_k is multiplied by 4 for the initial Qdrant fetch and the
+    # whole candidate list is held in memory for cross-encoder reranking.
+    top_k: int = Field(default=5, ge=1, le=50)
 
 
 @router.post("/{bot_id}/retrieve")
@@ -666,7 +734,7 @@ async def test_retrieval(
 async def debug_retrieval(
     bot_id: str,
     query: str = Query(..., description="Query to debug"),
-    top_k: int = Query(5, description="Number of chunks to retrieve"),
+    top_k: int = Query(5, ge=1, le=50, description="Number of chunks to retrieve"),
     bot: BotModel = Depends(deps.get_current_bot),
 ):
     """
@@ -752,21 +820,28 @@ async def debug_retrieval(
 
 @router.post("/{bot_id}/chat/{message_id}/feedback", status_code=200)
 async def submit_message_feedback(
-    bot_id: str,
     message_id: str,
     feedback_in: FeedbackRequest,
-    current_user: User = Depends(deps.get_current_active_user),
+    bot: BotModel = Depends(deps.get_current_bot_async),
+    current_user: User = Depends(deps.get_current_active_user_async),
 ):
     """Store thumbs-up / thumbs-down feedback for a specific AI message."""
     try:
         from app.db.mongodb import get_mongodb
         mongo_db = await get_mongodb()
+        # The match key is scoped to the caller. Matching on message_id alone
+        # let anyone overwrite another tenant's feedback record — including its
+        # tenant_id and user_id — for any message id they cared to guess.
         await mongo_db.message_feedback.update_one(
-            {"message_id": message_id},
+            {
+                "message_id": message_id,
+                "bot_id": str(bot.id),
+                "user_id": str(current_user.id),
+            },
             {
                 "$set": {
                     "message_id": message_id,
-                    "bot_id": bot_id,
+                    "bot_id": str(bot.id),
                     "user_id": str(current_user.id),
                     "tenant_id": str(current_user.tenant_id),
                     "score": feedback_in.score,

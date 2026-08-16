@@ -159,4 +159,4 @@ Snapshot này có:
 
 - Backend chưa expose document update/preview endpoint dù frontend client có hàm tương ứng.
 - Gateway cache không cache chat responses. Nếu cần đo cache chat, xem backend RAG cache.
-- Một số route OpenRouter trong `/api/v1/openrouter/*` là utility/test route, không phải flow chính của frontend.
+- Nhóm route `/api/v1/openrouter/*` đã được gỡ bỏ: chúng nhận `bot_id` từ client mà không kiểm tra quyền sở hữu, cho phép đọc và ghi kho tri thức của tenant khác. Mọi thao tác RAG đi qua `/api/v1/bots/{bot_id}/*`, nơi dependency `get_current_bot` ràng buộc `tenant_id`.

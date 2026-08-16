@@ -137,10 +137,11 @@ docker compose build backend frontend zalo-personal-worker
 docker compose up -d backend frontend zalo-personal-worker
 ```
 
-Production compose:
+Production compose — `docker-compose.prod.yml` is an override file with no
+service definitions of its own, so it must be passed alongside the base file:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ## Chạy backend ngoài Docker

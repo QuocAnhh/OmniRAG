@@ -19,10 +19,25 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	assert.Equal(t, "http://backend:8000", cfg.PythonBackendURL)
 	assert.Equal(t, 3600, cfg.JWTExpiration)
 	assert.Equal(t, "redis://redis:6379/0", cfg.RedisURL)
-	assert.Equal(t, 3600, cfg.CacheTTL)
+	// Must stay below the backend's 30-minute JWT lifetime: a cache HIT never
+	// reaches the backend, so the token is not revalidated and an expired one
+	// would keep reading cached responses until the entry aged out.
+	assert.Equal(t, 60, cfg.CacheTTL)
+	assert.Less(t, cfg.CacheTTL, 30*60, "cache TTL must be shorter than the JWT lifetime")
 	assert.True(t, cfg.RateLimitEnabled)
 	assert.Equal(t, 100, cfg.RateLimitRPS)
 	assert.Equal(t, "dev-secret-not-for-production", cfg.JWTSecret)
+	assert.Empty(t, cfg.TrustedProxies, "trust no proxy unless TRUSTED_PROXIES is set")
+}
+
+func TestLoadConfig_TrustedProxiesParsing(t *testing.T) {
+	clearEnv()
+	t.Setenv("TRUSTED_PROXIES", " 10.0.0.0/8 , 172.16.0.0/12 ,")
+
+	cfg, err := LoadConfig()
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"10.0.0.0/8", "172.16.0.0/12"}, cfg.TrustedProxies)
 }
 
 func TestLoadConfig_EnvOverride(t *testing.T) {

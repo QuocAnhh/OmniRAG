@@ -1,16 +1,90 @@
+# ─── Base stack: secure by default ────────────────────────────────────────────
+#
+# Only the gateway and the frontend publish ports. Every datastore and the
+# backend itself are reachable on the compose network only — Docker's `ports:`
+# binds 0.0.0.0 and writes iptables rules that bypass ufw, so anything
+# published here is on the public internet the moment this runs on a server.
+#
+# Credentials use the ${VAR:?} form on purpose: a missing value stops the
+# deploy with a clear error instead of silently falling back to a weak default.
+#
+# For local development (published datastore ports, live source mounts):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# For production:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# Shared backend/worker configuration. Both services run the same image and
+# must stay in step — they previously drifted, and celery_worker silently
+# lacked the Zalo Personal settings.
+x-backend-env: &backend-env
+  ENVIRONMENT: "${ENVIRONMENT:-production}"
+  SECRET_KEY: "${SECRET_KEY:?SECRET_KEY is required — generate with: openssl rand -hex 32}"
+  POSTGRES_SERVER: "db"
+  POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+  POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+  POSTGRES_DB: "${POSTGRES_DB:-omnirag}"
+  MONGODB_URL: "mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:?MONGO_PASSWORD is required}@mongodb:27017"
+  REDIS_URL: "redis://redis:6379/0"
+  MINIO_ENDPOINT: "minio:9000"
+  MINIO_ACCESS_KEY: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
+  MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
+  QDRANT_HOST: "qdrant"
+  QDRANT_URL: "http://qdrant:6333"
+  RAG_COLLECTION_NAME: "omnirag_openrouter_collection_v3"
+  OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
+  OPENROUTER_CHAT_MODEL: "${OPENROUTER_CHAT_MODEL:-google/gemini-3.1-flash-lite}"
+  OPENROUTER_EMBEDDING_MODEL: "${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}"
+  OPENROUTER_ENABLE_FALLBACKS: "${OPENROUTER_ENABLE_FALLBACKS:-true}"
+  OPENROUTER_SITE_URL: "${OPENROUTER_SITE_URL:-http://localhost:5173}"
+  OPENROUTER_SITE_NAME: "${OPENROUTER_SITE_NAME:-OmniRAG}"
+  HF_HOME: "/app/.cache/huggingface"
+  LIGHTRAG_LLM_MODEL: "google/gemini-3.1-flash-lite"
+  PDF_DEFAULT_PARSER_MODE: "hybrid_auto"
+  PDF_STRUCTURED_CHUNKING: "true"
+  PDF_TABLE_METHOD: "cluster"
+  PDF_READING_ORDER: "xycut"
+  PDF_IMAGE_OUTPUT: "external"
+  PDF_MARKDOWN_WITH_HTML: "true"
+  PDF_HYBRID_MODE: "docling-fast"
+  PDF_HYBRID_URL: "http://opendataloader-hybrid:5002"
+  PUBLIC_URL: "${PUBLIC_URL:-}"
+  # Channel shared secrets. Empty means the matching webhook rejects every
+  # request (all five channel webhooks fail closed), so a blank value disables
+  # the channel rather than opening it.
+  ZALO_HUB_WEBHOOK_SECRET: "${ZALO_HUB_WEBHOOK_SECRET:-}"
+  FB_WORKER_API_TOKEN: "${FB_WORKER_API_TOKEN:-}"
+  FB_INBOUND_SECRET: "${FB_INBOUND_SECRET:-}"
+  TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+  TELEGRAM_WEBHOOK_SECRET: "${TELEGRAM_WEBHOOK_SECRET:-}"
+  ZALO_PERSONAL_ENABLED: "${ZALO_PERSONAL_ENABLED:-false}"
+  ZALO_PERSONAL_WORKER_URL: "http://zalo-personal-worker:9200"
+  ZALO_PERSONAL_WORKER_API_TOKEN: "${ZALO_PERSONAL_WORKER_API_TOKEN:-}"
+  ZALO_PERSONAL_INBOUND_SECRET: "${ZALO_PERSONAL_INBOUND_SECRET:-}"
+
 services:
   gateway:
     build: ./gateway
     ports:
       - "${GATEWAY_HOST_PORT:-8080}:8080"
     environment:
-      - GATEWAY_PORT=8080
-      - ENVIRONMENT=development
-      - PYTHON_BACKEND_URL=http://backend:8000
-      - REDIS_URL=redis://redis:6379/0
-      - RATE_LIMIT_ENABLED=true
-      - RATE_LIMIT_RPS=100
-      - CORS_ALLOWED_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      GATEWAY_PORT: "8080"
+      # JWT_SECRET must be set before ENVIRONMENT=production: config.go returns
+      # an error when it is missing in production, and main.go turns that into
+      # log.Fatalf — which under `restart: always` is a permanent crash loop.
+      # The :? form fails the deploy up front instead.
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required — generate with: openssl rand -hex 32}"
+      ENVIRONMENT: "${ENVIRONMENT:-production}"
+      PYTHON_BACKEND_URL: "http://backend:8000"
+      REDIS_URL: "redis://redis:6379/0"
+      # Empty means trust no proxy and key the rate limiter on RemoteAddr.
+      # Set to your load balancer's CIDR if one sits in front of the gateway;
+      # leaving it wrong in either direction breaks rate limiting (spoofable
+      # if too broad, one shared bucket for everyone if the LB is untrusted).
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_RPS: "${RATE_LIMIT_RPS:-100}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}"
     depends_on:
       - backend
       - redis
@@ -22,13 +96,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=omnirag
-    ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+      # Only consumed by initdb. On an existing volume the password must be
+      # rotated with ALTER ROLE — changing it here alone has no effect.
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+      POSTGRES_DB: "${POSTGRES_DB:-omnirag}"
+    expose:
+      - "5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d omnirag"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-omnirag}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,19 +115,32 @@ services:
     volumes:
       - mongodb_data:/data/db
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
-    ports:
-      - "${MONGODB_HOST_PORT:-27017}:27017"
+      # Also initdb-only — rotate with db.changeUserPassword on an existing volume.
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_USER:-admin}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_PASSWORD:?MONGO_PASSWORD is required}"
+    expose:
+      - "27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    # Keep --appendonly yes: dropping it makes the next restart load from a
+    # possibly-absent RDB, silently losing the Celery queue.
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "${REDIS_HOST_PORT:-6380}:6379"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -60,60 +149,27 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    ports:
-      - "${MINIO_API_HOST_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
+    expose:
+      - "9000"
+      - "9001"
 
   backend:
     build: ./backend
     image: omnirag-backend
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # --forwarded-allow-ips lets slowapi see the real client instead of the
+    # gateway's container IP, which had collapsed every user into one shared
+    # rate-limit bucket. Safe only because port 8000 is not published: anyone
+    # who could reach the backend directly could otherwise forge the header.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
     volumes:
-      - ./backend:/app
       - huggingface_cache:/app/.cache/huggingface
-    ports:
-      - "${BACKEND_HOST_PORT:-8001}:8000"
+    expose:
+      - "8000"
     environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=omnirag
-      - MONGODB_URL=mongodb://admin:password@mongodb:27017
-      - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - QDRANT_HOST=qdrant
-      - QDRANT_URL=http://qdrant:6333
-      - RAG_COLLECTION_NAME=omnirag_openrouter_collection_v3
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-google/gemini-3.1-flash-lite}
-      - OPENROUTER_EMBEDDING_MODEL=${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
-      - OPENROUTER_ENABLE_FALLBACKS=${OPENROUTER_ENABLE_FALLBACKS:-true}
-      - OPENROUTER_SITE_URL=${OPENROUTER_SITE_URL:-http://localhost:5173}
-      - OPENROUTER_SITE_NAME=${OPENROUTER_SITE_NAME:-OmniRAG}
-      - HF_HOME=/app/.cache/huggingface
-      - LIGHTRAG_LLM_MODEL=google/gemini-3.1-flash-lite
-      - PDF_DEFAULT_PARSER_MODE=hybrid_auto
-      - PDF_STRUCTURED_CHUNKING=true
-      - PDF_TABLE_METHOD=cluster
-      - PDF_READING_ORDER=xycut
-      - PDF_IMAGE_OUTPUT=external
-      - PDF_MARKDOWN_WITH_HTML=true
-      - PDF_HYBRID_MODE=docling-fast
-      - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
-      - ZALO_PERSONAL_ENABLED=${ZALO_PERSONAL_ENABLED:-false}
-      - ZALO_PERSONAL_WORKER_URL=http://zalo-personal-worker:9200
-      - ZALO_PERSONAL_WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
-      - ZALO_PERSONAL_INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
-      - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
-      - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
-      - PUBLIC_URL=${PUBLIC_URL:-}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-}
+      <<: *backend-env
     depends_on:
       db:
         condition: service_healthy
@@ -133,42 +189,9 @@ services:
     restart: unless-stopped
     command: celery -A app.worker worker --loglevel=info --concurrency=4
     volumes:
-      - ./backend:/app
       - huggingface_cache:/app/.cache/huggingface
     environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=omnirag
-      - MONGODB_URL=mongodb://admin:password@mongodb:27017
-      - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - QDRANT_HOST=qdrant
-      - QDRANT_URL=http://qdrant:6333
-      - RAG_COLLECTION_NAME=omnirag_openrouter_collection_v3
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-google/gemini-3.1-flash-lite}
-      - OPENROUTER_EMBEDDING_MODEL=${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
-      - OPENROUTER_ENABLE_FALLBACKS=${OPENROUTER_ENABLE_FALLBACKS:-true}
-      - OPENROUTER_SITE_URL=${OPENROUTER_SITE_URL:-http://localhost:5173}
-      - OPENROUTER_SITE_NAME=${OPENROUTER_SITE_NAME:-OmniRAG}
-      - HF_HOME=/app/.cache/huggingface
-      - LIGHTRAG_LLM_MODEL=google/gemini-3.1-flash-lite
-      - PDF_DEFAULT_PARSER_MODE=hybrid_auto
-      - PDF_STRUCTURED_CHUNKING=true
-      - PDF_TABLE_METHOD=cluster
-      - PDF_READING_ORDER=xycut
-      - PDF_IMAGE_OUTPUT=external
-      - PDF_MARKDOWN_WITH_HTML=true
-      - PDF_HYBRID_MODE=docling-fast
-      - PDF_HYBRID_URL=http://opendataloader-hybrid:5002
-      - FB_WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
-      - FB_INBOUND_SECRET=${FB_INBOUND_SECRET:-}
-      - PUBLIC_URL=${PUBLIC_URL:-}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-}
+      <<: *backend-env
     depends_on:
       - db
       - mongodb
@@ -182,22 +205,24 @@ services:
   # Uses unofficial fbchat-muqit library; isolated from backend to avoid GPL
   # license entanglement. Communicates with backend over HTTP only.
   # See services/fb-channel-worker/README.md for details.
+  #
+  # Deliberately does NOT read backend/.env. It previously did, which handed
+  # this third-party-library service the JWT signing key and the OpenRouter
+  # billing key. The four variables it actually needs are listed below.
   # ─────────────────────────────────────────────────────────────────────────
   fb-channel-worker:
     build: ./services/fb-channel-worker
     image: omnirag-fb-channel-worker
     restart: unless-stopped
-    env_file:
-      - ./backend/.env
     expose:
       - "9100"
     volumes:
       - fb_cookies_data:/data/fb-cookies
     environment:
-      - BACKEND_URL=http://backend:8000
-      - WORKER_API_TOKEN=${FB_WORKER_API_TOKEN:-}
-      - INBOUND_SECRET=${FB_INBOUND_SECRET:-}
-      - LOG_LEVEL=INFO
+      BACKEND_URL: "http://backend:8000"
+      WORKER_API_TOKEN: "${FB_WORKER_API_TOKEN:-}"
+      INBOUND_SECRET: "${FB_INBOUND_SECRET:-}"
+      LOG_LEVEL: "INFO"
     depends_on:
       backend:
         condition: service_started
@@ -222,10 +247,10 @@ services:
     volumes:
       - zalo_personal_sessions:/sessions
     environment:
-      - BACKEND_URL=http://backend:8000
-      - WORKER_API_TOKEN=${ZALO_PERSONAL_WORKER_API_TOKEN:-}
-      - INBOUND_SECRET=${ZALO_PERSONAL_INBOUND_SECRET:-}
-      - LOG_LEVEL=info
+      BACKEND_URL: "http://backend:8000"
+      WORKER_API_TOKEN: "${ZALO_PERSONAL_WORKER_API_TOKEN:-}"
+      INBOUND_SECRET: "${ZALO_PERSONAL_INBOUND_SECRET:-}"
+      LOG_LEVEL: "info"
     depends_on:
       backend:
         condition: service_started
@@ -239,8 +264,8 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.16.0
     restart: unless-stopped
-    ports:
-      - "${QDRANT_HOST_PORT:-6333}:6333"
+    expose:
+      - "6333"
     volumes:
       - qdrant_data:/qdrant/storage
 
@@ -274,16 +299,16 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.hybrid
-    ports:
-      - "${PDF_HYBRID_HOST_PORT:-5002}:5002"
+    expose:
+      - "5002"
     environment:
-      - PDF_HYBRID_FORCE_OCR=${PDF_HYBRID_FORCE_OCR:-false}
-      - PDF_HYBRID_OCR_ENGINE=${PDF_HYBRID_OCR_ENGINE:-auto}
-      - PDF_HYBRID_OCR_LANG=${PDF_HYBRID_OCR_LANG:-}
-      - PDF_HYBRID_DEVICE=${PDF_HYBRID_DEVICE:-cpu}
-      - PDF_HYBRID_MAX_FILE_SIZE=${PDF_HYBRID_MAX_FILE_SIZE:-}
-      - PDF_HYBRID_ENRICH_PICTURE=${PDF_HYBRID_ENRICH_PICTURE:-false}
-      - PDF_HYBRID_ENRICH_FORMULA=${PDF_HYBRID_ENRICH_FORMULA:-false}
+      PDF_HYBRID_FORCE_OCR: "${PDF_HYBRID_FORCE_OCR:-false}"
+      PDF_HYBRID_OCR_ENGINE: "${PDF_HYBRID_OCR_ENGINE:-auto}"
+      PDF_HYBRID_OCR_LANG: "${PDF_HYBRID_OCR_LANG:-}"
+      PDF_HYBRID_DEVICE: "${PDF_HYBRID_DEVICE:-cpu}"
+      PDF_HYBRID_MAX_FILE_SIZE: "${PDF_HYBRID_MAX_FILE_SIZE:-}"
+      PDF_HYBRID_ENRICH_PICTURE: "${PDF_HYBRID_ENRICH_PICTURE:-false}"
+      PDF_HYBRID_ENRICH_FORMULA: "${PDF_HYBRID_ENRICH_FORMULA:-false}"
     restart: unless-stopped
 
   frontend:
@@ -291,12 +316,9 @@ services:
     restart: unless-stopped
     ports:
       - "${FRONTEND_HOST_PORT:-5173}:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
-      - VITE_BACKEND_URL=http://backend:8000
-      - VITE_ENABLE_ZALO_PERSONAL=${VITE_ENABLE_ZALO_PERSONAL:-false}
+      VITE_BACKEND_URL: "http://backend:8000"
+      VITE_ENABLE_ZALO_PERSONAL: "${VITE_ENABLE_ZALO_PERSONAL:-false}"
     depends_on:
       - gateway
 

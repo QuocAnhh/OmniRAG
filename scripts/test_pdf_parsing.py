@@ -193,11 +193,23 @@ def test_hybrid_fallback(pdf_path: str):
 
 
 def test_e2e(pdf_path: str):
-    """Full end-to-end test: upload PDF → ingest → chat (requires running backend)."""
+    """Full end-to-end test: upload PDF → ingest → chat (requires running backend).
+
+    Uses the tenant-scoped /bots/{bot_id}/* endpoints. Requires credentials —
+    set API_EMAIL and API_PASSWORD, or the test is skipped.
+    """
+    import time
+
     import requests
 
     api_url = os.getenv("API_URL", "http://localhost:8000")
+    email = os.getenv("API_EMAIL")
+    password = os.getenv("API_PASSWORD")
     print(f"--- E2E test against {api_url} ---")
+
+    if not (email and password):
+        print("  SKIP: set API_EMAIL and API_PASSWORD to run the E2E test")
+        return True
 
     session = requests.Session()
 
@@ -205,6 +217,15 @@ def test_e2e(pdf_path: str):
     resp = session.get(f"{api_url}/health")
     assert resp.status_code == 200, f"Health check failed: {resp.status_code}"
     print("  Health check OK")
+
+    # 1b. Authenticate — every bot endpoint is tenant-scoped
+    resp = session.post(
+        f"{api_url}/api/v1/auth/login",
+        data={"username": email, "password": password},
+    )
+    assert resp.status_code == 200, f"Login failed: {resp.status_code} {resp.text}"
+    session.headers["Authorization"] = f"Bearer {resp.json()['access_token']}"
+    print("  Authenticated OK")
 
     # 2. Create a test bot
     bot_data = {
@@ -218,30 +239,37 @@ def test_e2e(pdf_path: str):
     print(f"  Bot created: {bot_id}")
 
     try:
-        # 3. Upload PDF
+        # 3. Upload PDF — processing is dispatched to Celery, so poll for completion
         with open(pdf_path, "rb") as f:
             resp = session.post(
-                f"{api_url}/api/v1/openrouter/rag/ingest",
+                f"{api_url}/api/v1/bots/{bot_id}/documents",
                 files={"file": (os.path.basename(pdf_path), f, "application/pdf")},
-                data={"bot_id": bot_id, "chunk_size": "512", "chunk_overlap": "100"},
+                data={"chunking_strategy": "recursive"},
             )
-        assert resp.status_code == 200, f"Ingest failed: {resp.status_code} {resp.text}"
-        result = resp.json()["data"]
-        chunks = result.get("chunks_created", 0)
-        print(f"  Ingestion OK: {chunks} chunks created")
-        assert chunks > 0, "No chunks created from PDF"
+        assert resp.status_code in [200, 201], f"Upload failed: {resp.status_code} {resp.text}"
+        doc_id = resp.json()["id"]
+        print(f"  Upload OK: document {doc_id}")
+
+        deadline = time.time() + 300
+        status = None
+        while time.time() < deadline:
+            resp = session.get(f"{api_url}/api/v1/bots/{bot_id}/documents")
+            assert resp.status_code == 200, f"List documents failed: {resp.status_code}"
+            doc = next((d for d in resp.json() if d["id"] == doc_id), None)
+            status = doc.get("status") if doc else None
+            if status in ("completed", "failed"):
+                break
+            time.sleep(5)
+        assert status == "completed", f"Document processing did not complete (status={status})"
+        print("  Ingestion OK: document processed")
 
         # 4. Chat
         resp = session.post(
-            f"{api_url}/api/v1/openrouter/rag/chat",
-            json={
-                "bot_id": bot_id,
-                "query": "What is this document about?",
-                "bot_config": {"model": "openai/gpt-4o-mini"},
-            },
+            f"{api_url}/api/v1/bots/{bot_id}/chat",
+            json={"message": "What is this document about?"},
         )
         assert resp.status_code == 200, f"Chat failed: {resp.status_code} {resp.text}"
-        answer = resp.json().get("data", {}).get("answer", "")
+        answer = resp.json().get("response", "")
         print(f"  Chat OK: {answer[:100]}...")
     finally:
         # 5. Cleanup
