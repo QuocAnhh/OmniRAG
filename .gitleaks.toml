@@ -7,15 +7,11 @@
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = """
-FastAPI's openapi_url parameter. The generic-api-key rule fires on the \
-parameter name containing "api" next to a string literal; the value is a route \
-path (/api/v1/openapi.json), not a credential.
-"""
-regexTarget = "line"
-regexes = ['''openapi_url\s*=''']
-paths = ['''backend/app/main\.py''']
+# Note: single false positives are suppressed with an inline `gitleaks:allow`
+# comment at the offending line rather than a rule here. That syntax is stable
+# across gitleaks versions — the CI action pins 8.24.3 while local installs are
+# newer, and the top-level allowlist schema differs between them — and it keeps
+# the justification visible to anyone reading the code.
 
 [[allowlists]]
 description = "Template files hold CHANGE_ME placeholders by design."

@@ -94,7 +94,9 @@ _IS_PRODUCTION = settings.ENVIRONMENT == "production"
 # production — FastAPI enables /docs and /redoc unless explicitly disabled.
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=None if _IS_PRODUCTION else f"{settings.API_V1_STR}/openapi.json",
+    # gitleaks:allow — a route path, not a credential; the generic-api-key rule
+    # fires on the parameter name containing "api" beside a string literal.
+    openapi_url=None if _IS_PRODUCTION else f"{settings.API_V1_STR}/openapi.json",  # gitleaks:allow
     docs_url=None if _IS_PRODUCTION else "/docs",
     redoc_url=None if _IS_PRODUCTION else "/redoc",
     lifespan=lifespan,
