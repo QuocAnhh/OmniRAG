@@ -1,0 +1,37 @@
+# gitleaks configuration
+#
+# Keep this file narrow. Every entry below is a documented false positive with
+# a path and a pattern, never a blanket rule or a whole-directory exclusion —
+# a secret scanner that has been quieted into always passing is worse than none.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+FastAPI's openapi_url parameter. The generic-api-key rule fires on the \
+parameter name containing "api" next to a string literal; the value is a route \
+path (/api/v1/openapi.json), not a credential.
+"""
+regexTarget = "line"
+regexes = ['''openapi_url\s*=''']
+paths = ['''backend/app/main\.py''']
+
+[[allowlists]]
+description = "Template files hold CHANGE_ME placeholders by design."
+paths = [
+  '''\.env\.example''',
+  '''\.env\.prod\.example''',
+]
+
+[[allowlists]]
+description = """
+Documentation and tests quote redaction sentinels and example values so the \
+security rules stay legible and testable.
+"""
+regexTarget = "line"
+regexes = [
+  '''__REDACTED__''',
+  '''CHANGE_ME''',
+  '''openssl rand -hex''',
+]
