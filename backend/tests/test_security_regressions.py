@@ -29,13 +29,13 @@ STORED_CONFIG = {
     "system_prompt": "Custom prompt the tenant wrote",
     "top_k": 8,
     "telegram": {
-        "bot_token": "123456:REAL-TELEGRAM-TOKEN",
-        "webhook_secret": "real-webhook-secret",
+        "bot_token": "telegram-token-fixture-not-a-real-credential",
+        "webhook_secret": "telegram-webhook-secret-fixture",
         "is_active": True,
         "bot_username": "acme_bot",
         "webhook_url": "https://example.test/hook",
     },
-    "zalo_bot": {"bot_token": "zalo-real-token", "webhook_secret": "zalo-secret"},
+    "zalo_bot": {"bot_token": "zalo-token-fixture", "webhook_secret": "zalo-webhook-secret-fixture"},
 }
 
 
@@ -84,9 +84,9 @@ def test_echoing_a_redacted_read_does_not_wipe_credentials():
 
     merged = merge_config(STORED_CONFIG, echoed)
 
-    assert merged["telegram"]["bot_token"] == "123456:REAL-TELEGRAM-TOKEN"
-    assert merged["telegram"]["webhook_secret"] == "real-webhook-secret"
-    assert merged["zalo_bot"]["bot_token"] == "zalo-real-token"
+    assert merged["telegram"]["bot_token"] == "telegram-token-fixture-not-a-real-credential"
+    assert merged["telegram"]["webhook_secret"] == "telegram-webhook-secret-fixture"
+    assert merged["zalo_bot"]["bot_token"] == "zalo-token-fixture"
     # and the real change still lands
     assert merged["enable_knowledge_graph"] is True
 
